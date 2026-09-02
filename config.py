@@ -1,0 +1,20 @@
+# Конфигурация и загрузка переменных окружения
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN не задан в .env файле")
+
+DB_PATH = Path(os.getenv("DB_PATH", "data/bot.db"))
+if not DB_PATH.is_absolute():
+    DB_PATH = BASE_DIR / DB_PATH
+
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+API_BASE_URL = os.getenv("API_BASE_URL", "https://www.rubinst.ru/schedule.php")
+CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "300"))
