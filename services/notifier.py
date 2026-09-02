@@ -21,7 +21,6 @@ from services.api import (
     parse_para_time_range,
     clean_time,
     format_para_item,
-    hash_tomorrow_payload,
     find_tomorrow_diff
 )
 
@@ -54,7 +53,7 @@ class ScheduleNotifier:
 
         cur_mins = now.hour * 60 + now.minute
 
-        # Группируем пользователей по group_id, чтобы не делать лишних запросов к расписанию
+        # Группируем пользователей по group_id, чтобы запрашивать расписание группы один раз
         users_by_group: Dict[int, List[Dict[str, Any]]] = {}
         for u in users:
             gid = u.get("group_id")
@@ -162,35 +161,31 @@ class ScheduleNotifier:
 
             t_week, t_day, t_day_name = get_tomorrow_target(fresh_sched)
             t_week_rome = "I" if t_week == 1 else "II"
-            new_hash = hash_tomorrow_payload(fresh_sched, t_week, t_day)
             
-            old_hash, old_sched = await get_stored_group_schedule(gid)
+            old_sched = await get_stored_group_schedule(gid)
 
-            if old_hash is None:
-                # Первичная инициализация состояния расписания на завтра
-                await save_group_schedule(gid, new_hash, fresh_sched)
+            if old_sched is None:
+                # Первичная инициализация состояния расписания
+                await save_group_schedule(gid, fresh_sched)
                 continue
 
-            if old_hash != new_hash:
-                diffs = find_tomorrow_diff(old_sched or {}, fresh_sched, t_week, t_day)
-                await save_group_schedule(gid, new_hash, fresh_sched)
+            # Сравниваем расписание на завтра между старым и новым снимком
+            diffs = find_tomorrow_diff(old_sched, fresh_sched, t_week, t_day)
+            
+            # Обновляем сохраненный снимок расписания
+            await save_group_schedule(gid, fresh_sched)
 
+            if diffs:
                 users_to_notify = await get_users_for_group_changes(gid)
                 if not users_to_notify:
                     continue
 
-                if diffs:
-                    diff_text = "\n\n".join(diffs[:8])
-                    msg = (
-                        f"Срочно! Изменилось расписание на завтра для группы {gname} ({t_day_name}, {t_week_rome} неделя):\n\n"
-                        f"{diff_text}\n\n"
-                        "Нажми кнопку «Завтра» для просмотра обновленного расписания."
-                    )
-                else:
-                    msg = (
-                        f"Внимание! В расписание на завтра для группы {gname} ({t_day_name}, {t_week_rome} неделя) внесены изменения на сайте института.\n\n"
-                        "Нажми кнопку «Завтра» для просмотра актуального расписания."
-                    )
+                diff_text = "\n\n".join(diffs[:8])
+                msg = (
+                    f"Срочно! Изменилось расписание на завтра для группы {gname} ({t_day_name}, {t_week_rome} неделя):\n\n"
+                    f"{diff_text}\n\n"
+                    "Нажми кнопку «Завтра» для просмотра обновленного расписания."
+                )
 
                 for u in users_to_notify:
                     await self._send_message(u["user_id"], msg)
@@ -203,7 +198,7 @@ class ScheduleNotifier:
         except (TelegramForbiddenError, TelegramBadRequest):
             pass
         except Exception as e:
-            logger.warning("Ошибка отправки уведомления пользователю %s: %s", user_id, e)
+            logger.warning("Ошибка отправки сообщения пользователю %s: %s", user_id, e)
 
     async def start_loop(self):
         logger.info("Фоновый процесс уведомлений запущен")

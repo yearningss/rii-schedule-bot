@@ -14,22 +14,32 @@ RUBTSOVSK_TZ = ZoneInfo("Asia/Barnaul")
 
 class RiiApiClient:
     def __init__(self):
+        self._session: Optional[aiohttp.ClientSession] = None
         self._groups_cache: Optional[List[Dict[str, Any]]] = None
         self._groups_cache_time: float = 0
         self._schedule_cache: Dict[int, Dict[str, Any]] = {}
         self._schedule_cache_time: Dict[int, float] = {}
 
+    async def _get_session(self) -> aiohttp.ClientSession:
+        if self._session is None or self._session.closed:
+            connector = aiohttp.TCPConnector(ssl=False)
+            timeout = aiohttp.ClientTimeout(total=15)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Referer": "https://www.rubinst.ru/schedule"
+            }
+            self._session = aiohttp.ClientSession(connector=connector, timeout=timeout, headers=headers)
+        return self._session
+
+    async def close(self):
+        if self._session and not self._session.closed:
+            await self._session.close()
+
     async def _fetch_json(self, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        connector = aiohttp.TCPConnector(ssl=False)
-        timeout = aiohttp.ClientTimeout(total=15)
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Referer": "https://www.rubinst.ru/schedule"
-        }
-        async with aiohttp.ClientSession(connector=connector, timeout=timeout, headers=headers) as session:
-            async with session.get(API_BASE_URL, params=params) as response:
-                response.raise_for_status()
-                return await response.json()
+        session = await self._get_session()
+        async with session.get(API_BASE_URL, params=params) as response:
+            response.raise_for_status()
+            return await response.json()
 
     async def get_groups(self, force_refresh: bool = False) -> List[Dict[str, Any]]:
         now = time.time()
@@ -114,7 +124,7 @@ class RiiApiClient:
 def clean_time(time_str: Optional[str]) -> str:
     if not time_str:
         return ""
-    cleaned = time_str.replace("<br />", " - ").replace("<br>", " - ").replace("<br/>", " - ")
+    cleaned = re.sub(r"<br\s*/?>", " - ", time_str, flags=re.IGNORECASE)
     cleaned = cleaned.replace(".", ":")
     return cleaned.strip()
 
@@ -132,13 +142,11 @@ def parse_para_time_range(time_str: Optional[str], default_para_num: int = 1) ->
         return default_times.get(default_para_num, (0, 0, "", ""))
 
     c = clean_time(time_str)
-    parts = c.split("-")
-    if len(parts) == 2:
+    match = re.search(r"(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})", c)
+    if match:
         try:
-            s_raw = parts[0].strip().split(":")
-            e_raw = parts[1].strip().split(":")
-            s_h, s_m = int(s_raw[0]), int(s_raw[1])
-            e_h, e_m = int(e_raw[0]), int(e_raw[1])
+            s_h, s_m = int(match.group(1)), int(match.group(2))
+            e_h, e_m = int(match.group(3)), int(match.group(4))
             start_mins = s_h * 60 + s_m
             end_mins = e_h * 60 + e_m
             start_str = f"{s_h:02d}:{s_m:02d}"
@@ -324,15 +332,16 @@ def format_week_schedule(
     schedule: Dict[str, Any],
     week_num: int,
     user_subgroup: int = 0
-) -> str:
+) -> List[str]:
     week_days = schedule.get("weekDays", {})
     para_times = schedule.get("paraTimes", {})
     schedule_data = schedule.get("scheduleData", {})
     week_data = schedule_data.get(str(week_num), {})
     week_rome = "I" if week_num == 1 else "II"
     
-    parts = [f"Расписание на неделю: {group_name}\nНеделя {week_rome}\n" + "=" * 30]
+    header = f"Расписание на неделю: {group_name}\nНеделя {week_rome}\n" + "=" * 30
     
+    day_blocks = []
     has_any = False
     for d_num in range(1, 7):
         d_str = str(d_num)
@@ -346,14 +355,21 @@ def format_week_schedule(
             has_any = True
             for p_str in sorted(day_data.keys(), key=lambda x: int(x)):
                 p_info = day_data[p_str]
-                p_time = clean_time(para_times.get(p_str), "")
+                p_time = clean_time(para_times.get(p_str, ""))
                 day_lines.append(format_para_item(p_str, p_time, p_info, user_subgroup))
-        parts.append("\n".join(day_lines))
+        day_blocks.append("\n".join(day_lines))
         
     if not has_any:
-        return f"Расписание: {group_name}\nНеделя {week_rome}\n\nНа этой неделе занятий нет."
-        
-    return "\n".join(parts)
+        return [f"Расписание: {group_name}\nНеделя {week_rome}\n\nНа этой неделе занятий нет."]
+
+    # Разделяем по частям, если текст слишком длинный для Telegram (лимит 4096 символов)
+    full_text = header + "\n" + "\n".join(day_blocks)
+    if len(full_text) <= 3900:
+        return [full_text]
+    
+    part1 = header + "\n" + "\n".join(day_blocks[:3])
+    part2 = f"Расписание: {group_name} (продолжение)\nНеделя {week_rome}\n" + "=" * 30 + "\n" + "\n".join(day_blocks[3:])
+    return [part1, part2]
 
 def format_bells(schedule: Dict[str, Any]) -> str:
     para_times = schedule.get("paraTimes", {})
@@ -388,16 +404,6 @@ def format_exams(group_name: str, schedule: Dict[str, Any]) -> str:
         if info:
             lines.append(f"  {info}")
     return "\n".join(lines)
-
-def hash_tomorrow_payload(schedule: Dict[str, Any], t_week: int, t_day: int) -> str:
-    day_data = schedule.get("scheduleData", {}).get(str(t_week), {}).get(str(t_day), {})
-    relevant = {
-        "target": f"{t_week}:{t_day}",
-        "dayData": day_data,
-        "message": schedule.get("message")
-    }
-    raw = json.dumps(relevant, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 def format_para_short(item: Optional[Dict[str, Any]]) -> str:
     if not item:

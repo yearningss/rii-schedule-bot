@@ -95,8 +95,9 @@ async def show_current_week(message: Message):
 
     cur_week = int(sched.get("weekNumber", 1))
     subgroup = user.get("subgroup", 0)
-    text = format_week_schedule(user["group_name"], sched, cur_week, subgroup)
-    await message.answer(text)
+    parts = format_week_schedule(user["group_name"], sched, cur_week, subgroup)
+    for part in parts:
+        await message.answer(part)
 
 @router.message(Command("nextweek"))
 @router.message(F.text == "Следующая неделя")
@@ -113,8 +114,9 @@ async def show_next_week(message: Message):
     cur_week = int(sched.get("weekNumber", 1))
     next_week = 2 if cur_week == 1 else 1
     subgroup = user.get("subgroup", 0)
-    text = format_week_schedule(user["group_name"], sched, next_week, subgroup)
-    await message.answer(text)
+    parts = format_week_schedule(user["group_name"], sched, next_week, subgroup)
+    for part in parts:
+        await message.answer(part)
 
 @router.message(Command("bells"))
 @router.message(F.text == "Звонки")
@@ -175,7 +177,8 @@ async def cb_navigate_day(callback: CallbackQuery):
         await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num))
     except Exception:
         pass
-    await callback.answer()
+    finally:
+        await callback.answer()
 
 @router.callback_query(F.data.startswith("refresh_day:"))
 async def cb_refresh_day(callback: CallbackQuery):
@@ -196,4 +199,5 @@ async def cb_refresh_day(callback: CallbackQuery):
         await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num))
     except Exception:
         pass
-    await callback.answer("Расписание обновлено")
+    finally:
+        await callback.answer("Расписание обновлено")

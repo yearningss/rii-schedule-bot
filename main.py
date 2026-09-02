@@ -10,6 +10,7 @@ from aiogram.enums import ParseMode
 from config import BOT_TOKEN
 from database import init_db
 from handlers import main_router
+from services.api import api_client
 from services.notifier import ScheduleNotifier
 
 logging.basicConfig(
@@ -59,6 +60,7 @@ async def main():
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         notifier_task.cancel()
+        await api_client.close()
         await bot.session.close()
 
 if __name__ == "__main__":

@@ -118,10 +118,13 @@ async def cb_set_group(callback: CallbackQuery):
 
 @router.message(F.text)
 async def handle_text_group_search(message: Message):
-    if message.text.startswith("/"):
+    if not message.text or message.text.startswith("/"):
         return
 
     query = message.text.strip()
+    if len(query) < 2:
+        return
+
     results = await api_client.search_groups(query)
 
     if not results:

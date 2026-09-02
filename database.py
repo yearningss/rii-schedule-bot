@@ -5,6 +5,8 @@ from config import DB_PATH
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("PRAGMA journal_mode=WAL;")
+        await db.execute("PRAGMA synchronous=NORMAL;")
         await db.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -26,7 +28,6 @@ async def init_db():
             """
             CREATE TABLE IF NOT EXISTS group_schedules (
                 group_id INTEGER PRIMARY KEY,
-                schedule_hash TEXT,
                 schedule_json TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -170,26 +171,28 @@ async def get_all_active_group_ids():
 async def get_stored_group_schedule(group_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
-            "SELECT schedule_hash, schedule_json FROM group_schedules WHERE group_id = ?",
+            "SELECT schedule_json FROM group_schedules WHERE group_id = ?",
             (group_id,),
         ) as cursor:
             row = await cursor.fetchone()
-            if row:
-                return row[0], json.loads(row[1]) if row[1] else None
-            return None, None
+            if row and row[0]:
+                try:
+                    return json.loads(row[0])
+                except Exception:
+                    return None
+            return None
 
-async def save_group_schedule(group_id: int, schedule_hash: str, schedule_data: dict):
+async def save_group_schedule(group_id: int, schedule_data: dict):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """
-            INSERT INTO group_schedules (group_id, schedule_hash, schedule_json, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO group_schedules (group_id, schedule_json, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(group_id) DO UPDATE SET
-                schedule_hash = excluded.schedule_hash,
                 schedule_json = excluded.schedule_json,
                 updated_at = CURRENT_TIMESTAMP
             """,
-            (group_id, schedule_hash, json.dumps(schedule_data, ensure_ascii=False)),
+            (group_id, json.dumps(schedule_data, ensure_ascii=False)),
         )
         await db.commit()
 
