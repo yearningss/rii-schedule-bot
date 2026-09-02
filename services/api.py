@@ -1,7 +1,9 @@
-# Клиент для работы с API расписания РИИ и форматирование расписания
+# Клиент для работы с API расписания РИИ, форматирование и сравнение изменений на завтра
 import asyncio
 import time
 import re
+import json
+import hashlib
 import aiohttp
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -202,6 +204,25 @@ def format_para_item(
 def get_rubtsovsk_now() -> datetime:
     return datetime.now(RUBTSOVSK_TZ)
 
+def get_tomorrow_target(schedule: Dict[str, Any]) -> Tuple[int, int, str]:
+    now = get_rubtsovsk_now()
+    cur_week = int(schedule.get("weekNumber", 1))
+    cur_day = now.isoweekday()
+
+    day_names = {
+        1: "Понедельник", 2: "Вторник", 3: "Среда",
+        4: "Четверг", 5: "Пятница", 6: "Суббота", 7: "Воскресенье"
+    }
+
+    if cur_day >= 6:
+        next_day = 1
+        next_week = 2 if cur_week == 1 else 1
+    else:
+        next_day = cur_day + 1
+        next_week = cur_week
+
+    return next_week, next_day, day_names.get(next_day, "Понедельник")
+
 def format_day_schedule(
     group_name: str,
     schedule: Dict[str, Any],
@@ -245,7 +266,6 @@ def format_day_schedule(
     sorted_paras = sorted(day_data.keys(), key=lambda x: int(x))
 
     if is_today and check_live_status:
-        # Определяем, идет ли сейчас пара, перемена или занятия закончились
         ongoing_para = None
         for p_str in sorted_paras:
             p_n = int(p_str)
@@ -326,7 +346,7 @@ def format_week_schedule(
             has_any = True
             for p_str in sorted(day_data.keys(), key=lambda x: int(x)):
                 p_info = day_data[p_str]
-                p_time = clean_time(para_times.get(p_str, ""))
+                p_time = clean_time(para_times.get(p_str), "")
                 day_lines.append(format_para_item(p_str, p_time, p_info, user_subgroup))
         parts.append("\n".join(day_lines))
         
@@ -368,5 +388,71 @@ def format_exams(group_name: str, schedule: Dict[str, Any]) -> str:
         if info:
             lines.append(f"  {info}")
     return "\n".join(lines)
+
+def hash_tomorrow_payload(schedule: Dict[str, Any], t_week: int, t_day: int) -> str:
+    day_data = schedule.get("scheduleData", {}).get(str(t_week), {}).get(str(t_day), {})
+    relevant = {
+        "target": f"{t_week}:{t_day}",
+        "dayData": day_data,
+        "message": schedule.get("message")
+    }
+    raw = json.dumps(relevant, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+def format_para_short(item: Optional[Dict[str, Any]]) -> str:
+    if not item:
+        return "нет"
+    if item.get("isDouble"):
+        parts = []
+        if item.get("subj1"):
+            p1 = f"1 п/г: {item.get('subj1')}"
+            if item.get("aud1"):
+                p1 += f" (ауд. {item.get('aud1')})"
+            parts.append(p1)
+        if item.get("subj2"):
+            p2 = f"2 п/г: {item.get('subj2')}"
+            if item.get("aud2"):
+                p2 += f" (ауд. {item.get('aud2')})"
+            parts.append(p2)
+        return ", ".join(parts) if parts else "пара с подгруппами"
+    
+    subj = item.get("subj1") or "предмет"
+    type_str = f" ({item.get('type1')})" if item.get("type1") else ""
+    aud = f", ауд. {item.get('aud1')}" if item.get("aud1") else ""
+    tch = f", {item.get('teacher1')}" if item.get("teacher1") else ""
+    return f"{subj}{type_str}{aud}{tch}"
+
+def find_tomorrow_diff(
+    old_sched: Dict[str, Any],
+    new_sched: Dict[str, Any],
+    t_week: int,
+    t_day: int
+) -> List[str]:
+    diffs = []
+    
+    old_msg = old_sched.get("message")
+    new_msg = new_sched.get("message")
+    if old_msg != new_msg and new_msg:
+        diffs.append(f"Объявление института: {new_msg}")
+        
+    old_day = old_sched.get("scheduleData", {}).get(str(t_week), {}).get(str(t_day), {})
+    new_day = new_sched.get("scheduleData", {}).get(str(t_week), {}).get(str(t_day), {})
+    
+    all_paras = sorted(
+        set(list(old_day.keys()) + list(new_day.keys())),
+        key=lambda x: int(x) if x.isdigit() else 99
+    )
+    for p in all_paras:
+        old_p = old_day.get(p)
+        new_p = new_day.get(p)
+        if old_p != new_p:
+            if old_p is None and new_p is not None:
+                diffs.append(f"Добавлена {p} пара:\n  -> {format_para_short(new_p)}")
+            elif old_p is not None and new_p is None:
+                diffs.append(f"Отменена {p} пара:\n  -> Было: {format_para_short(old_p)}")
+            else:
+                diffs.append(f"Изменение в {p} паре:\n  Было: {format_para_short(old_p)}\n  Стало: {format_para_short(new_p)}")
+                
+    return diffs
 
 api_client = RiiApiClient()

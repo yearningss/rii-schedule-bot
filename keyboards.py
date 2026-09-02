@@ -1,4 +1,4 @@
-# Клавиатуры бота (главное меню, выбор курса и группы, переключение дней)
+# Клавиатуры бота (главное меню, выбор курса и группы, переключение дней, настройки)
 from typing import Dict, List, Any
 from aiogram.types import (
     ReplyKeyboardMarkup,
@@ -70,6 +70,7 @@ def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
     before_mins = user.get("notify_before_mins", 10)
     breaks_enabled = user.get("notify_breaks", 1)
     start_enabled = user.get("notify_lesson_start", 1)
+    changes_enabled = user.get("notify_changes", 1)
 
     sg0 = "[✓ Все п/г]" if subgroup == 0 else "Все п/г"
     sg1 = "[✓ 1 п/г]" if subgroup == 1 else "1 п/г"
@@ -78,6 +79,7 @@ def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
     notif_text = "Уведомления: ВКЛ" if notif_enabled == 1 else "Уведомления: ВЫКЛ"
     breaks_text = "О перемене: ВКЛ" if breaks_enabled == 1 else "О перемене: ВЫКЛ"
     start_text = "О начале: ВКЛ" if start_enabled == 1 else "О начале: ВЫКЛ"
+    changes_text = "О правках: ВКЛ" if changes_enabled == 1 else "О правках: ВЫКЛ"
 
     b5 = "[✓ За 5м]" if before_mins == 5 else "За 5м"
     b10 = "[✓ За 10м]" if before_mins == 10 else "За 10м"
@@ -94,6 +96,7 @@ def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=breaks_text, callback_data="toggle_breaks"),
             InlineKeyboardButton(text=start_text, callback_data="toggle_start")
         ],
+        [InlineKeyboardButton(text=changes_text, callback_data="toggle_changes")],
         [
             InlineKeyboardButton(text=sg0, callback_data="set_sg:0"),
             InlineKeyboardButton(text=sg1, callback_data="set_sg:1"),

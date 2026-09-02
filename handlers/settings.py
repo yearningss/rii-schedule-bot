@@ -16,6 +16,7 @@ def format_settings_text(user: dict) -> str:
     before_text = f"За {before} минут" if before > 0 else "Отключено"
     breaks = "Включены" if user.get("notify_breaks", 1) == 1 else "Отключены"
     start = "Включены" if user.get("notify_lesson_start", 1) == 1 else "Отключены"
+    changes = "Включены" if user.get("notify_changes", 1) == 1 else "Отключены"
 
     return (
         f"Настройки пользователя:\n"
@@ -24,7 +25,8 @@ def format_settings_text(user: dict) -> str:
         f"Главные уведомления: {notif}\n"
         f"Напоминание перед парой: {before_text}\n"
         f"Оповещение о переменах: {breaks}\n"
-        f"Оповещение о начале пары: {start}\n\n"
+        f"Оповещение о начале пары: {start}\n"
+        f"Оповещение о правках на завтра: {changes}\n\n"
         "Нажимай на кнопки ниже для изменения параметров:"
     )
 
@@ -97,6 +99,21 @@ async def cb_toggle_start(callback: CallbackQuery):
         pass
     status_label = "включены" if new_val == 1 else "отключены"
     await callback.answer(f"Оповещения о начале пар {status_label}")
+
+@router.callback_query(F.data == "toggle_changes")
+async def cb_toggle_changes(callback: CallbackQuery):
+    user = await get_user(callback.from_user.id)
+    new_val = 0 if user.get("notify_changes", 1) == 1 else 1
+    await update_user_notifications(callback.from_user.id, notify_changes=new_val)
+    
+    updated_user = await get_user(callback.from_user.id)
+    text = format_settings_text(updated_user)
+    try:
+        await callback.message.edit_text(text, reply_markup=get_settings_keyboard(updated_user))
+    except Exception:
+        pass
+    status_label = "включены" if new_val == 1 else "отключены"
+    await callback.answer(f"Оповещения о правках {status_label}")
 
 @router.callback_query(F.data.startswith("set_sg:"))
 async def cb_set_subgroup(callback: CallbackQuery):
