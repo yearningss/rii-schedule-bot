@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="РИИ Расписание Бот" width="100%">
+</p>
+
 # RII Schedule Bot (Бот с расписанием РИИ)
 
 Телеграм-бот для быстрого и удобного просмотра расписания пар Рубцовского индустриального института (РИИ АлтГТУ).
@@ -37,6 +41,9 @@
 
 ```text
 rii-schedule-bot/
+├── assets/
+│   ├── banner.png      # Баннер проекта
+│   └── logo.png        # Квадратный логотип
 ├── config.py           # Настройки, пути и переменные окружения
 ├── database.py         # Работа с базой данных пользователей (SQLite)
 ├── keyboards.py        # Кнопки меню и инлайн-клавиатуры
@@ -95,7 +102,7 @@ BOT_TOKEN=твой_токен_от_BotFather
 DB_PATH=data/bot.db
 API_BASE_URL=https://www.rubinst.ru/schedule.php
 CACHE_TTL_SECONDS=300
-CHANGE_CHECK_INTERVAL_SECONDS=60
+CHANGE_CHECK_INTERVAL_SECONDS=900
 ```
 
 ### 5. Запустить бота:
