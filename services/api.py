@@ -292,7 +292,7 @@ def format_day_schedule(
             first_p_n = int(sorted_paras[0])
             first_s_m, _, _, _ = parse_para_time_range(para_times.get(str(first_p_n)), first_p_n)
             if cur_mins < first_s_m:
-                status_bar = f"Статус: Занятия еще не начались. 1 пара начнется в {start_s} (через {rem} мин)\n"
+                status_bar = f"Статус: Занятия еще не начались. {first_p_n} пара начнется в {start_s} (через {rem} мин)\n"
             else:
                 status_bar = f"Статус: Сейчас перемена (до {start_s}, осталось {rem} мин). Следующая: {p_n} пара\n"
         else:
