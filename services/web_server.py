@@ -1,9 +1,11 @@
 # Встроенный легковесный HTTP-сервер на aiohttp.web для обслуживания Telegram Mini App
 import os
 import logging
+import json
 from pathlib import Path
 from aiohttp import web
 from services.api import api_client
+from database import get_user, set_user_group, set_user_subgroup
 
 logger = logging.getLogger("rii_schedule_bot.web")
 
@@ -33,11 +35,50 @@ async def handle_api_schedule(request: web.Request) -> web.Response:
         logger.error("Ошибка API schedule для группы %s: %s", group_id_str, e)
         return web.json_response({"error": "Failed to fetch schedule"}, status=500)
 
+async def handle_api_get_user(request: web.Request) -> web.Response:
+    user_id_str = request.query.get("user_id")
+    if not user_id_str:
+        return web.json_response({"error": "Missing user_id"}, status=400)
+    try:
+        user_id = int(user_id_str)
+        user = await get_user(user_id)
+        if user:
+            return web.json_response({
+                "user_id": user["user_id"],
+                "group_id": user.get("group_id"),
+                "group_name": user.get("group_name"),
+                "subgroup": user.get("subgroup", 0)
+            })
+        return web.json_response({"user_id": user_id, "group_id": None, "group_name": None, "subgroup": 0})
+    except Exception as e:
+        logger.error("Ошибка API get_user для user_id %s: %s", user_id_str, e)
+        return web.json_response({"error": "Failed to get user"}, status=500)
+
+async def handle_api_sync_user(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        user_id = data.get("user_id")
+        group_id = data.get("group_id")
+        group_name = data.get("group_name")
+        subgroup = data.get("subgroup")
+
+        if user_id and group_id and group_name:
+            await set_user_group(int(user_id), int(group_id), str(group_name))
+        if user_id and subgroup is not None:
+            await set_user_subgroup(int(user_id), int(subgroup))
+
+        return web.json_response({"status": "ok"})
+    except Exception as e:
+        logger.error("Ошибка API sync_user: %s", e)
+        return web.json_response({"error": "Failed to sync user settings"}, status=500)
+
 def create_web_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/", handle_index)
     app.router.add_get("/api/groups", handle_api_groups)
     app.router.add_get("/api/schedule", handle_api_schedule)
+    app.router.add_get("/api/user", handle_api_get_user)
+    app.router.add_post("/api/user/sync", handle_api_sync_user)
     app.router.add_static("/", WEBAPP_DIR)
     return app
 

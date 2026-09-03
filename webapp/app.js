@@ -6,6 +6,9 @@ if (tg) {
   if (tg.setHeaderColor) tg.setHeaderColor('bg_color');
 }
 
+const telegramUser = tg?.initDataUnsafe?.user || null;
+const telegramUserId = telegramUser?.id || null;
+
 function triggerHaptic(style = 'light') {
   if (tg?.HapticFeedback) {
     try {
@@ -22,7 +25,8 @@ const state = {
   currentDay: 1,
   subgroup: localStorage.getItem('selected_subgroup') ? parseInt(localStorage.getItem('selected_subgroup')) : 0,
   scheduleData: null,
-  allGroups: []
+  allGroups: [],
+  userChangedManually: false
 };
 
 // Элементы интерфейса
@@ -79,29 +83,84 @@ function parseParaTime(timeStr, defaultParaNum = 1) {
   return defaultTimes[defaultParaNum] || { s: 0, e: 0, sStr: "", eStr: "" };
 }
 
-// Загрузка списка групп
-async function fetchGroups() {
+// Фоновая синхронизация настроек пользователя с ботом
+async function syncUserWithBot(groupId, groupName, subgroup) {
+  if (!telegramUserId) return;
+  try {
+    await fetch('/api/user/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: telegramUserId,
+        group_id: groupId,
+        group_name: groupName,
+        subgroup: subgroup
+      })
+    });
+  } catch (e) {
+    console.warn('Синхронизация с ботом не удалась:', e);
+  }
+}
+
+// Загрузка данных пользователя из бота
+async function fetchUserBotSettings() {
+  if (!telegramUserId) return null;
+  try {
+    const res = await fetch(`/api/user?user_id=${telegramUserId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.group_id) {
+        return data;
+      }
+    }
+  } catch (e) {
+    console.warn('Не удалось загрузить настройки пользователя:', e);
+  }
+  return null;
+}
+
+// Загрузка списка групп и инициализация
+async function initApp() {
   try {
     const res = await fetch('/api/groups');
     if (!res.ok) throw new Error('Ошибка сети');
     state.allGroups = await res.json();
     renderGroupsList();
 
-    // Если группа не выбрана, берем из URL параметров или первую
+    // 1. Проверяем настройки пользователя из Telegram-бота
+    const botUser = await fetchUserBotSettings();
     const urlParams = new URLSearchParams(window.location.search);
     const paramGid = urlParams.get('group_id');
 
-    if (paramGid) {
+    if (botUser && botUser.group_id) {
+      // Приоритет настроек из бота
+      state.currentGroupId = botUser.group_id;
+      state.currentGroupName = botUser.group_name;
+      state.subgroup = botUser.subgroup ?? state.subgroup;
+      localStorage.setItem('selected_group_id', state.currentGroupId);
+      localStorage.setItem('selected_group_name', state.currentGroupName);
+      localStorage.setItem('selected_subgroup', state.subgroup);
+    } else if (paramGid) {
       const g = state.allGroups.find(x => x.id === parseInt(paramGid));
-      if (g) selectGroup(g.id, g.name);
+      if (g) {
+        state.currentGroupId = g.id;
+        state.currentGroupName = g.name;
+        localStorage.setItem('selected_group_id', g.id);
+        localStorage.setItem('selected_group_name', g.name);
+      }
     } else if (!state.currentGroupId && state.allGroups.length > 0) {
-      selectGroup(state.allGroups[0].id, state.allGroups[0].name);
-    } else if (state.currentGroupId) {
+      // Если вообще ничего не выбрано
+      state.currentGroupId = state.allGroups[0].id;
+      state.currentGroupName = state.allGroups[0].name;
+    }
+
+    if (state.currentGroupId) {
       el.currentGroupName.textContent = state.currentGroupName;
+      updateSubgroupButtonsUI();
       loadSchedule();
     }
   } catch (err) {
-    console.error('Ошибка загрузки групп:', err);
+    console.error('Ошибка инициализации:', err);
   }
 }
 
@@ -232,7 +291,6 @@ function renderSchedule() {
     }
 
     if (item.isDouble) {
-      // Пара с делением на подгруппы
       let partsHtml = '';
       if ((state.subgroup === 0 || state.subgroup === 1) && (item.subj1 || item.aud1)) {
         partsHtml += `
@@ -269,7 +327,6 @@ function renderSchedule() {
           ${partsHtml}
         </div>`;
     } else {
-      // Обычная пара
       html += `
         <div class="para-card ${statusClass}">
           <div class="para-header">
@@ -320,6 +377,7 @@ function selectGroup(groupId, groupName) {
   localStorage.setItem('selected_group_name', groupName);
   el.currentGroupName.textContent = groupName;
   closeGroupModal();
+  syncUserWithBot(groupId, groupName, state.subgroup);
   loadSchedule();
 }
 
@@ -337,6 +395,12 @@ function updateDaysNavUI() {
     const d = parseInt(btn.dataset.day);
     btn.classList.toggle('active', d === state.currentDay);
     btn.classList.toggle('today-badge', d === rDay);
+  });
+}
+
+function updateSubgroupButtonsUI() {
+  el.subgroupBtns.forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.sg) === state.subgroup);
   });
 }
 
@@ -394,10 +458,8 @@ el.scheduleContainer.addEventListener('touchend', e => {
   const diffX = e.changedTouches[0].screenX - touchStartX;
   const diffY = e.changedTouches[0].screenY - touchStartY;
 
-  // Игнорируем вертикальный скролл
   if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
     if (diffX < 0) {
-      // Свайп влево -> следующий день
       if (state.currentDay < 6) {
         setDay(state.currentDay + 1);
       } else if (state.currentDay === 6) {
@@ -405,7 +467,6 @@ el.scheduleContainer.addEventListener('touchend', e => {
         setDay(1);
       }
     } else {
-      // Свайп вправо -> предыдущий день
       if (state.currentDay > 1) {
         setDay(state.currentDay - 1);
       } else if (state.currentDay === 1) {
@@ -440,15 +501,11 @@ el.subgroupBtns.forEach(btn => {
     triggerHaptic();
     state.subgroup = parseInt(btn.dataset.sg);
     localStorage.setItem('selected_subgroup', state.subgroup);
-    el.subgroupBtns.forEach(b => b.classList.toggle('active', b === btn));
+    updateSubgroupButtonsUI();
+    syncUserWithBot(state.currentGroupId, state.currentGroupName, state.subgroup);
     renderSchedule();
   });
 });
 
-// Инициализация подгруппы из localStorage
-el.subgroupBtns.forEach(b => {
-  b.classList.toggle('active', parseInt(b.dataset.sg) === state.subgroup);
-});
-
-// Запуск
-fetchGroups();
+// Запуск приложения
+initApp();
