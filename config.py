@@ -22,4 +22,4 @@ CHANGE_CHECK_INTERVAL_SECONDS = int(os.getenv("CHANGE_CHECK_INTERVAL_SECONDS", "
 
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://rii-bot.yearnings.ru")
 WEB_HOST = os.getenv("WEB_HOST", "127.0.0.1")
-WEB_PORT = int(os.getenv("WEB_PORT", "8080"))
+WEB_PORT = int(os.getenv("WEB_PORT", "8082"))
