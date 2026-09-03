@@ -1,14 +1,18 @@
-# Клавиатуры бота (главное меню, выбор курса и группы, переключение дней, настройки)
-from typing import Dict, List, Any
+# Клавиатуры бота (главное меню, выбор курса и группы, переключение дней, настройки, Web App)
+from typing import Dict, List, Any, Optional
 from aiogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
     InlineKeyboardMarkup,
-    InlineKeyboardButton
+    InlineKeyboardButton,
+    WebAppInfo
 )
+from config import WEBAPP_URL
 
-def get_main_keyboard() -> ReplyKeyboardMarkup:
+def get_main_keyboard(group_id: Optional[int] = None) -> ReplyKeyboardMarkup:
+    url = f"{WEBAPP_URL}?group_id={group_id}" if group_id else WEBAPP_URL
     kb = [
+        [KeyboardButton(text="Открыть расписание (Web App)", web_app=WebAppInfo(url=url))],
         [KeyboardButton(text="Сегодня"), KeyboardButton(text="Завтра")],
         [KeyboardButton(text="Текущая неделя"), KeyboardButton(text="Следующая неделя")],
         [KeyboardButton(text="Выбрать группу"), KeyboardButton(text="Звонки")],
@@ -43,7 +47,7 @@ def get_groups_keyboard(course: int, groups: List[Dict[str, Any]]) -> InlineKeyb
     buttons.append([InlineKeyboardButton(text="<< Назад к курсам", callback_data="back_to_courses")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-def get_day_nav_keyboard(current_week: int, current_day: int) -> InlineKeyboardMarkup:
+def get_day_nav_keyboard(current_week: int, current_day: int, group_id: Optional[int] = None) -> InlineKeyboardMarkup:
     days_short = [("Пн", 1), ("Вт", 2), ("Ср", 3), ("Чт", 4), ("Пт", 5), ("Сб", 6)]
     
     days_row = []
@@ -57,12 +61,17 @@ def get_day_nav_keyboard(current_week: int, current_day: int) -> InlineKeyboardM
     other_week = 2 if current_week == 1 else 1
     other_label = "Перейти на II неделю" if current_week == 1 else "Перейти на I неделю"
     
+    url = f"{WEBAPP_URL}?group_id={group_id}" if group_id else WEBAPP_URL
+
     nav_row = [
         InlineKeyboardButton(text=other_label, callback_data=f"nav_day:{other_week}:{current_day}"),
         InlineKeyboardButton(text="Обновить", callback_data=f"refresh_day:{current_week}:{current_day}")
     ]
+    app_row = [
+        InlineKeyboardButton(text="Открыть в Mini App", web_app=WebAppInfo(url=url))
+    ]
     
-    return InlineKeyboardMarkup(inline_keyboard=[days_row, nav_row])
+    return InlineKeyboardMarkup(inline_keyboard=[days_row, nav_row, app_row])
 
 def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
     subgroup = user.get("subgroup", 0)

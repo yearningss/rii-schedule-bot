@@ -1,11 +1,12 @@
 # Обработчики команды /start, справки, выбора и поиска группы
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from database import get_user, set_user_group
 from services.api import api_client
 from keyboards import get_main_keyboard, get_courses_keyboard, get_groups_keyboard
+from config import WEBAPP_URL
 
 router = Router()
 
@@ -18,12 +19,13 @@ DISCLAIMER = (
 async def cmd_start(message: Message):
     user = await get_user(message.from_user.id)
     if user and user.get("group_name"):
+        gid = user.get("group_id")
         await message.answer(
             f"Привет, {message.from_user.first_name}!\n\n"
             f"{DISCLAIMER}\n\n"
             f"Текущая группа: {user['group_name']}\n\n"
-            "Используй кнопки меню для просмотра расписания.",
-            reply_markup=get_main_keyboard()
+            "Используй кнопки меню или открой приложение в Mini App.",
+            reply_markup=get_main_keyboard(gid)
         )
         return
 
@@ -41,10 +43,13 @@ async def cmd_start(message: Message):
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
+    user = await get_user(message.from_user.id)
+    gid = user.get("group_id") if user else None
     text = (
         f"{DISCLAIMER}\n\n"
         "Команды бота:\n"
         "/start - Главное меню и приветствие\n"
+        "/app - Открыть расписание в Mini App\n"
         "/group - Выбор или смена учебной группы\n"
         "/today - Расписание на сегодня\n"
         "/tomorrow - Расписание на завтра\n"
@@ -57,7 +62,17 @@ async def cmd_help(message: Message):
         "/help - Справка\n\n"
         "Также можно написать название группы в чат (например: ИВТ-61), чтобы быстро найти её."
     )
-    await message.answer(text, reply_markup=get_main_keyboard())
+    await message.answer(text, reply_markup=get_main_keyboard(gid))
+
+@router.message(Command("app"))
+async def cmd_app(message: Message):
+    user = await get_user(message.from_user.id)
+    gid = user.get("group_id") if user else None
+    url = f"{WEBAPP_URL}?group_id={gid}" if gid else WEBAPP_URL
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=url))]
+    ])
+    await message.answer("Нажми кнопку ниже, чтобы открыть интерактивное расписание в приложении:", reply_markup=kb)
 
 @router.message(Command("group"))
 @router.message(F.text == "Выбрать группу")
@@ -111,8 +126,8 @@ async def cb_set_group(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(
         f"Группа сохранена: {group['name']}\n\n"
-        "Теперь ты можешь быстро смотреть расписание кнопками ниже.",
-        reply_markup=get_main_keyboard()
+        "Теперь ты можешь смотреть расписание через кнопки или в Mini App.",
+        reply_markup=get_main_keyboard(group["id"])
     )
     await callback.answer()
 
@@ -128,10 +143,12 @@ async def handle_text_group_search(message: Message):
     results = await api_client.search_groups(query)
 
     if not results:
+        user = await get_user(message.from_user.id)
+        gid = user.get("group_id") if user else None
         await message.answer(
             f"По запросу '{query}' группа не найдена.\n"
             "Попробуй написать точнее или нажми 'Выбрать группу'.",
-            reply_markup=get_main_keyboard()
+            reply_markup=get_main_keyboard(gid)
         )
         return
 

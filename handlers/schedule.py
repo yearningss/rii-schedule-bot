@@ -1,7 +1,7 @@
 # Обработчики просмотра расписания (сегодня, завтра, недели, звонки, экзамены)
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from database import get_user
 from services.api import (
@@ -12,6 +12,7 @@ from services.api import (
     format_exams
 )
 from keyboards import get_day_nav_keyboard, get_courses_keyboard
+from config import WEBAPP_URL
 
 router = Router()
 
@@ -53,7 +54,7 @@ async def show_today(message: Message):
         note = ""
 
     text = note + format_day_schedule(user["group_name"], sched, cur_week, cur_day, subgroup)
-    await message.answer(text, reply_markup=get_day_nav_keyboard(cur_week, cur_day))
+    await message.answer(text, reply_markup=get_day_nav_keyboard(cur_week, cur_day, group_id))
 
 @router.message(Command("tomorrow"))
 @router.message(F.text == "Завтра")
@@ -79,7 +80,7 @@ async def show_tomorrow(message: Message):
         next_week = cur_week
 
     text = format_day_schedule(user["group_name"], sched, next_week, next_day, subgroup)
-    await message.answer(text, reply_markup=get_day_nav_keyboard(next_week, next_day))
+    await message.answer(text, reply_markup=get_day_nav_keyboard(next_week, next_day, group_id))
 
 @router.message(Command("week"))
 @router.message(F.text == "Текущая неделя")
@@ -154,6 +155,7 @@ async def show_about(message: Message):
         "Проект полностью с открытым исходным кодом. Расписание и список групп подтягиваются динамически с сервера rubinst.ru."
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=WEBAPP_URL))],
         [InlineKeyboardButton(text="Репозиторий на GitHub", url="https://github.com/yearningss/rii-schedule-bot")]
     ])
     await message.answer(text, reply_markup=kb)
@@ -174,7 +176,7 @@ async def cb_navigate_day(callback: CallbackQuery):
     text = format_day_schedule(user["group_name"], sched, week_num, day_num, subgroup)
 
     try:
-        await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num))
+        await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num, user["group_id"]))
     except Exception:
         pass
     finally:
@@ -196,7 +198,7 @@ async def cb_refresh_day(callback: CallbackQuery):
     text = format_day_schedule(user["group_name"], sched, week_num, day_num, subgroup)
 
     try:
-        await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num))
+        await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num, user["group_id"]))
     except Exception:
         pass
     finally:

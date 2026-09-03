@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>РИИ Расписание</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Шапка -->
+    <header class="app-header">
+      <div class="header-top">
+        <button id="groupSelectBtn" class="group-btn">
+          <span id="currentGroupName">Выбрать группу</span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+          </svg>
+        </button>
+        <div class="week-toggle">
+          <button id="week1Btn" class="week-btn active" data-week="1">I нед</button>
+          <button id="week2Btn" class="week-btn" data-week="2">II нед</button>
+        </div>
+      </div>
+
+      <!-- Полоса дней недели -->
+      <nav class="days-nav" id="daysNav">
+        <button class="day-chip" data-day="1">Пн</button>
+        <button class="day-chip" data-day="2">Вт</button>
+        <button class="day-chip" data-day="3">Ср</button>
+        <button class="day-chip" data-day="4">Чт</button>
+        <button class="day-chip" data-day="5">Пт</button>
+        <button class="day-chip" data-day="6">Сб</button>
+      </nav>
+    </header>
+
+    <!-- Информационная плашка статуса -->
+    <div id="liveStatusBar" class="live-status-bar hidden">
+      <span class="status-indicator"></span>
+      <span id="liveStatusText" class="status-text">Загрузка...</span>
+    </div>
+
+    <!-- Основной контент расписания -->
+    <main class="schedule-container" id="scheduleContainer">
+      <div id="scheduleCards" class="cards-list">
+        <!-- Карточки пар генерируются динамически через JS -->
+      </div>
+      <div id="emptyState" class="empty-state hidden">
+        <p class="empty-title">Занятий нет</p>
+        <p class="empty-subtitle">В этот день пар в расписании не найдено</p>
+      </div>
+      <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <p>Загрузка расписания...</p>
+      </div>
+    </main>
+
+    <!-- Фильтр подгруппы -->
+    <footer class="app-footer">
+      <div class="subgroup-selector">
+        <button class="sg-btn active" data-sg="0">Все подгруппы</button>
+        <button class="sg-btn" data-sg="1">1 п/г</button>
+        <button class="sg-btn" data-sg="2">2 п/г</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Модальное окно выбора группы -->
+  <div id="groupModal" class="modal-backdrop hidden">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3>Выбор учебной группы</h3>
+        <button id="closeModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="search-box">
+        <input type="text" id="groupSearchInput" placeholder="Поиск группы (например: ИВТ-61)..." autocomplete="off">
+      </div>
+      <div id="groupsListContainer" class="groups-list">
+        <!-- Список курсов и групп -->
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
