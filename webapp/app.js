@@ -507,5 +507,44 @@ el.subgroupBtns.forEach(btn => {
   });
 });
 
+// Регистрация Service Worker для PWA и офлайн-режима
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+
+// Установка PWA в браузере вне Telegram
+let deferredPrompt = null;
+const pwaBanner = document.getElementById('pwaInstallBanner');
+const pwaBtn = document.getElementById('pwaInstallBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Показываем только в браузере, если открыто не внутри Telegram WebApp
+  if (!tg?.initData) {
+    pwaBanner?.classList.remove('hidden');
+  }
+});
+
+pwaBtn?.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      pwaBanner?.classList.add('hidden');
+    }
+    deferredPrompt = null;
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  pwaBanner?.classList.add('hidden');
+  deferredPrompt = null;
+});
+
 // Запуск приложения
 initApp();

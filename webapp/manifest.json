@@ -1,0 +1,29 @@
+{
+  "name": "РИИ Расписание пар",
+  "short_name": "РИИ Бот",
+  "description": "Актуальное расписание занятий Рубцовского индустриального института (РИИ АлтГТУ)",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#181c24",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

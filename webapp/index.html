@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>РИИ Расписание | Рубцовский индустриальный институт</title>
   
+  <!-- Manifest и PWA настройки -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="РИИ Бот">
+
   <!-- Favicon и иконки -->
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
@@ -12,7 +20,6 @@
   <link rel="shortcut icon" href="/favicon.ico">
   
   <!-- Метатеги для браузера и соцсетей (Open Graph) -->
-  <meta name="theme-color" content="#2563eb">
   <meta name="description" content="Удобное расписание занятий Рубцовского индустриального института (РИИ АлтГТУ). Статус пар в реальном времени, уведомления и свайпы дней.">
   <meta property="og:title" content="РИИ Расписание пар">
   <meta property="og:description" content="Актуальное расписание занятий студентов РИИ АлтГТУ прямо в Telegram и браузере.">
@@ -54,6 +61,18 @@
     <div id="liveStatusBar" class="live-status-bar hidden">
       <span class="status-indicator"></span>
       <span id="liveStatusText" class="status-text">Загрузка...</span>
+    </div>
+
+    <!-- Подсказка для установки PWA в браузере -->
+    <div id="pwaInstallBanner" class="pwa-install-banner hidden">
+      <div class="pwa-banner-content">
+        <img src="/favicon-32x32.png" alt="Иконка" class="pwa-icon">
+        <div class="pwa-banner-text">
+          <strong>Установить приложение</strong>
+          <span>Быстрый доступ с экрана «Домой»</span>
+        </div>
+      </div>
+      <button id="pwaInstallBtn" class="pwa-action-btn">Установить</button>
     </div>
 
     <!-- Основной контент расписания -->
