@@ -1,5 +1,7 @@
 # Модуль работы с базой данных SQLite через aiosqlite
 import json
+import secrets
+from typing import Optional
 import aiosqlite
 from config import DB_PATH
 
@@ -30,6 +32,28 @@ async def init_db():
                 group_id INTEGER PRIMARY KEY,
                 schedule_json TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_auth_sessions (
+                session_token TEXT PRIMARY KEY,
+                user_id INTEGER,
+                status TEXT NOT NULL DEFAULT 'pending',
+                auth_token TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP
+            )
+            """
+        )
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_users (
+                auth_token TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
@@ -209,3 +233,83 @@ async def get_stats():
             "active_users": active_users,
             "notif_users": notif_users
         }
+
+async def create_auth_session(session_token: str, expires_in_mins: int = 15) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO app_auth_sessions (session_token, status, expires_at)
+            VALUES (?, 'pending', datetime('now', '+' || ? || ' minutes'))
+            """,
+            (session_token, expires_in_mins),
+        )
+        await db.commit()
+        return True
+
+async def confirm_auth_session(session_token: str, user_id: int) -> Optional[str]:
+    auth_token = secrets.token_hex(32)
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            """
+            SELECT session_token FROM app_auth_sessions
+            WHERE session_token = ? AND expires_at > datetime('now') AND status = 'pending'
+            """,
+            (session_token,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                return None
+
+        await db.execute(
+            """
+            UPDATE app_auth_sessions
+            SET user_id = ?, status = 'confirmed', auth_token = ?
+            WHERE session_token = ?
+            """,
+            (user_id, auth_token, session_token),
+        )
+        await db.execute(
+            """
+            INSERT INTO app_users (auth_token, user_id, last_active)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(auth_token) DO UPDATE SET last_active = CURRENT_TIMESTAMP
+            """,
+            (auth_token, user_id),
+        )
+        await db.commit()
+        return auth_token
+
+async def get_auth_session(session_token: str) -> Optional[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """
+            SELECT session_token, user_id, status, auth_token,
+                   CASE WHEN expires_at <= datetime('now') THEN 1 ELSE 0 END as is_expired
+            FROM app_auth_sessions
+            WHERE session_token = ?
+            """,
+            (session_token,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                return None
+            data = dict(row)
+            if data["is_expired"] and data["status"] == "pending":
+                data["status"] = "expired"
+            return data
+
+async def get_user_by_auth_token(auth_token: str) -> Optional[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """
+            SELECT u.* FROM users u
+            JOIN app_users a ON u.user_id = a.user_id
+            WHERE a.auth_token = ?
+            """,
+            (auth_token,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+

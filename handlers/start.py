@@ -1,9 +1,9 @@
 # Обработчики команды /start, справки, выбора и поиска группы
 from aiogram import Router, F
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, CommandObject
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-from database import get_user, set_user_group
+from database import get_user, set_user_group, get_auth_session, confirm_auth_session
 from services.api import api_client
 from keyboards import get_main_keyboard, get_courses_keyboard, get_groups_keyboard
 from config import WEBAPP_URL
@@ -16,7 +16,40 @@ DISCLAIMER = (
 )
 
 @router.message(CommandStart())
-async def cmd_start(message: Message):
+async def cmd_start(message: Message, command: CommandObject = None):
+    # Проверка диплинка авторизации мобильного приложения (tg://resolve?domain=rubinst_bot&start=auth_TOKEN)
+    if command and command.args and command.args.startswith("auth_"):
+        session_token = command.args[5:].strip()
+        session = await get_auth_session(session_token)
+        if not session:
+            await message.answer("Сессия авторизации не найдена или уже недействительна.")
+            return
+        if session.get("status") == "expired":
+            await message.answer("Время действия запроса на вход истекло. Запросите новую ссылку в приложении.")
+            return
+        if session.get("status") == "confirmed":
+            await message.answer("Этот запрос на вход уже был подтвержден ранее.")
+            return
+
+        user = await get_user(message.from_user.id)
+        current_group = user.get("group_name") if user and user.get("group_name") else "не выбрана"
+
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Подтвердить вход", callback_data=f"appauth:ok:{session_token}"),
+                InlineKeyboardButton(text="Отклонить", callback_data=f"appauth:cancel:{session_token}")
+            ]
+        ])
+
+        await message.answer(
+            "Вход в мобильное приложение РИИ Расписание.\n\n"
+            f"Текущая группа: {current_group}\n"
+            f"Пользователь: {message.from_user.full_name}\n\n"
+            "Подтвердить авторизацию устройства?",
+            reply_markup=kb
+        )
+        return
+
     user = await get_user(message.from_user.id)
     if user and user.get("group_name"):
         gid = user.get("group_id")
@@ -40,6 +73,27 @@ async def cmd_start(message: Message):
         "Выбери свой курс, чтобы указать учебную группу:",
         reply_markup=get_courses_keyboard(list(courses_map.keys()))
     )
+
+@router.callback_query(F.data.startswith("appauth:"))
+async def cb_app_auth(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    action = parts[1]
+    session_token = parts[2]
+
+    if action == "ok":
+        auth_token = await confirm_auth_session(session_token, callback.from_user.id)
+        if auth_token:
+            user = await get_user(callback.from_user.id)
+            group_text = f" Группа: {user['group_name']}." if user and user.get("group_name") else ""
+            await callback.message.edit_text(
+                f"Вход в мобильное приложение успешно подтвержден.{group_text}\n"
+                "Теперь вернитесь в приложение — вход выполнится автоматически."
+            )
+        else:
+            await callback.message.edit_text("Не удалось подтвердить вход. Возможно, время ожидания истекло.")
+    else:
+        await callback.message.edit_text("Вход в мобильное приложение отклонен.")
+    await callback.answer()
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):

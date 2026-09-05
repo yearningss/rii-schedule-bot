@@ -72,6 +72,81 @@ async def handle_api_sync_user(request: web.Request) -> web.Response:
         logger.error("Ошибка API sync_user: %s", e)
         return web.json_response({"error": "Failed to sync user settings"}, status=500)
 
+async def handle_api_app_auth_session(request: web.Request) -> web.Response:
+    import secrets
+    session_token = secrets.token_urlsafe(16)
+    from database import create_auth_session
+    await create_auth_session(session_token)
+    return web.json_response({
+        "status": "ok",
+        "session_token": session_token,
+        "bot_username": "rubinst_bot",
+        "auth_url": f"https://t.me/rubinst_bot?start=auth_{session_token}",
+        "deep_link": f"tg://resolve?domain=rubinst_bot&start=auth_{session_token}"
+    })
+
+async def handle_api_app_auth_check(request: web.Request) -> web.Response:
+    session_token = request.query.get("session_token")
+    if not session_token:
+        return web.json_response({"error": "Missing session_token"}, status=400)
+    
+    from database import get_auth_session
+    session = await get_auth_session(session_token)
+    if not session:
+        return web.json_response({"status": "not_found"}, status=404)
+    
+    if session["status"] == "confirmed" and session.get("user_id"):
+        user = await get_user(session["user_id"])
+        return web.json_response({
+            "status": "confirmed",
+            "auth_token": session.get("auth_token"),
+            "user": {
+                "user_id": user["user_id"] if user else session["user_id"],
+                "group_id": user.get("group_id") if user else None,
+                "group_name": user.get("group_name") if user else None,
+                "subgroup": user.get("subgroup", 0) if user else 0,
+                "notifications_enabled": user.get("notifications_enabled", 1) if user else 1
+            }
+        })
+    
+    return web.json_response({"status": session["status"]})
+
+async def handle_api_app_profile(request: web.Request) -> web.Response:
+    auth_token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    if not auth_token:
+        auth_token = request.query.get("auth_token", "").strip()
+        
+    if not auth_token:
+        return web.json_response({"error": "Unauthorized"}, status=401)
+        
+    from database import get_user_by_auth_token
+    user = await get_user_by_auth_token(auth_token)
+    if not user:
+        return web.json_response({"error": "Invalid auth token"}, status=401)
+        
+    if request.method == "POST":
+        try:
+            data = await request.json()
+            gid = data.get("group_id")
+            gname = data.get("group_name")
+            sg = data.get("subgroup")
+            if gid and gname:
+                await set_user_group(user["user_id"], int(gid), str(gname))
+            if sg is not None:
+                await set_user_subgroup(user["user_id"], int(sg))
+            user = await get_user(user["user_id"])
+        except Exception as e:
+            logger.error("Ошибка обновления профиля мобильного приложения: %s", e)
+            return web.json_response({"error": "Failed to update profile"}, status=500)
+
+    return web.json_response({
+        "user_id": user["user_id"],
+        "group_id": user.get("group_id"),
+        "group_name": user.get("group_name"),
+        "subgroup": user.get("subgroup", 0),
+        "notifications_enabled": user.get("notifications_enabled", 1)
+    })
+
 def create_web_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/", handle_index)
@@ -79,6 +154,10 @@ def create_web_app() -> web.Application:
     app.router.add_get("/api/schedule", handle_api_schedule)
     app.router.add_get("/api/user", handle_api_get_user)
     app.router.add_post("/api/user/sync", handle_api_sync_user)
+    app.router.add_post("/api/app/auth/session", handle_api_app_auth_session)
+    app.router.add_get("/api/app/auth/check", handle_api_app_auth_check)
+    app.router.add_get("/api/app/profile", handle_api_app_profile)
+    app.router.add_post("/api/app/profile", handle_api_app_profile)
     app.router.add_static("/", WEBAPP_DIR)
     return app
 
