@@ -18,8 +18,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_badge_bg"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="2dp"
+            android:paddingLeft="6dp"
+            android:paddingTop="2dp"
+            android:paddingRight="6dp"
+            android:paddingBottom="2dp"
             android:text="РИИ"
             android:textColor="#FFFFFF"
             android:textSize="11sp"
@@ -27,18 +29,17 @@
 
         <TextView
             android:id="@+id/widget_group_name"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="Группа не выбрана"
             android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:textStyle="bold" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
 
         <TextView
             android:id="@+id/widget_date_week"

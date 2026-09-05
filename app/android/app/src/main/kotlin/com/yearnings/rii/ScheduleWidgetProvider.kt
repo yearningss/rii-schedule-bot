@@ -33,6 +33,20 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    private fun getIntOrLong(prefs: android.content.SharedPreferences, key: String, defaultVal: Int = 0): Int {
+        return try {
+            prefs.getInt(key, defaultVal)
+        } catch (e: ClassCastException) {
+            try {
+                prefs.getLong(key, defaultVal.toLong()).toInt()
+            } catch (e2: Exception) {
+                defaultVal
+            }
+        } catch (e: Exception) {
+            defaultVal
+        }
+    }
+
     private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
         val views = RemoteViews(context.packageName, R.layout.schedule_widget)
 
@@ -47,8 +61,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         try {
             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             val groupName = prefs.getString("flutter.group_name", null) ?: "РИИ"
-            val subgroup = prefs.getLong("flutter.subgroup", 0L).toInt()
-            val groupId = prefs.getLong("flutter.group_id", 0L).toInt()
+            val subgroup = getIntOrLong(prefs, "flutter.subgroup", 0)
+            val groupId = getIntOrLong(prefs, "flutter.group_id", 0)
 
             // Пытаемся взять JSON расписания
             var scheduleJsonStr = prefs.getString("flutter.widget_schedule_json", null)
