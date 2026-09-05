@@ -116,6 +116,11 @@ class UserProfile {
   final String? groupName;
   final int subgroup;
   final String? authToken;
+  final String? firstName;
+  final String? lastName;
+  final String? username;
+  final String? avatarUrl;
+  final String? customAvatar;
 
   UserProfile({
     this.userId,
@@ -123,7 +128,28 @@ class UserProfile {
     this.groupName,
     this.subgroup = 0,
     this.authToken,
+    this.firstName,
+    this.lastName,
+    this.username,
+    this.avatarUrl,
+    this.customAvatar,
   });
+
+  String get displayName {
+    final full = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+    if (full.isNotEmpty) return full;
+    if (username != null && username!.isNotEmpty) return '@$username';
+    if (userId != null) return 'Студент ID $userId';
+    return 'Студент РИИ';
+  }
+
+  String get idAndUsernameText {
+    if (userId == null) return 'Telegram аккаунт не привязан';
+    if (username != null && username!.isNotEmpty) {
+      return 'ID: $userId (@$username)';
+    }
+    return 'ID: $userId';
+  }
 
   UserProfile copyWith({
     int? userId,
@@ -131,6 +157,11 @@ class UserProfile {
     String? groupName,
     int? subgroup,
     String? authToken,
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? avatarUrl,
+    String? customAvatar,
   }) {
     return UserProfile(
       userId: userId ?? this.userId,
@@ -138,6 +169,11 @@ class UserProfile {
       groupName: groupName ?? this.groupName,
       subgroup: subgroup ?? this.subgroup,
       authToken: authToken ?? this.authToken,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      username: username ?? this.username,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      customAvatar: customAvatar ?? this.customAvatar,
     );
   }
 }

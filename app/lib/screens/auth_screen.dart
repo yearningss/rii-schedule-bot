@@ -69,6 +69,10 @@ class _AuthScreenState extends State<AuthScreen> {
               groupId: userMap?['group_id'],
               groupName: userMap?['group_name'],
               subgroup: userMap?['subgroup'] ?? 0,
+              firstName: userMap?['first_name'],
+              lastName: userMap?['last_name'],
+              username: userMap?['username'],
+              avatarUrl: userMap?['avatar_url'],
             );
 
             await widget.storage.saveUserProfile(profile);

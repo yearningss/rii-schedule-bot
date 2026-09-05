@@ -71,6 +71,18 @@ async def init_db():
             await db.execute("ALTER TABLE users ADD COLUMN notify_lesson_start INTEGER DEFAULT 1")
         if "notify_changes" not in columns:
             await db.execute("ALTER TABLE users ADD COLUMN notify_changes INTEGER DEFAULT 1")
+        if "has_mobile_app" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN has_mobile_app INTEGER DEFAULT 0")
+        if "first_name" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
+        if "last_name" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN last_name TEXT")
+        if "username" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN username TEXT")
+        if "avatar_url" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+        if "mobile_app_installed_at" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN mobile_app_installed_at TIMESTAMP")
 
         await db.commit()
 
@@ -81,7 +93,9 @@ async def get_user(user_id: int):
             """
             SELECT user_id, group_id, group_name, subgroup,
                    notifications_enabled, notify_before_mins, notify_breaks,
-                   notify_lesson_start, notify_changes
+                   notify_lesson_start, notify_changes,
+                   has_mobile_app, first_name, last_name, username, avatar_url,
+                   mobile_app_installed_at
             FROM users WHERE user_id = ?
             """,
             (user_id,),
@@ -228,10 +242,13 @@ async def get_stats():
             active_users = (await cursor.fetchone())[0]
         async with db.execute("SELECT COUNT(*) FROM users WHERE notifications_enabled = 1") as cursor:
             notif_users = (await cursor.fetchone())[0]
+        async with db.execute("SELECT COUNT(*) FROM users WHERE has_mobile_app = 1") as cursor:
+            mobile_users = (await cursor.fetchone())[0]
         return {
             "total_users": total_users,
             "active_users": active_users,
-            "notif_users": notif_users
+            "notif_users": notif_users,
+            "mobile_users": mobile_users
         }
 
 async def create_auth_session(session_token: str, expires_in_mins: int = 15) -> bool:
@@ -246,7 +263,14 @@ async def create_auth_session(session_token: str, expires_in_mins: int = 15) -> 
         await db.commit()
         return True
 
-async def confirm_auth_session(session_token: str, user_id: int) -> Optional[str]:
+async def confirm_auth_session(
+    session_token: str,
+    user_id: int,
+    first_name: Optional[str] = None,
+    last_name: Optional[str] = None,
+    username: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+) -> Optional[str]:
     auth_token = secrets.token_hex(32)
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
@@ -276,8 +300,35 @@ async def confirm_auth_session(session_token: str, user_id: int) -> Optional[str
             """,
             (auth_token, user_id),
         )
+        await db.execute(
+            """
+            INSERT INTO users (user_id, has_mobile_app, first_name, last_name, username, avatar_url, mobile_app_installed_at, updated_at)
+            VALUES (?, 1, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                has_mobile_app = 1,
+                first_name = COALESCE(excluded.first_name, users.first_name),
+                last_name = COALESCE(excluded.last_name, users.last_name),
+                username = COALESCE(excluded.username, users.username),
+                avatar_url = COALESCE(excluded.avatar_url, users.avatar_url),
+                mobile_app_installed_at = COALESCE(users.mobile_app_installed_at, CURRENT_TIMESTAMP),
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (user_id, first_name, last_name, username, avatar_url),
+        )
         await db.commit()
         return auth_token
+
+async def update_user_custom_avatar(user_id: int, avatar_url: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            UPDATE users
+            SET avatar_url = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+            """,
+            (avatar_url, user_id),
+        )
+        await db.commit()
 
 async def get_auth_session(session_token: str) -> Optional[dict]:
     async with aiosqlite.connect(DB_PATH) as db:

@@ -38,35 +38,40 @@ class RiiScheduleApp extends StatelessWidget {
     final userProfile = storage.getUserProfile();
     final hasGroup = userProfile.groupId != null;
 
-    return MaterialApp(
-      title: 'РИИ Расписание',
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorSchemeSeed: const Color(0xFF2563EB),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF0F172A),
-          elevation: 0,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorSchemeSeed: const Color(0xFF2563EB),
-        scaffoldBackgroundColor: const Color(0xFF11151C),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E232D),
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
-      ),
-      home: hasGroup
-          ? ScheduleScreen(storage: storage, api: api)
-          : AuthScreen(storage: storage, api: api),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: storage.themeModeNotifier,
+      builder: (context, currentMode, _) {
+        return MaterialApp(
+          title: 'РИИ Расписание',
+          debugShowCheckedModeBanner: false,
+          themeMode: currentMode,
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorSchemeSeed: const Color(0xFF2563EB),
+            scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.white,
+              foregroundColor: Color(0xFF0F172A),
+              elevation: 0,
+            ),
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            colorSchemeSeed: const Color(0xFF2563EB),
+            scaffoldBackgroundColor: const Color(0xFF11151C),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF1E232D),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+          ),
+          home: hasGroup
+              ? ScheduleScreen(storage: storage, api: api)
+              : AuthScreen(storage: storage, api: api),
+        );
+      },
     );
   }
 }

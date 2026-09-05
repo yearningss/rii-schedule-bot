@@ -105,7 +105,12 @@ async def handle_api_app_auth_check(request: web.Request) -> web.Response:
                 "group_id": user.get("group_id") if user else None,
                 "group_name": user.get("group_name") if user else None,
                 "subgroup": user.get("subgroup", 0) if user else 0,
-                "notifications_enabled": user.get("notifications_enabled", 1) if user else 1
+                "notifications_enabled": user.get("notifications_enabled", 1) if user else 1,
+                "first_name": user.get("first_name") if user else None,
+                "last_name": user.get("last_name") if user else None,
+                "username": user.get("username") if user else None,
+                "avatar_url": user.get("avatar_url") if user else None,
+                "has_mobile_app": 1
             }
         })
     
@@ -119,7 +124,7 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
     if not auth_token:
         return web.json_response({"error": "Unauthorized"}, status=401)
         
-    from database import get_user_by_auth_token
+    from database import get_user_by_auth_token, update_user_custom_avatar
     user = await get_user_by_auth_token(auth_token)
     if not user:
         return web.json_response({"error": "Invalid auth token"}, status=401)
@@ -130,10 +135,25 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
             gid = data.get("group_id")
             gname = data.get("group_name")
             sg = data.get("subgroup")
+            avatar_url = data.get("avatar_url")
+            avatar_base64 = data.get("avatar_base64")
+
             if gid and gname:
                 await set_user_group(user["user_id"], int(gid), str(gname))
             if sg is not None:
                 await set_user_subgroup(user["user_id"], int(sg))
+            if avatar_url:
+                await update_user_custom_avatar(user["user_id"], avatar_url)
+            elif avatar_base64:
+                import base64
+                os.makedirs("webapp/avatars", exist_ok=True)
+                file_name = f"{user['user_id']}_custom.png"
+                file_path = os.path.join("webapp", "avatars", file_name)
+                img_data = base64.b64decode(avatar_base64.split(",")[-1])
+                with open(file_path, "wb") as f:
+                    f.write(img_data)
+                await update_user_custom_avatar(user["user_id"], f"/avatars/{file_name}")
+
             user = await get_user(user["user_id"])
         except Exception as e:
             logger.error("Ошибка обновления профиля мобильного приложения: %s", e)
@@ -144,7 +164,12 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
         "group_id": user.get("group_id"),
         "group_name": user.get("group_name"),
         "subgroup": user.get("subgroup", 0),
-        "notifications_enabled": user.get("notifications_enabled", 1)
+        "notifications_enabled": user.get("notifications_enabled", 1),
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
+        "username": user.get("username"),
+        "avatar_url": user.get("avatar_url"),
+        "has_mobile_app": user.get("has_mobile_app", 1)
     })
 
 def create_web_app() -> web.Application:

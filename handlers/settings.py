@@ -17,11 +17,13 @@ def format_settings_text(user: dict) -> str:
     breaks = "Включены" if user.get("notify_breaks", 1) == 1 else "Отключены"
     start = "Включены" if user.get("notify_lesson_start", 1) == 1 else "Отключены"
     changes = "Включены" if user.get("notify_changes", 1) == 1 else "Отключены"
+    mobile_app = "Подключено" if user.get("has_mobile_app", 0) == 1 else "Не подключено"
 
     return (
         f"Настройки пользователя:\n"
         f"Группа: {user.get('group_name', 'Не выбрана')}\n"
         f"Подгруппа: {sg_text}\n"
+        f"Мобильное приложение: {mobile_app}\n"
         f"Главные уведомления: {notif}\n"
         f"Напоминание перед парой: {before_text}\n"
         f"Оповещение о переменах: {breaks}\n"

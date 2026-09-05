@@ -43,30 +43,52 @@ class ApiService {
     throw Exception('Ошибка проверки статуса авторизации');
   }
 
+  // Получение актуального профиля с сервера
+  Future<Map<String, dynamic>?> getProfile(String authToken) async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/app/profile'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   // Двусторонняя синхронизация профиля пользователя
   Future<Map<String, dynamic>?> syncProfile({
     required String authToken,
     int? groupId,
     String? groupName,
     int? subgroup,
+    String? avatarUrl,
+    String? avatarBase64,
   }) async {
     final body = <String, dynamic>{};
     if (groupId != null) body['group_id'] = groupId;
     if (groupName != null) body['group_name'] = groupName;
     if (subgroup != null) body['subgroup'] = subgroup;
+    if (avatarUrl != null) body['avatar_url'] = avatarUrl;
+    if (avatarBase64 != null) body['avatar_base64'] = avatarBase64;
 
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/app/profile'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      },
-      body: jsonEncode(body),
-    );
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/app/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: jsonEncode(body),
+      );
 
-    if (res.statusCode == 200) {
-      return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-    }
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      }
+    } catch (_) {}
     return null;
   }
 }

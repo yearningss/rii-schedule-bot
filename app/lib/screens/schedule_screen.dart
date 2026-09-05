@@ -8,6 +8,7 @@ import '../widgets/para_card.dart';
 import 'bells_screen.dart';
 import 'group_picker_screen.dart';
 import 'auth_screen.dart';
+import 'settings_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final StorageService storage;
@@ -247,13 +248,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.sync_rounded),
-            tooltip: 'Синхронизация Telegram',
-            onPressed: () {
-              Navigator.push(
+            icon: const Icon(Icons.settings_rounded),
+            tooltip: 'Настройки и профиль',
+            onPressed: () async {
+              await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => AuthScreen(storage: widget.storage, api: widget.api)),
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(storage: widget.storage, api: widget.api),
+                ),
               );
+              if (mounted) {
+                final updated = widget.storage.getUserProfile();
+                if (updated.groupId != _profile.groupId || updated.subgroup != _profile.subgroup) {
+                  setState(() {
+                    _profile = updated;
+                    _isLoading = true;
+                  });
+                  _initSchedule();
+                } else {
+                  setState(() {
+                    _profile = updated;
+                  });
+                }
+              }
             },
           ),
         ],

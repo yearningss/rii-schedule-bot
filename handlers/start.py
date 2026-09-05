@@ -81,7 +81,28 @@ async def cb_app_auth(callback: CallbackQuery):
     session_token = parts[2]
 
     if action == "ok":
-        auth_token = await confirm_auth_session(session_token, callback.from_user.id)
+        from_user = callback.from_user
+        avatar_url = None
+        try:
+            import os
+            photos = await callback.bot.get_user_profile_photos(from_user.id, limit=1)
+            if photos.total_count > 0:
+                file_info = await callback.bot.get_file(photos.photos[0][-1].file_id)
+                os.makedirs("webapp/avatars", exist_ok=True)
+                avatar_path = os.path.join("webapp", "avatars", f"{from_user.id}.jpg")
+                await callback.bot.download_file(file_info.file_path, avatar_path)
+                avatar_url = f"/avatars/{from_user.id}.jpg"
+        except Exception:
+            pass
+
+        auth_token = await confirm_auth_session(
+            session_token=session_token,
+            user_id=from_user.id,
+            first_name=from_user.first_name,
+            last_name=from_user.last_name,
+            username=from_user.username,
+            avatar_url=avatar_url,
+        )
         if auth_token:
             user = await get_user(callback.from_user.id)
             group_text = f" Группа: {user['group_name']}." if user and user.get("group_name") else ""
