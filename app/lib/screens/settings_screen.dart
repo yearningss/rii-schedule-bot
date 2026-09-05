@@ -6,6 +6,7 @@ import '../services/storage_service.dart';
 import 'bells_screen.dart';
 import 'group_picker_screen.dart';
 import 'auth_screen.dart';
+import '../services/widget_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final StorageService storage;
@@ -82,6 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subgroup: sg,
       );
     }
+    WidgetService.updateWidgetData(profile: _profile);
   }
 
   Future<void> _changeGroup() async {
@@ -105,6 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           groupName: selected.name,
         );
       }
+      WidgetService.updateWidgetData(profile: _profile);
     }
   }
 

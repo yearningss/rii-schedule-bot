@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">РИИ Расписание</string>
+    <string name="widget_name">Расписание РИИ</string>
+    <string name="widget_description">Текущая и следующая пара выбранной группы</string>
+</resources>

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../services/widget_service.dart';
 import '../widgets/para_card.dart';
 import 'bells_screen.dart';
 import 'group_picker_screen.dart';
@@ -100,6 +101,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         _selectedDay = rDay;
       }
     });
+
+    WidgetService.updateWidgetData(profile: _profile, scheduleJson: data);
   }
 
   Future<void> _changeGroup() async {
@@ -126,6 +129,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         );
       }
 
+      WidgetService.updateWidgetData(profile: _profile);
       await _fetchFreshSchedule();
     }
   }
@@ -142,6 +146,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         subgroup: sg,
       );
     }
+
+    WidgetService.updateWidgetData(profile: _profile, scheduleJson: _scheduleJson);
   }
 
   String _calculateLiveStatus(Map<String, dynamic> dayMap, Map<String, dynamic> paraTimes) {
