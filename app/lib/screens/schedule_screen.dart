@@ -56,7 +56,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // Фоновая тихая проверка обновлений при запуске
   Future<void> _checkAppUpdateSilently() async {
     try {
-      final update = await widget.api.checkAppUpdate(currentBuild: 1, currentVersion: '1.0.0');
+      final update = await widget.api.checkAppUpdate(
+        currentBuild: AppInfo.versionCode,
+        currentVersion: AppInfo.versionName,
+      );
       if (mounted && update != null && update.hasUpdate) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

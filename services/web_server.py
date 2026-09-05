@@ -176,10 +176,10 @@ async def handle_api_app_version(request: web.Request) -> web.Response:
     # Проверка актуальной версии мобильного приложения РИИ
     return web.json_response({
         "status": "ok",
-        "latest_version": "1.0.0",
-        "latest_build": 1,
+        "latest_version": "1.0.1",
+        "latest_build": 2,
         "download_url": "https://github.com/yearningss/rii-schedule-bot/releases/latest",
-        "release_notes": "Официальная версия приложения РИИ АлтГТУ.\n- Виджет расписания на рабочий стол\n- Быстрая привязка Telegram аккаунта\n- Расписание звонков и темная тема",
+        "release_notes": "Обновление приложения РИИ:\n- Добавлена проверка обновлений\n- Улучшена стабильность виджета на рабочих столах MagicOS и Android\n- Расписание звонков и темная тема",
         "is_required": False
     })
 

@@ -117,7 +117,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _checkForUpdate() async {
     setState(() => _isCheckingUpdate = true);
     try {
-      final update = await widget.api.checkAppUpdate(currentBuild: 1, currentVersion: '1.0.0');
+      final update = await widget.api.checkAppUpdate(
+        currentBuild: AppInfo.versionCode,
+        currentVersion: AppInfo.versionName,
+      );
       if (!mounted) return;
       setState(() => _isCheckingUpdate = false);
 
@@ -625,7 +628,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.system_update_rounded, color: Color(0xFF2563EB)),
                   title: const Text('Проверить обновления'),
-                  subtitle: Text(_isCheckingUpdate ? 'Проверка...' : 'Версия: v1.0.0 (сборка 1)'),
+                  subtitle: Text(_isCheckingUpdate ? 'Проверка...' : 'Версия: ${AppInfo.fullVersionText}'),
                   trailing: _isCheckingUpdate
                       ? const SizedBox(
                           width: 18,
