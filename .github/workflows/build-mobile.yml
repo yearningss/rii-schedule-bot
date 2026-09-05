@@ -1,18 +1,21 @@
-name: Сборка мобильных приложений Flutter (Android APK и iOS IPA)
+name: Сборка и публикация мобильных приложений (Android APK и iOS IPA)
 
 on:
   push:
     branches:
-      - 'feature/mobile-app'
       - 'main'
+      - 'feature/mobile-app'
     paths:
       - 'app/**'
       - '.github/workflows/build-mobile.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
-    name: Сборка Android (RiiSchedule.apk)
+    name: Сборка Android (RiiSchedule.apk и RiiSchedule-debug.apk)
     runs-on: ubuntu-latest
     steps:
       - name: Клонирование репозитория
@@ -57,14 +60,121 @@ jobs:
           cd app
           flutter build apk --release --android-skip-build-dependency-validation
 
-      - name: Подготовка файла APK
+      - name: Сборка отладочного APK (debug)
+        run: |
+          cd app
+          flutter build apk --debug --android-skip-build-dependency-validation
+
+      - name: Подготовка файлов APK
         run: |
           mkdir -p dist
           cp app/build/app/outputs/flutter-apk/app-release.apk dist/RiiSchedule.apk
+          cp app/build/app/outputs/flutter-apk/app-debug.apk dist/RiiSchedule-debug.apk
 
-      - name: Загрузка готового APK в артефакты
+      - name: Загрузка APK в артефакты
         uses: actions/upload-artifact@v4
         with:
-          name: RiiSchedule-Android-Signed-APK
-          path: dist/RiiSchedule.apk
+          name: android-packages
+          path: |
+            dist/RiiSchedule.apk
+            dist/RiiSchedule-debug.apk
           if-no-files-found: error
+
+  build-ios:
+    name: Сборка iOS (RiiSchedule.ipa)
+    runs-on: macos-latest
+    steps:
+      - name: Клонирование репозитория
+        uses: actions/checkout@v4
+
+      - name: Настройка Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Установка зависимостей Flutter
+        run: |
+          cd app
+          flutter pub get
+
+      - name: Сборка приложения iOS без подписи
+        run: |
+          cd app
+          flutter build ios --release --no-codesign
+
+      - name: Упаковка приложения в формат IPA
+        run: |
+          mkdir -p dist/Payload
+          cp -r app/build/ios/iphoneos/Runner.app dist/Payload/
+          cd dist
+          zip -r RiiSchedule.ipa Payload
+          rm -rf Payload
+
+      - name: Загрузка IPA в артефакты
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-package
+          path: dist/RiiSchedule.ipa
+          if-no-files-found: error
+
+  publish-release:
+    name: Публикация релиза в GitHub Releases
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      (needs.build-android.result == 'success') &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Клонирование репозитория
+        uses: actions/checkout@v4
+
+      - name: Чтение версии приложения
+        id: get_version
+        run: |
+          RAW_VERSION=$(grep 'version:' app/pubspec.yaml | head -n 1 | sed 's/version: //' | tr -d '[:space:]')
+          VERSION_NAME=$(echo "$RAW_VERSION" | cut -d'+' -f1)
+          VERSION_BUILD=$(echo "$RAW_VERSION" | cut -d'+' -f2)
+          echo "APP_VERSION=$VERSION_NAME" >> $GITHUB_ENV
+          echo "APP_BUILD=$VERSION_BUILD" >> $GITHUB_ENV
+          echo "Текущая версия: $VERSION_NAME, сборка: $VERSION_BUILD"
+
+      - name: Создание директории для файлов релиза
+        run: mkdir -p release-assets
+
+      - name: Скачивание пакетов Android
+        uses: actions/download-artifact@v4
+        with:
+          name: android-packages
+          path: release-assets
+
+      - name: Скачивание пакета iOS
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: ios-package
+          path: release-assets
+
+      - name: Проверка содержимого релиза
+        run: ls -la release-assets
+
+      - name: Публикация релиза на GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VERSION }}
+          name: Релиз v${{ env.APP_VERSION }} (сборка ${{ env.APP_BUILD }})
+          body: |
+            Официальный релиз мобильного приложения РИИ АлтГТУ (версия ${{ env.APP_VERSION }}, сборка ${{ env.APP_BUILD }}).
+
+            ### Файлы для загрузки:
+            * **RiiSchedule.apk** — Релизный подписанный APK для Android (рекомендуется для установки и обновления поверх старых версий).
+            * **RiiSchedule-debug.apk** — Отладочный APK со встроенными логами для тестирования.
+            * **RiiSchedule.ipa** — Пакет приложения для iOS (установка через AltStore, Sideloadly, TrollStore или личный сертификат Apple ID).
+          files: release-assets/*
+          fail_on_unmatched_files: false
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
