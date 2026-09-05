@@ -14,3 +14,9 @@ data/*.sqlite3
 .DS_Store
 .idea/
 .vscode/
+
+# Сертификаты и ключи подписи
+certs/
+*.jks
+*.keystore
+key.properties
