@@ -23,9 +23,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.yearnings.rii"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -55,16 +54,18 @@ android {
                 storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: "Goll7535"
                 keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: "yearnings"
                 keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: "Goll7535"
-            } else {
-                // Если файл ключа не найден, используем отладочную подпись без падения сборки
-                signingConfig signingConfigs.debug
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            def keyFilePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties['storeFile']
+            if (keyFilePath && file(keyFilePath).exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled false
             shrinkResources false
         }
