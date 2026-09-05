@@ -6,6 +6,7 @@ import '../services/storage_service.dart';
 import 'bells_screen.dart';
 import 'group_picker_screen.dart';
 import 'auth_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/widget_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late UserProfile _profile;
   late ThemeMode _currentThemeMode;
+  bool _isCheckingUpdate = false;
 
   // Список встроенных иконок для выбора аватара
   static const List<Map<String, dynamic>> _presetAvatars = [
@@ -108,6 +110,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
       WidgetService.updateWidgetData(profile: _profile);
+    }
+  }
+
+  // Проверка актуальности версии приложения
+  Future<void> _checkForUpdate() async {
+    setState(() => _isCheckingUpdate = true);
+    try {
+      final update = await widget.api.checkAppUpdate(currentBuild: 1, currentVersion: '1.0.0');
+      if (!mounted) return;
+      setState(() => _isCheckingUpdate = false);
+
+      if (update != null && update.hasUpdate) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Доступно обновление v${update.latestVersion}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Вышла новая версия приложения РИИ АлтГТУ.\n\nЧто нового:',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  update.releaseNotes ?? 'Исправления ошибок и улучшения производительности.',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Позже'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final uri = Uri.parse(update.downloadUrl);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: const Text('Скачать'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Обновлений нет'),
+            content: const Text('У вас установлена последняя версия приложения (v1.0.0).'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Понятно'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isCheckingUpdate = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось связаться с сервером для проверки обновлений')),
+        );
+      }
     }
   }
 
@@ -547,6 +620,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const BellsScreen()));
                   },
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                ListTile(
+                  leading: const Icon(Icons.system_update_rounded, color: Color(0xFF2563EB)),
+                  title: const Text('Проверить обновления'),
+                  subtitle: Text(_isCheckingUpdate ? 'Проверка...' : 'Версия: v1.0.0 (сборка 1)'),
+                  trailing: _isCheckingUpdate
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.chevron_right_rounded),
+                  onTap: _isCheckingUpdate ? null : _checkForUpdate,
                 ),
                 Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
                 ListTile(

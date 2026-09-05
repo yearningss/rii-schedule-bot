@@ -20,3 +20,12 @@ certs/
 *.jks
 *.keystore
 key.properties
+
+# Flutter и Android артефакты
+app/.dart_tool/
+app/.flutter-plugins*
+app/.packages
+app/build/
+app/android/local.properties
+app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+app/pubspec.lock

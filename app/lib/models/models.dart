@@ -177,3 +177,54 @@ class UserProfile {
     );
   }
 }
+
+// Информация об обновлении мобильного приложения
+class AppUpdateInfo {
+  final String latestVersion;
+  final int latestBuild;
+  final String downloadUrl;
+  final String? releaseNotes;
+  final bool isRequired;
+  final bool hasUpdate;
+
+  AppUpdateInfo({
+    required this.latestVersion,
+    required this.latestBuild,
+    required this.downloadUrl,
+    this.releaseNotes,
+    this.isRequired = false,
+    this.hasUpdate = false,
+  });
+
+  factory AppUpdateInfo.fromJson(Map<String, dynamic> json, {int currentBuild = 1, String currentVersion = '1.0.0'}) {
+    final lVersion = json['latest_version']?.toString() ?? '1.0.0';
+    final lBuild = int.tryParse(json['latest_build']?.toString() ?? '1') ?? 1;
+    final dUrl = json['download_url']?.toString() ?? 'https://github.com/yearningss/rii-schedule-bot/releases/latest';
+    final notes = json['release_notes']?.toString();
+    final req = json['is_required'] == true;
+
+    final hasNewer = (lBuild > currentBuild) || (_compareVersions(lVersion, currentVersion) > 0);
+
+    return AppUpdateInfo(
+      latestVersion: lVersion,
+      latestBuild: lBuild,
+      downloadUrl: dUrl,
+      releaseNotes: notes,
+      isRequired: req,
+      hasUpdate: hasNewer,
+    );
+  }
+
+  static int _compareVersions(String v1, String v2) {
+    final parts1 = v1.replaceAll(RegExp(r'[^0-9.]'), '').split('.').map((p) => int.tryParse(p) ?? 0).toList();
+    final parts2 = v2.replaceAll(RegExp(r'[^0-9.]'), '').split('.').map((p) => int.tryParse(p) ?? 0).toList();
+    for (int i = 0; i < parts1.length || i < parts2.length; i++) {
+      final p1 = i < parts1.length ? parts1[i] : 0;
+      final p2 = i < parts2.length ? parts2[i] : 0;
+      if (p1 > p2) return 1;
+      if (p1 < p2) return -1;
+    }
+    return 0;
+  }
+}
+

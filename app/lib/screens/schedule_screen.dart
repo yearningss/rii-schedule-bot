@@ -8,8 +8,8 @@ import '../services/widget_service.dart';
 import '../widgets/para_card.dart';
 import 'bells_screen.dart';
 import 'group_picker_screen.dart';
-import 'auth_screen.dart';
 import 'settings_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final StorageService storage;
@@ -46,6 +46,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _statusTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
+
+    // Фоновая тихая проверка доступности обновлений
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppUpdateSilently();
+    });
+  }
+
+  // Фоновая тихая проверка обновлений при запуске
+  Future<void> _checkAppUpdateSilently() async {
+    try {
+      final update = await widget.api.checkAppUpdate(currentBuild: 1, currentVersion: '1.0.0');
+      if (mounted && update != null && update.hasUpdate) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Доступна новая версия приложения (v${update.latestVersion})'),
+            duration: const Duration(seconds: 8),
+            action: SnackBarAction(
+              label: 'Обновить',
+              onPressed: () async {
+                final uri = Uri.parse(update.downloadUrl);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+          ),
+        );
+      }
+    } catch (_) {}
   }
 
   @override

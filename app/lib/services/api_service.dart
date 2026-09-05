@@ -91,4 +91,25 @@ class ApiService {
     } catch (_) {}
     return null;
   }
+
+  // Проверка доступности новой версии мобильного приложения
+  Future<AppUpdateInfo?> checkAppUpdate({
+    int currentBuild = 1,
+    String currentVersion = '1.0.0',
+  }) async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/api/app/version')).timeout(
+        const Duration(seconds: 5),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+        return AppUpdateInfo.fromJson(
+          data,
+          currentBuild: currentBuild,
+          currentVersion: currentVersion,
+        );
+      }
+    } catch (_) {}
+    return null;
+  }
 }

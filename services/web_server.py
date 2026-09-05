@@ -172,6 +172,17 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
         "has_mobile_app": user.get("has_mobile_app", 1)
     })
 
+async def handle_api_app_version(request: web.Request) -> web.Response:
+    # Проверка актуальной версии мобильного приложения РИИ
+    return web.json_response({
+        "status": "ok",
+        "latest_version": "1.0.0",
+        "latest_build": 1,
+        "download_url": "https://github.com/yearningss/rii-schedule-bot/releases/latest",
+        "release_notes": "Официальная версия приложения РИИ АлтГТУ.\n- Виджет расписания на рабочий стол\n- Быстрая привязка Telegram аккаунта\n- Расписание звонков и темная тема",
+        "is_required": False
+    })
+
 def create_web_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/", handle_index)
@@ -183,6 +194,7 @@ def create_web_app() -> web.Application:
     app.router.add_get("/api/app/auth/check", handle_api_app_auth_check)
     app.router.add_get("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/profile", handle_api_app_profile)
+    app.router.add_get("/api/app/version", handle_api_app_version)
     app.router.add_static("/", WEBAPP_DIR)
     return app
 
