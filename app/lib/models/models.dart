@@ -230,8 +230,8 @@ class AppUpdateInfo {
 
 // Данные о текущей версии мобильного приложения РИИ
 class AppInfo {
-  static const String versionName = '1.0.1';
-  static const int versionCode = 2;
+  static const String versionName = '1.0.2';
+  static const int versionCode = 3;
   static const String fullVersionText = 'v$versionName (сборка $versionCode)';
 }
 
