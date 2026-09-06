@@ -30,3 +30,5 @@ app/build/
 app/android/local.properties
 app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 app/pubspec.lock
+*.apk
+*.ipa
