@@ -28,5 +28,5 @@
 
 ### 5. Контакты разработчика
 По всем вопросам работы Приложения и обработки данных:
-* Электронная почта: support@yearnings.ru
+* Электронная почта: doki@dotirr.ru
 * Репозиторий проекта на GitHub: https://github.com/yearningss/rii-schedule-bot
