@@ -141,10 +141,34 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.11',
+        title: 'Релиз v1.0.11 (сборка 12)',
+        publishedAt: '2026-09-06T08:50:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.11',
+        rawBody: '''* Интеллектуальный офлайн-режим: при отсутствии интернет-соединения при запуске отображается локально сохраненное расписание с понятным уведомлением.
+* Отображение сетевого режима в Настройках: статус онлайн/офлайн с индикатором и кнопкой мгновенной проверки соединения.
+* Расширенная настройка уведомлений: выбор времени напоминания до пары (5, 10, 15, 30 минут), оповещения о начале пары, переменах и изменениях в расписании.
+* Полноценная синхронизация параметров уведомлений с Telegram-ботом и сервером РИИ.
+* Добавлена возможность обновления расписания жестом свайпа (pull-to-refresh) на пустых экранах выходных дней.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 55750000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8290000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.10',
         title: 'Релиз v1.0.10 (сборка 11)',
         publishedAt: '2026-09-06T07:25:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.10',
         rawBody: '''* Документирование кодовой базы: все комментарии в исходном коде переведены и стандартизированы на русском языке.
 * Подтверждена стабильная работа нативного виджета расписания для iOS (WidgetKit) и Android (RemoteViews).

@@ -60,7 +60,7 @@ class ApiService {
     return null;
   }
 
-  // Двусторонняя синхронизация профиля пользователя
+  // Двусторонняя синхронизация профиля и параметров уведомлений пользователя
   Future<Map<String, dynamic>?> syncProfile({
     required String authToken,
     int? groupId,
@@ -68,6 +68,11 @@ class ApiService {
     int? subgroup,
     String? avatarUrl,
     String? avatarBase64,
+    bool? notificationsEnabled,
+    int? notifyBeforeMins,
+    bool? notifyLessonStart,
+    bool? notifyBreaks,
+    bool? notifyChanges,
   }) async {
     final body = <String, dynamic>{};
     if (groupId != null) body['group_id'] = groupId;
@@ -75,6 +80,11 @@ class ApiService {
     if (subgroup != null) body['subgroup'] = subgroup;
     if (avatarUrl != null) body['avatar_url'] = avatarUrl;
     if (avatarBase64 != null) body['avatar_base64'] = avatarBase64;
+    if (notificationsEnabled != null) body['notifications_enabled'] = notificationsEnabled ? 1 : 0;
+    if (notifyBeforeMins != null) body['notify_before_mins'] = notifyBeforeMins;
+    if (notifyLessonStart != null) body['notify_lesson_start'] = notifyLessonStart ? 1 : 0;
+    if (notifyBreaks != null) body['notify_breaks'] = notifyBreaks ? 1 : 0;
+    if (notifyChanges != null) body['notify_changes'] = notifyChanges ? 1 : 0;
 
     try {
       final res = await http.post(
@@ -91,6 +101,18 @@ class ApiService {
       }
     } catch (_) {}
     return null;
+  }
+
+  // Проверка доступности сервера и подключения к сети
+  Future<bool> checkConnection() async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/api/groups')).timeout(
+        const Duration(seconds: 4),
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   // Проверка доступности новой версии мобильного приложения

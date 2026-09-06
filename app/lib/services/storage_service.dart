@@ -111,6 +111,26 @@ class StorageService {
     await prefs.setInt(_keySubgroup, subgroup);
   }
 
+  // Получение параметров уведомлений из локальной памяти
+  NotificationSettings getNotificationSettings() {
+    return NotificationSettings(
+      enabled: prefs.getBool('notifications_enabled') ?? true,
+      beforeMins: prefs.getInt('notify_before_mins') ?? 10,
+      lessonStart: prefs.getBool('notify_lesson_start') ?? true,
+      breaks: prefs.getBool('notify_breaks') ?? true,
+      changes: prefs.getBool('notify_changes') ?? true,
+    );
+  }
+
+  // Сохранение параметров уведомлений в локальную память
+  Future<void> saveNotificationSettings(NotificationSettings settings) async {
+    await prefs.setBool('notifications_enabled', settings.enabled);
+    await prefs.setInt('notify_before_mins', settings.beforeMins);
+    await prefs.setBool('notify_lesson_start', settings.lessonStart);
+    await prefs.setBool('notify_breaks', settings.breaks);
+    await prefs.setBool('notify_changes', settings.changes);
+  }
+
   Future<void> clearAuth() async {
     await prefs.remove(_keyAuthToken);
     await prefs.remove(_keyUserId);

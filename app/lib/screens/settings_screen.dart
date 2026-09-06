@@ -29,7 +29,10 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late UserProfile _profile;
   late ThemeMode _currentThemeMode;
+  late NotificationSettings _notifSettings;
   bool _isCheckingUpdate = false;
+  bool _isOnline = true;
+  bool _isCheckingConnection = false;
 
   // Список встроенных иконок для выбора аватара
   static const List<Map<String, dynamic>> _presetAvatars = [
@@ -48,7 +51,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _profile = widget.storage.getUserProfile();
     _currentThemeMode = widget.storage.getThemeMode();
+    _notifSettings = widget.storage.getNotificationSettings();
+    _checkNetworkConnection();
     _refreshProfileFromServer();
+  }
+
+  // Проверка статуса соединения с сервером РИИ
+  Future<void> _checkNetworkConnection({bool showFeedback = false}) async {
+    setState(() => _isCheckingConnection = true);
+    final connected = await widget.api.checkConnection();
+    if (mounted) {
+      setState(() {
+        _isOnline = connected;
+        _isCheckingConnection = false;
+      });
+      if (showFeedback) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              connected
+                  ? 'Соединение с сервером РИИ активно (Онлайн)'
+                  : 'Нет подключения к серверу. Активен офлайн-режим',
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  // Сохранение и синхронизация параметров уведомлений
+  Future<void> _updateNotificationSettings(NotificationSettings newSettings) async {
+    setState(() {
+      _notifSettings = newSettings;
+    });
+    await widget.storage.saveNotificationSettings(newSettings);
+
+    if (newSettings.enabled) {
+      await NotificationService.requestPermission();
+    }
+
+    if (_profile.authToken != null) {
+      await widget.api.syncProfile(
+        authToken: _profile.authToken!,
+        notificationsEnabled: newSettings.enabled,
+        notifyBeforeMins: newSettings.beforeMins,
+        notifyLessonStart: newSettings.lessonStart,
+        notifyBreaks: newSettings.breaks,
+        notifyChanges: newSettings.changes,
+      );
+    }
   }
 
   Future<void> _refreshProfileFromServer() async {
@@ -66,8 +119,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           username: data['username'],
           avatarUrl: data['avatar_url'],
         );
+        if (data.containsKey('notifications_enabled')) {
+          _notifSettings = _notifSettings.copyWith(
+            enabled: (data['notifications_enabled'] == 1 || data['notifications_enabled'] == true),
+            beforeMins: data['notify_before_mins'] is int
+                ? data['notify_before_mins']
+                : int.tryParse(data['notify_before_mins']?.toString() ?? '') ?? _notifSettings.beforeMins,
+            lessonStart: data['notify_lesson_start'] == null
+                ? _notifSettings.lessonStart
+                : (data['notify_lesson_start'] == 1 || data['notify_lesson_start'] == true),
+            breaks: data['notify_breaks'] == null
+                ? _notifSettings.breaks
+                : (data['notify_breaks'] == 1 || data['notify_breaks'] == true),
+            changes: data['notify_changes'] == null
+                ? _notifSettings.changes
+                : (data['notify_changes'] == 1 || data['notify_changes'] == true),
+          );
+        }
       });
       await widget.storage.saveUserProfile(_profile);
+      await widget.storage.saveNotificationSettings(_notifSettings);
     }
   }
 
@@ -563,8 +634,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // Секция: Тема оформления
-          _buildSectionHeader('Оформление темы'),
+          // Секция: Режим работы и сеть
+          _buildSectionHeader('Режим работы и сеть'),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _isOnline
+                        ? const Color(0xFF059669).withOpacity(0.12)
+                        : const Color(0xFFD97706).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                    color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _isOnline ? 'Онлайн-режим' : 'Офлайн-режим',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _isOnline
+                            ? 'Связь с сервером активна, расписание синхронизировано'
+                            : 'Связь отсутствует, отображается локальный кэш',
+                        style: TextStyle(fontSize: 12, color: subColor),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _isCheckingConnection ? null : () => _checkNetworkConnection(showFeedback: true),
+                  tooltip: 'Проверить соединение',
+                  icon: _isCheckingConnection
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Секция: Настройки уведомлений
+          _buildSectionHeader('Настройки уведомлений'),
           Container(
             decoration: BoxDecoration(
               color: cardBg,
@@ -575,26 +728,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: Column(
               children: [
-                _buildThemeTile(
-                  title: 'Светлая тема',
-                  subtitle: 'Классический белый фон с синими акцентами',
-                  icon: Icons.light_mode_rounded,
-                  mode: ThemeMode.light,
+                SwitchListTile(
+                  value: _notifSettings.enabled,
+                  onChanged: (val) {
+                    _updateNotificationSettings(_notifSettings.copyWith(enabled: val));
+                  },
+                  secondary: const Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB)),
+                  title: const Text('Уведомления о занятиях', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Получать напоминания о парах и изменениях'),
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                _buildThemeTile(
-                  title: 'Тёмная тема',
-                  subtitle: 'Глубокий темный фон для комфорта глаз',
-                  icon: Icons.dark_mode_rounded,
-                  mode: ThemeMode.dark,
-                ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                _buildThemeTile(
-                  title: 'Системная тема',
-                  subtitle: 'Следовать настройкам операционной системы',
-                  icon: Icons.brightness_auto_rounded,
-                  mode: ThemeMode.system,
-                ),
+                if (_notifSettings.enabled) ...[
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Напоминать до начала пары:',
+                              style: TextStyle(fontSize: 13, color: subColor, fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              '${_notifSettings.beforeMins} минут',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [5, 10, 15, 30].map((mins) {
+                            final isSel = _notifSettings.beforeMins == mins;
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 3),
+                                child: InkWell(
+                                  onTap: () {
+                                    _updateNotificationSettings(_notifSettings.copyWith(beforeMins: mins));
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSel
+                                          ? const Color(0xFF2563EB)
+                                          : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isSel ? const Color(0xFF2563EB) : Colors.transparent,
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '$mins мин',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                        color: isSel ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[800]),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                  SwitchListTile(
+                    value: _notifSettings.lessonStart,
+                    onChanged: (val) {
+                      _updateNotificationSettings(_notifSettings.copyWith(lessonStart: val));
+                    },
+                    secondary: const Icon(Icons.alarm_on_rounded, color: Color(0xFF059669)),
+                    title: const Text('Звонок на пару'),
+                    subtitle: const Text('Оповещение в момент начала занятия'),
+                  ),
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                  SwitchListTile(
+                    value: _notifSettings.breaks,
+                    onChanged: (val) {
+                      _updateNotificationSettings(_notifSettings.copyWith(breaks: val));
+                    },
+                    secondary: const Icon(Icons.coffee_rounded, color: Color(0xFFD97706)),
+                    title: const Text('Оповещения о переменах'),
+                    subtitle: const Text('Оповещение о завершении пары и времени перемены'),
+                  ),
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                  SwitchListTile(
+                    value: _notifSettings.changes,
+                    onChanged: (val) {
+                      _updateNotificationSettings(_notifSettings.copyWith(changes: val));
+                    },
+                    secondary: const Icon(Icons.sync_problem_rounded, color: Color(0xFF8B5CF6)),
+                    title: const Text('Изменения и замены'),
+                    subtitle: const Text('Оповещение при публикации нового расписания'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -656,6 +890,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
+          // Секция: Тема оформления
+          _buildSectionHeader('Оформление темы'),
+          Container(
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Column(
+              children: [
+                _buildThemeTile(
+                  title: 'Светлая тема',
+                  subtitle: 'Классический белый фон с синими акцентами',
+                  icon: Icons.light_mode_rounded,
+                  mode: ThemeMode.light,
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                _buildThemeTile(
+                  title: 'Тёмная тема',
+                  subtitle: 'Глубокий темный фон для комфорта глаз',
+                  icon: Icons.dark_mode_rounded,
+                  mode: ThemeMode.dark,
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                _buildThemeTile(
+                  title: 'Системная тема',
+                  subtitle: 'Следовать настройкам операционной системы',
+                  icon: Icons.brightness_auto_rounded,
+                  mode: ThemeMode.system,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
           // Секция: Дополнительно
           _buildSectionHeader('Дополнительно'),
           Container(
@@ -679,9 +951,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
                 ListTile(
-                  leading: const Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB)),
-                  title: const Text('Уведомления о парах'),
-                  subtitle: const Text('Проверить или запросить системное разрешение'),
+                  leading: const Icon(Icons.verified_user_rounded, color: Color(0xFF2563EB)),
+                  title: const Text('Системные разрешения'),
+                  subtitle: const Text('Проверить разрешение на показ уведомлений в ОС'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
                     final granted = await NotificationService.requestPermission();
@@ -690,7 +962,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SnackBar(
                           content: Text(granted
                               ? 'Уведомления разрешены системой'
-                              : 'Запрос отправлен. Убедитесь, что уведомления включены в настройках Android'),
+                              : 'Запрос отправлен. Убедитесь, что уведомления включены в настройках системы'),
                           duration: const Duration(seconds: 3),
                         ),
                       );

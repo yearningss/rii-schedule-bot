@@ -10,7 +10,7 @@ from pathlib import Path
 import aiohttp
 from aiohttp import web
 from services.api import api_client
-from database import get_user, set_user_group, set_user_subgroup
+from database import get_user, set_user_group, set_user_subgroup, update_user_notifications
 
 logger = logging.getLogger("rii_schedule_bot.web")
 
@@ -142,6 +142,11 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
             sg = data.get("subgroup")
             avatar_url = data.get("avatar_url")
             avatar_base64 = data.get("avatar_base64")
+            notifications_enabled = data.get("notifications_enabled")
+            notify_before_mins = data.get("notify_before_mins")
+            notify_lesson_start = data.get("notify_lesson_start")
+            notify_breaks = data.get("notify_breaks")
+            notify_changes = data.get("notify_changes")
 
             if gid and gname:
                 await set_user_group(user["user_id"], int(gid), str(gname))
@@ -159,6 +164,16 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
                     f.write(img_data)
                 await update_user_custom_avatar(user["user_id"], f"/avatars/{file_name}")
 
+            if any(x is not None for x in (notifications_enabled, notify_before_mins, notify_lesson_start, notify_breaks, notify_changes)):
+                await update_user_notifications(
+                    user_id=user["user_id"],
+                    notifications_enabled=int(notifications_enabled) if notifications_enabled is not None else None,
+                    notify_before_mins=int(notify_before_mins) if notify_before_mins is not None else None,
+                    notify_lesson_start=int(notify_lesson_start) if notify_lesson_start is not None else None,
+                    notify_breaks=int(notify_breaks) if notify_breaks is not None else None,
+                    notify_changes=int(notify_changes) if notify_changes is not None else None,
+                )
+
             user = await get_user(user["user_id"])
         except Exception as e:
             logger.error("Ошибка обновления профиля мобильного приложения: %s", e)
@@ -170,6 +185,10 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
         "group_name": user.get("group_name"),
         "subgroup": user.get("subgroup", 0),
         "notifications_enabled": user.get("notifications_enabled", 1),
+        "notify_before_mins": user.get("notify_before_mins", 10),
+        "notify_lesson_start": user.get("notify_lesson_start", 1),
+        "notify_breaks": user.get("notify_breaks", 1),
+        "notify_changes": user.get("notify_changes", 1),
         "first_name": user.get("first_name"),
         "last_name": user.get("last_name"),
         "username": user.get("username"),
@@ -264,7 +283,7 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
-            "latest_build": latest.get("build", 11),
+            "latest_build": latest.get("build", 12),
             "download_url": download_url,
             "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
             "is_required": False
@@ -272,10 +291,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.10",
-        "latest_build": 11,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/{target_ext}",
-        "release_notes": "Обновление приложения РИИ (v1.0.10, сборка 11):\n- Документирование исходного кода на русском языке\n- Фиксация стабильного чтения расписания в нативных виджетах Android и iOS\n- Повышение производительности и оптимизация сборки",
+        "latest_version": "1.0.11",
+        "latest_build": 12,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/{target_ext}",
+        "release_notes": "Обновление приложения РИИ (v1.0.11, сборка 12):\n- Интеллектуальный офлайн-режим с предупреждением об использовании кэша при отсутствии сети\n- Отображение текущего сетевого режима (онлайн/офлайн) в настройках\n- Расширенная настройка уведомлений: выбор времени напоминания до пары (5, 10, 15, 30 минут), оповещения о начале пары, переменах и изменениях в расписании",
         "is_required": False
     }
 

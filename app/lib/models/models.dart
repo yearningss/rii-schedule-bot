@@ -228,10 +228,43 @@ class AppUpdateInfo {
   }
 }
 
+// Модель параметров уведомлений пользователя
+class NotificationSettings {
+  final bool enabled;
+  final int beforeMins;
+  final bool lessonStart;
+  final bool breaks;
+  final bool changes;
+
+  const NotificationSettings({
+    this.enabled = true,
+    this.beforeMins = 10,
+    this.lessonStart = true,
+    this.breaks = true,
+    this.changes = true,
+  });
+
+  NotificationSettings copyWith({
+    bool? enabled,
+    int? beforeMins,
+    bool? lessonStart,
+    bool? breaks,
+    bool? changes,
+  }) {
+    return NotificationSettings(
+      enabled: enabled ?? this.enabled,
+      beforeMins: beforeMins ?? this.beforeMins,
+      lessonStart: lessonStart ?? this.lessonStart,
+      breaks: breaks ?? this.breaks,
+      changes: changes ?? this.changes,
+    );
+  }
+}
+
 // Данные о текущей версии мобильного приложения РИИ
 class AppInfo {
-  static const String versionName = '1.0.10';
-  static const int versionCode = 11;
+  static const String versionName = '1.0.11';
+  static const int versionCode = 12;
   static const String fullVersionText = 'v$versionName (сборка $versionCode)';
 }
 

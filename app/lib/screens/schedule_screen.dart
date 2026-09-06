@@ -30,6 +30,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   late UserProfile _profile;
   Map<String, dynamic>? _scheduleJson;
   bool _isLoading = true;
+  bool _isOffline = false;
 
   int _selectedWeek = 1;
   int _selectedDay = 1;
@@ -129,18 +130,40 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     await _fetchFreshSchedule();
   }
 
-  Future<void> _fetchFreshSchedule() async {
+  Future<void> _fetchFreshSchedule({bool isInit = false}) async {
     if (_profile.groupId == null) return;
 
     try {
       final fresh = await widget.api.getSchedule(_profile.groupId!);
       await widget.storage.saveScheduleCache(_profile.groupId!, fresh);
       if (mounted) {
+        setState(() {
+          _isOffline = false;
+        });
         _applyScheduleData(fresh, isFromCache: false);
       }
     } catch (_) {
-      if (mounted && _scheduleJson == null) {
-        setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isOffline = true;
+          if (_scheduleJson == null) {
+            _isLoading = false;
+          }
+        });
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Офлайн-режим: отображается сохраненное расписание. Для получения актуальных данных подключитесь к интернету.',
+            ),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Повторить',
+              onPressed: () => _fetchFreshSchedule(),
+            ),
+          ),
+        );
       }
     }
   }
@@ -290,6 +313,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   _profile.groupName ?? 'Выбрать группу',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
+                if (_isOffline) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD97706).withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFD97706), width: 1),
+                    ),
+                    child: const Text(
+                      'Офлайн',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFD97706),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 4),
                 const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
               ],
@@ -414,6 +456,43 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
 
+          // Предупреждение об офлайн-режиме работы
+          if (_isOffline)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withOpacity(0.14),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.wifi_off_rounded, size: 18, color: Color(0xFFD97706)),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Офлайн-режим: отображается сохраненное расписание. Для обновления подключитесь к сети.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFD97706),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _fetchFreshSchedule,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Повторить', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+
           // Плашка статуса для сегодняшнего дня или выходных
           if (isToday)
             Container(
@@ -503,33 +582,44 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : sortedKeys.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.event_busy_rounded, size: 54, color: Colors.grey[400]),
-                            const SizedBox(height: 12),
-                            Text(
-                              _selectedDay == 6
-                                  ? 'В субботу занятий нет (выходной)'
-                                  : 'В этот день занятий нет',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            if (_selectedDay == 6) ...[
-                              const SizedBox(height: 12),
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedDay = 1;
-                                    _selectedWeek = (_selectedWeek == 1) ? 2 : 1;
-                                    _userSelectedManually = true;
-                                  });
-                                },
-                                icon: const Icon(Icons.calendar_today_rounded, size: 16),
-                                label: const Text('Открыть понедельник'),
+                    ? RefreshIndicator(
+                        onRefresh: _fetchFreshSchedule,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.event_busy_rounded, size: 54, color: Colors.grey[400]),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _selectedDay == 6
+                                          ? 'В субботу занятий нет (выходной)'
+                                          : 'В этот день занятий нет',
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    ),
+                                    if (_selectedDay == 6) ...[
+                                      const SizedBox(height: 12),
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedDay = 1;
+                                            _selectedWeek = (_selectedWeek == 1) ? 2 : 1;
+                                            _userSelectedManually = true;
+                                          });
+                                        },
+                                        icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                                        label: const Text('Открыть понедельник'),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
-                            ],
-                          ],
+                            ),
+                          ),
                         ),
                       )
                     : RefreshIndicator(
