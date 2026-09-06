@@ -141,10 +141,32 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.8',
+        title: 'Релиз v1.0.8 (сборка 9)',
+        publishedAt: '2026-09-06T07:10:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.8',
+        rawBody: '''* Устранена циклическая зависимость фаз сборки Xcode (Cycle inside Runner) при интеграции виджета WidgetKit.
+* Порядок фаз сборки Runner скорректирован: встраивание расширения Embed App Extensions перенесено перед скриптом Thin Binary.
+* Нативный виджет расписания для iOS (WidgetKit и SwiftUI) с поддержкой форматов systemSmall и systemMedium.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 55597479,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.8/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8196388,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.8/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.7',
         title: 'Релиз v1.0.7 (сборка 8)',
         publishedAt: '2026-09-06T07:00:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.7',
         rawBody: '''* Устранена ошибка компиляции нативного виджета iOS в Swift (заменен вызов TimelineProviderContext на вспомогательный метод defaultPlaceholder).
 * Оптимизирована публикация релизов в GitHub Actions: описание релиза теперь формируется через единый файл release_body.md с параметром body_path.

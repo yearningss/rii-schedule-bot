@@ -264,7 +264,7 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
-            "latest_build": latest.get("build", 8),
+            "latest_build": latest.get("build", 9),
             "download_url": download_url,
             "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
             "is_required": False
@@ -272,10 +272,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.7",
-        "latest_build": 8,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.7/{target_ext}",
-        "release_notes": "Обновление приложения РИИ (v1.0.7, сборка 8):\n- Устранена ошибка сборки виджета iOS (Swift TimelineProviderContext)\n- Оптимизирована генерация описания релиза в GitHub Actions через единый файл release_body.md\n- Нативный виджет расписания для iOS (WidgetKit и SwiftUI)",
+        "latest_version": "1.0.8",
+        "latest_build": 9,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.8/{target_ext}",
+        "release_notes": "Обновление приложения РИИ (v1.0.8, сборка 9):\n- Устранена циклическая зависимость сборщика Xcode (Cycle inside Runner) при встраивании виджета\n- Фаза Embed App Extensions перемещена до выполнения Thin Binary скрипта Flutter\n- Нативный виджет расписания для iOS (WidgetKit и SwiftUI)",
         "is_required": False
     }
 
