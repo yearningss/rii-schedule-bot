@@ -264,7 +264,7 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
-            "latest_build": latest.get("build", 6),
+            "latest_build": latest.get("build", 7),
             "download_url": download_url,
             "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
             "is_required": False
@@ -272,10 +272,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.5",
-        "latest_build": 6,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/{target_ext}",
-        "release_notes": "Обновление приложения РИИ (v1.0.5, сборка 6):\n- Добавлен безопасный отступ снизу SafeArea на iOS и Android под панелью подгрупп\n- Исправлена сборка пакета IPA для iOS\n- Раздельное скачивание APK для Android и IPA для iOS",
+        "latest_version": "1.0.6",
+        "latest_build": 7,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.6/{target_ext}",
+        "release_notes": "Обновление приложения РИИ (v1.0.6, сборка 7):\n- Внедрен нативный виджет расписания для рабочего стола iOS (WidgetKit и SwiftUI)\n- Поддержка форматов виджета systemSmall и systemMedium\n- Обмен данными через общую группу приложений (App Group)\n- Автоматическое формирование списка изменений для релизов",
         "is_required": False
     }
 

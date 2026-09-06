@@ -23,12 +23,18 @@ class WidgetService {
       }
       await prefs.setInt('subgroup', profile.subgroup);
 
-      if (scheduleJson != null) {
-        await prefs.setString(_keyWidgetScheduleJson, jsonEncode(scheduleJson));
+      final jsonStr = scheduleJson != null ? jsonEncode(scheduleJson) : '';
+      if (jsonStr.isNotEmpty) {
+        await prefs.setString(_keyWidgetScheduleJson, jsonStr);
       }
 
-      // Вызов нативного метода обновления виджета
-      await _channel.invokeMethod('updateWidget');
+      // Вызов нативного метода обновления виджета (Android и iOS)
+      await _channel.invokeMethod('updateWidget', {
+        'group_name': profile.groupName ?? 'РИИ',
+        'group_id': profile.groupId ?? 0,
+        'subgroup': profile.subgroup,
+        'widget_schedule_json': jsonStr.isNotEmpty ? jsonStr : (prefs.getString(_keyWidgetScheduleJson) ?? ''),
+      });
     } catch (_) {}
   }
 }

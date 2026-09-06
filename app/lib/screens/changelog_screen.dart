@@ -141,10 +141,33 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.6',
+        title: 'Релиз v1.0.6 (сборка 7)',
+        publishedAt: '2026-09-06T06:50:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.6',
+        rawBody: '''* Внедрен нативный виджет расписания для рабочего стола iOS (WidgetKit и SwiftUI).
+* Поддержка компактного (systemSmall) и расширенного (systemMedium) форматов виджета.
+* Синхронизация расписания между Flutter-приложением и расширением виджета через App Groups.
+* Автоматическая генерация описания изменений (Changelog) в GitHub Actions для каждого релиза.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 55597479,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.6/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8196388,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.6/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.5',
         title: 'Релиз v1.0.5 (сборка 6)',
         publishedAt: '2026-09-06T06:30:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.5',
         rawBody: '''* Исправлен отступ безопасной зоны (SafeArea) снизу экрана: переключатель подгрупп теперь корректно приподнят над системной полосой жестов iOS (Home Bar) и панелью Android.
 * Устранены ошибки компиляции Flutter и добавлена поддержка сборки пакета iOS IPA без цифровой подписи.

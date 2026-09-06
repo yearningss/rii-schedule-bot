@@ -164,24 +164,33 @@ jobs:
 
       - name: Подготовка списка изменений для релиза
         run: |
-          python3 -c "
-          import re, os
+          python3 - << 'PYEOF'
+          import re, os, subprocess
+
           text = ''
           if os.path.exists('CHANGELOG.md'):
               with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
                   text = f.read()
-          ver = '${{ env.APP_VERSION }}'
-          pattern = rf'## \[{re.escape(ver)}\][^\n]*\n(.*?)(?=\n## |\Z)'
-          m = re.search(pattern, text, re.DOTALL)
-          changes = m.group(1).strip() if m else ''
+
+          ver = os.environ.get('APP_VERSION', '').strip()
+          changes = ''
+          if ver and text:
+              pattern = rf'## \[{re.escape(ver)}\][^\n]*\n(.*?)(?=\n## |\Z)'
+              m = re.search(pattern, text, re.DOTALL)
+              if m:
+                  changes = m.group(1).strip()
+
           if not changes:
-              import subprocess
-              changes = subprocess.getoutput('git log -n 10 --pretty=format:\"* %s\" | grep -v \"Merge \" | head -n 8')
+              log = subprocess.getoutput('git log -n 10 --pretty=format:%s')
+              lines = [f"* {l}" for l in log.splitlines() if l.strip() and not l.startswith("Merge ")][:8]
+              changes = "\n".join(lines)
+
           with open('release_notes.txt', 'w', encoding='utf-8') as f:
               f.write(changes)
-          "
+          PYEOF
           echo "COMMIT_CHANGES<<EOF" >> $GITHUB_ENV
           cat release_notes.txt >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Публикация релиза на GitHub
