@@ -43,9 +43,9 @@ jobs:
             echo "Декодирование личного сертификата разработчика..."
             echo "$KEYSTORE_BASE64" | base64 --decode > /tmp/release.jks
             echo "KEYSTORE_FILE=/tmp/release.jks" >> $GITHUB_ENV
-          elif [ -f "app/android/release-keystore.jks" ]; then
-            echo "Использование сертификата app/android/release-keystore.jks..."
-            echo "KEYSTORE_FILE=$(pwd)/app/android/release-keystore.jks" >> $GITHUB_ENV
+          elif [ -f "certs/release.jks" ]; then
+            echo "Использование сертификата certs/release.jks..."
+            echo "KEYSTORE_FILE=$(pwd)/certs/release.jks" >> $GITHUB_ENV
           else
             echo "Сертификат не найден, будет использована отладочная подпись"
           fi
@@ -58,9 +58,9 @@ jobs:
       - name: Сборка релизного APK
         env:
           KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'RiiSchedule2026' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'rii_release' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'RiiSchedule2026' }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'Goll7535' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'yearnings' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'Goll7535' }}
         run: |
           cd app
           flutter build apk --release --android-skip-build-dependency-validation

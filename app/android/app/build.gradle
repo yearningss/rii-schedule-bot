@@ -48,32 +48,37 @@ android {
 
     signingConfigs {
         release {
-            def keyFilePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties['storeFile']
-            if (!keyFilePath) {
-                def defaultKey = rootProject.file("release-keystore.jks")
-                if (defaultKey.exists()) {
-                    keyFilePath = defaultKey.absolutePath
+            def keyFile = null
+            def envPath = System.getenv("KEYSTORE_FILE")
+            if (envPath && file(envPath).exists()) {
+                keyFile = file(envPath)
+            } else if (keystoreProperties['storeFile']) {
+                def candidate1 = file(keystoreProperties['storeFile'])
+                def candidate2 = rootProject.file(keystoreProperties['storeFile'])
+                if (candidate1.exists()) {
+                    keyFile = candidate1
+                } else if (candidate2.exists()) {
+                    keyFile = candidate2
                 }
             }
-            if (keyFilePath && file(keyFilePath).exists()) {
-                storeFile file(keyFilePath)
-                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: "RiiSchedule2026"
-                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: "rii_release"
-                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: "RiiSchedule2026"
+            if (keyFile == null) {
+                def defaultKey = rootProject.file("../../certs/release.jks")
+                if (defaultKey.exists()) {
+                    keyFile = defaultKey
+                }
+            }
+            if (keyFile != null && keyFile.exists()) {
+                storeFile keyFile
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: "Goll7535"
+                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: "yearnings"
+                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: "Goll7535"
             }
         }
     }
 
     buildTypes {
         release {
-            def keyFilePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties['storeFile']
-            if (!keyFilePath) {
-                def defaultKey = rootProject.file("release-keystore.jks")
-                if (defaultKey.exists()) {
-                    keyFilePath = defaultKey.absolutePath
-                }
-            }
-            if (keyFilePath && file(keyFilePath).exists()) {
+            if (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) {
                 signingConfig signingConfigs.release
             } else {
                 signingConfig signingConfigs.debug
