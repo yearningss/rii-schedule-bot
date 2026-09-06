@@ -244,10 +244,18 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
     if (url.isEmpty) return;
     try {
       final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
-    } catch (_) {}
+    } catch (_) {
+      try {
+        await launchUrl(
+          Uri.parse('https://github.com/yearningss/rii-schedule-bot/releases/latest'),
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (_) {}
+    }
   }
 
   @override

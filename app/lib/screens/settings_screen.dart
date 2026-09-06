@@ -116,6 +116,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // Проверка актуальности версии приложения
+  Future<void> _openDownloadUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Открыта страница скачивания APK в браузере...')),
+        );
+      }
+    } catch (_) {
+      try {
+        await launchUrl(
+          Uri.parse('https://github.com/yearningss/rii-schedule-bot/releases/latest'),
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Не удалось открыть браузер для загрузки APK')),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _checkForUpdate() async {
     setState(() => _isCheckingUpdate = true);
     try {
@@ -151,15 +179,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Позже'),
               ),
-              FilledButton(
-                onPressed: () async {
+              FilledButton.icon(
+                icon: const Icon(Icons.download_rounded, size: 18),
+                onPressed: () {
                   Navigator.pop(ctx);
-                  final uri = Uri.parse(update.downloadUrl);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  }
+                  _openDownloadUrl(update.downloadUrl);
                 },
-                child: const Text('Скачать'),
+                label: const Text('Скачать APK'),
               ),
             ],
           ),
@@ -177,6 +203,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
                 },
                 child: const Text('Что нового'),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.download_rounded, size: 16),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final downloadUrl = (update?.downloadUrl.isNotEmpty == true)
+                      ? update!.downloadUrl
+                      : 'https://github.com/yearningss/rii-schedule-bot/releases/download/v${AppInfo.versionName}/RiiSchedule.apk';
+                  _openDownloadUrl(downloadUrl);
+                },
+                label: const Text('Скачать APK заново'),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx),

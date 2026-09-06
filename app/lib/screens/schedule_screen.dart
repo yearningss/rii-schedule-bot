@@ -84,9 +84,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             action: SnackBarAction(
               label: 'Обновить',
               onPressed: () async {
-                final uri = Uri.parse(update.downloadUrl);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                try {
+                  final uri = Uri.parse(update.downloadUrl);
+                  final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  if (!launched) {
+                    await launchUrl(uri, mode: LaunchMode.platformDefault);
+                  }
+                } catch (_) {
+                  try {
+                    await launchUrl(
+                      Uri.parse('https://github.com/yearningss/rii-schedule-bot/releases/latest'),
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } catch (_) {}
                 }
               },
             ),
