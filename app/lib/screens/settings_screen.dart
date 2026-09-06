@@ -679,6 +679,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
                 ListTile(
+                  leading: const Icon(Icons.history_rounded, color: Color(0xFF8B5CF6)),
+                  title: const Text('История изменений'),
+                  subtitle: const Text('Список всех обновлений и релизов с GitHub'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
+                  },
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                ListTile(
                   leading: const Icon(Icons.info_outline_rounded, color: Color(0xFF64748B)),
                   title: const Text('О приложении'),
                   subtitle: Text('РИИ Расписание ${AppInfo.fullVersionText}'),

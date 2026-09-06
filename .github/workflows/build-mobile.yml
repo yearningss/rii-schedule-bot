@@ -161,13 +161,24 @@ jobs:
       - name: Проверка содержимого релиза
         run: ls -la release-assets
 
+      - name: Подготовка списка изменений из истории Git
+        run: |
+          CHANGES=$(git log -n 12 --pretty=format:"* %s" | grep -v "Merge " | head -n 10)
+          echo "COMMIT_CHANGES<<EOF" >> $GITHUB_ENV
+          echo "$CHANGES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Публикация релиза на GitHub
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.APP_VERSION }}
           name: Релиз v${{ env.APP_VERSION }} (сборка ${{ env.APP_BUILD }})
+          generate_release_notes: true
           body: |
             Официальный релиз мобильного приложения РИИ АлтГТУ (версия ${{ env.APP_VERSION }}, сборка ${{ env.APP_BUILD }}).
+
+            ### Что нового в этом обновлении:
+            ${{ env.COMMIT_CHANGES }}
 
             ### Файлы для загрузки:
             * **RiiSchedule.apk** — Релизный подписанный APK для Android (рекомендуется для установки и обновления поверх старых версий).

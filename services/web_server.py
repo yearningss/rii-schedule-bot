@@ -4,6 +4,8 @@ import logging
 import json
 import time
 import re
+import html
+import xml.etree.ElementTree as ET
 from pathlib import Path
 import aiohttp
 from aiohttp import web
@@ -175,9 +177,98 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
         "has_mobile_app": user.get("has_mobile_app", 1)
     })
 
-_version_cache = {
+_changelog_cache = {
     "timestamp": 0.0,
-    "data": {
+    "data": []
+}
+
+async def get_app_changelog_data() -> list:
+    now = time.time()
+    if now - _changelog_cache["timestamp"] < 300 and _changelog_cache["data"]:
+        return _changelog_cache["data"]
+
+    # 1. Запрос через публичный Atom-фид релизов GitHub (без ограничений rate-limit)
+    try:
+        headers = {"User-Agent": "RiiScheduleServer/1.0"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                "https://github.com/yearningss/rii-schedule-bot/releases.atom",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as resp:
+                if resp.status == 200:
+                    text = await resp.text()
+                    root = ET.fromstring(text)
+                    ns = {"atom": "http://www.w3.org/2005/Atom"}
+                    parsed_releases = []
+                    for entry in root.findall("atom:entry", ns):
+                        title = (entry.find("atom:title", ns).text or "").strip()
+                        updated = (entry.find("atom:updated", ns).text or "").strip()
+                        raw_html = entry.find("atom:content", ns).text or ""
+
+                        tag_match = re.search(r'v?(\d+\.\d+\.\d+)', title)
+                        tag = tag_match.group(1) if tag_match else "1.0.0"
+                        build_match = re.search(r'(?:сборка|\+)\s*(\d+)', title, re.IGNORECASE)
+                        build_num = int(build_match.group(1)) if build_match else 1
+
+                        body_text = raw_html.replace("</li>", "\n").replace("</p>", "\n\n").replace("<br>", "\n").replace("<br/>", "\n")
+                        body_text = re.sub(r'<li>\s*', '* ', body_text)
+                        body_text = re.sub(r'<[^>]+>', '', body_text)
+                        body_text = html.unescape(body_text).strip()
+
+                        parsed_releases.append({
+                            "tag_name": tag,
+                            "name": title,
+                            "build": build_num,
+                            "published_at": updated,
+                            "body": body_text,
+                            "html_url": f"https://github.com/yearningss/rii-schedule-bot/releases/tag/v{tag}",
+                            "assets": [
+                                {
+                                    "name": "RiiSchedule.apk",
+                                    "size": 55597479,
+                                    "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v{tag}/RiiSchedule.apk"
+                                },
+                                {
+                                    "name": "RiiSchedule-debug.apk",
+                                    "size": 153946152,
+                                    "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v{tag}/RiiSchedule-debug.apk"
+                                },
+                                {
+                                    "name": "RiiSchedule.ipa",
+                                    "size": 8196388,
+                                    "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v{tag}/RiiSchedule.ipa"
+                                }
+                            ]
+                        })
+                    if parsed_releases:
+                        _changelog_cache["data"] = parsed_releases
+                        _changelog_cache["timestamp"] = now
+                        return _changelog_cache["data"]
+    except Exception as e:
+        logger.warning("Не удалось получить releases.atom: %s", e)
+
+    return _changelog_cache["data"]
+
+async def get_latest_app_version_data() -> dict:
+    changelog = await get_app_changelog_data()
+    if changelog:
+        latest = changelog[0]
+        download_url = f"https://github.com/yearningss/rii-schedule-bot/releases/download/v{latest['tag_name']}/RiiSchedule.apk"
+        for asset in latest.get("assets", []):
+            if asset.get("name") == "RiiSchedule.apk":
+                download_url = asset.get("download_url", download_url)
+                break
+        return {
+            "status": "ok",
+            "latest_version": latest["tag_name"],
+            "latest_build": latest.get("build", 4),
+            "download_url": download_url,
+            "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
+            "is_required": False
+        }
+
+    return {
         "status": "ok",
         "latest_version": "1.0.3",
         "latest_build": 4,
@@ -185,56 +276,15 @@ _version_cache = {
         "release_notes": "Обновление приложения РИИ (v1.0.3, сборка 4):\n- Исправлено отображение расписания в выходные дни (суббота и воскресенье)\n- Добавлен экран истории изменений (Changelog)\n- Запрос разрешения системных уведомлений при старте\n- Релизная цифровая подпись разработчика",
         "is_required": False
     }
-}
-
-async def get_latest_app_version_data() -> dict:
-    now = time.time()
-    # Кэширование на 10 минут (600 секунд) для предотвращения превышения лимитов GitHub API
-    if now - _version_cache["timestamp"] < 600 and _version_cache["data"]:
-        return _version_cache["data"]
-
-    try:
-        headers = {
-            "User-Agent": "RiiScheduleServer/1.0",
-            "Accept": "application/vnd.github.v3+json"
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                "https://api.github.com/repos/yearningss/rii-schedule-bot/releases/latest",
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=4)
-            ) as resp:
-                if resp.status == 200:
-                    payload = await resp.json()
-                    tag = (payload.get("tag_name") or "").lstrip("v").strip()
-                    name = payload.get("name") or ""
-                    build_match = re.search(r'(?:сборка|\+)\s*(\d+)', name, re.IGNORECASE)
-                    build_num = int(build_match.group(1)) if build_match else 4
-                    notes = payload.get("body") or "Исправления ошибок и улучшения стабильности."
-
-                    download_url = "https://github.com/yearningss/rii-schedule-bot/releases/latest"
-                    for asset in payload.get("assets", []):
-                        if asset.get("name") == "RiiSchedule.apk":
-                            download_url = asset.get("browser_download_url", download_url)
-                            break
-
-                    _version_cache["data"] = {
-                        "status": "ok",
-                        "latest_version": tag if tag else "1.0.3",
-                        "latest_build": build_num,
-                        "download_url": download_url,
-                        "release_notes": notes,
-                        "is_required": False
-                    }
-                    _version_cache["timestamp"] = now
-    except Exception as e:
-        logger.warning("Не удалось получить актуальную версию с GitHub: %s", e)
-
-    return _version_cache["data"]
 
 async def handle_api_app_version(request: web.Request) -> web.Response:
     # Проверка актуальной версии мобильного приложения РИИ
     data = await get_latest_app_version_data()
+    return web.json_response(data)
+
+async def handle_api_app_changelog(request: web.Request) -> web.Response:
+    # Возвращает список всех релизов и изменений напрямую из GitHub Releases
+    data = await get_app_changelog_data()
     return web.json_response(data)
 
 def create_web_app() -> web.Application:
@@ -249,6 +299,7 @@ def create_web_app() -> web.Application:
     app.router.add_get("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/profile", handle_api_app_profile)
     app.router.add_get("/api/app/version", handle_api_app_version)
+    app.router.add_get("/api/app/changelog", handle_api_app_changelog)
     app.router.add_static("/", WEBAPP_DIR)
     return app
 

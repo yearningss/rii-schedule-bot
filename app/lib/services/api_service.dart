@@ -150,4 +150,62 @@ class ApiService {
 
     return serverUpdate;
   }
+
+  // Загрузка реальной истории изменений из GitHub Releases
+  Future<List<Map<String, dynamic>>> getChangelog() async {
+    // 1. Попытка запроса через наш бэкенд
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/api/app/changelog')).timeout(
+        const Duration(seconds: 4),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
+        if (data is List && data.isNotEmpty) {
+          return List<Map<String, dynamic>>.from(
+            data.map((e) => Map<String, dynamic>.from(e as Map)),
+          );
+        }
+      }
+    } catch (_) {}
+
+    // 2. Резервный запрос напрямую к GitHub Releases API
+    try {
+      final res = await http.get(
+        Uri.parse('https://api.github.com/repos/yearningss/rii-schedule-bot/releases'),
+        headers: {'Accept': 'application/vnd.github.v3+json'},
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
+        if (data is List) {
+          final list = <Map<String, dynamic>>[];
+          for (final item in data) {
+            if (item is! Map) continue;
+            final assetsList = <Map<String, dynamic>>[];
+            if (item['assets'] is List) {
+              for (final a in item['assets']) {
+                if (a is Map) {
+                  assetsList.add({
+                    'name': a['name'],
+                    'size': a['size'] ?? 0,
+                    'download_url': a['browser_download_url'],
+                  });
+                }
+              }
+            }
+            list.add({
+              'tag_name': (item['tag_name'] ?? '').toString().replaceAll('v', '').trim(),
+              'name': item['name'] ?? '',
+              'published_at': item['published_at'] ?? '',
+              'body': item['body'] ?? '',
+              'html_url': item['html_url'] ?? '',
+              'assets': assetsList,
+            });
+          }
+          if (list.isNotEmpty) return list;
+        }
+      }
+    } catch (_) {}
+
+    return [];
+  }
 }
