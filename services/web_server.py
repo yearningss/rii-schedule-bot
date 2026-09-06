@@ -250,19 +250,21 @@ async def get_app_changelog_data() -> list:
 
     return _changelog_cache["data"]
 
-async def get_latest_app_version_data() -> dict:
+async def get_latest_app_version_data(platform: str = "android") -> dict:
     changelog = await get_app_changelog_data()
+    is_ios = (platform.lower() == "ios")
+    target_ext = "RiiSchedule.ipa" if is_ios else "RiiSchedule.apk"
     if changelog:
         latest = changelog[0]
-        download_url = f"https://github.com/yearningss/rii-schedule-bot/releases/download/v{latest['tag_name']}/RiiSchedule.apk"
+        download_url = f"https://github.com/yearningss/rii-schedule-bot/releases/download/v{latest['tag_name']}/{target_ext}"
         for asset in latest.get("assets", []):
-            if asset.get("name") == "RiiSchedule.apk":
+            if asset.get("name") == target_ext:
                 download_url = asset.get("download_url", download_url)
                 break
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
-            "latest_build": latest.get("build", 4),
+            "latest_build": latest.get("build", 5),
             "download_url": download_url,
             "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
             "is_required": False
@@ -270,16 +272,17 @@ async def get_latest_app_version_data() -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.3",
-        "latest_build": 4,
-        "download_url": "https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.3/RiiSchedule.apk",
-        "release_notes": "Обновление приложения РИИ (v1.0.3, сборка 4):\n- Исправлено отображение расписания в выходные дни (суббота и воскресенье)\n- Добавлен экран истории изменений (Changelog)\n- Запрос разрешения системных уведомлений при старте\n- Релизная цифровая подпись разработчика",
+        "latest_version": "1.0.4",
+        "latest_build": 5,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/{target_ext}",
+        "release_notes": "Обновление приложения РИИ (v1.0.4, сборка 5):\n- Автоматическое разделение APK (Android) и IPA (iOS)\n- Устранена блокировка скачивания через браузер\n- Очищено меню настроек",
         "is_required": False
     }
 
 async def handle_api_app_version(request: web.Request) -> web.Response:
     # Проверка актуальной версии мобильного приложения РИИ
-    data = await get_latest_app_version_data()
+    platform = request.query.get("platform", "android")
+    data = await get_latest_app_version_data(platform)
     return web.json_response(data)
 
 async def handle_api_app_changelog(request: web.Request) -> web.Response:

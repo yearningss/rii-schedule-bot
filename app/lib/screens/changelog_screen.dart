@@ -140,10 +140,34 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.4',
+        title: 'Релиз v1.0.4 (сборка 5)',
+        publishedAt: '2026-09-06T06:10:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.4',
+        rawBody: '''* Автоматическое разделение загрузки обновлений: для Android скачивается APK (RiiSchedule.apk), для iOS предлагается пакет IPA (RiiSchedule.ipa).
+* Устранена блокировка скачивания файлов через браузер (убран баг метода canLaunchUrl в Flutter).
+* Очищено меню настроек: удалены дублирующиеся пункты, оставлен удобный и понятный интерфейс.
+* Добавлена возможность принудительного повторного скачивания актуального дистрибутива в один клик.
+* Обновлена среда сборки мобильных приложений (переход на actions/setup-java@v5).''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 55597479,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8196388,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.3',
         title: 'Релиз v1.0.3 (сборка 4)',
         publishedAt: '2026-09-06T05:18:11Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.3',
         rawBody: '''* Исправлен расчет и отображение расписания в субботу и воскресенье в приложении и виджете
 * В выходные виджет и приложение автоматически рассчитывают пары на понедельник следующей недели
@@ -361,17 +385,20 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
 
                       final item = _releases[idx - 1];
                       final lines = _parseBodyLines(item.rawBody);
-                      ReleaseAsset? apkAsset;
+                      final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+                      final targetExt = isIOS ? '.ipa' : '.apk';
+                      final targetLabel = isIOS ? 'IPA' : 'APK';
+                      ReleaseAsset? releaseAsset;
                       for (final a in item.assets) {
-                        if (a.name.endsWith('.apk') && !a.name.contains('debug')) {
-                          apkAsset = a;
+                        if (a.name.endsWith(targetExt) && !a.name.contains('debug')) {
+                          releaseAsset = a;
                           break;
                         }
                       }
-                      if (apkAsset == null && item.assets.isNotEmpty) {
+                      if (releaseAsset == null && item.assets.isNotEmpty) {
                         for (final a in item.assets) {
-                          if (a.name.endsWith('.apk')) {
-                            apkAsset = a;
+                          if (a.name.endsWith(targetExt)) {
+                            releaseAsset = a;
                             break;
                           }
                         }
@@ -499,7 +526,7 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                   ),
                                 );
                               }),
-                              if (apkAsset != null) ...[
+                              if (releaseAsset != null) ...[
                                 const SizedBox(height: 12),
                                 const Divider(height: 1),
                                 const SizedBox(height: 10),
@@ -507,12 +534,12 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                   children: [
                                     Expanded(
                                       child: OutlinedButton.icon(
-                                        onPressed: () => _launchUrl(apkAsset!.downloadUrl),
+                                        onPressed: () => _launchUrl(releaseAsset.downloadUrl),
                                         icon: const Icon(Icons.download_rounded, size: 18),
                                         label: Text(
-                                          apkAsset.formattedSize.isNotEmpty
-                                              ? 'Скачать APK (${apkAsset.formattedSize})'
-                                              : 'Скачать APK',
+                                          releaseAsset.formattedSize.isNotEmpty
+                                              ? 'Скачать $targetLabel (${releaseAsset.formattedSize})'
+                                              : 'Скачать $targetLabel',
                                           style: const TextStyle(fontSize: 12.5),
                                         ),
                                         style: OutlinedButton.styleFrom(

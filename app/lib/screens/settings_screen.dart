@@ -117,6 +117,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Проверка актуальности версии приложения
   Future<void> _openDownloadUrl(String url) async {
+    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+    final extName = isIOS ? 'IPA (для iOS)' : 'APK (для Android)';
     try {
       final uri = Uri.parse(url);
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -125,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Открыта страница скачивания APK в браузере...')),
+          SnackBar(content: Text('Открыта страница скачивания $extName в браузере...')),
         );
       }
     } catch (_) {
@@ -137,7 +139,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Не удалось открыть браузер для загрузки APK')),
+            SnackBar(content: Text('Не удалось открыть браузер для загрузки $extName')),
           );
         }
       }
@@ -145,6 +147,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _checkForUpdate() async {
+    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+    final extName = isIOS ? 'IPA' : 'APK';
+    final fallbackPackage = isIOS ? 'RiiSchedule.ipa' : 'RiiSchedule.apk';
+
     setState(() => _isCheckingUpdate = true);
     try {
       final update = await widget.api.checkAppUpdate(
@@ -185,7 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Navigator.pop(ctx);
                   _openDownloadUrl(update.downloadUrl);
                 },
-                label: const Text('Скачать APK'),
+                label: Text('Скачать $extName'),
               ),
             ],
           ),
@@ -210,10 +216,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Navigator.pop(ctx);
                   final downloadUrl = (update?.downloadUrl.isNotEmpty == true)
                       ? update!.downloadUrl
-                      : 'https://github.com/yearningss/rii-schedule-bot/releases/download/v${AppInfo.versionName}/RiiSchedule.apk';
+                      : 'https://github.com/yearningss/rii-schedule-bot/releases/download/v${AppInfo.versionName}/$fallbackPackage';
                   _openDownloadUrl(downloadUrl);
                 },
-                label: const Text('Скачать APK заново'),
+                label: Text('Скачать $extName заново'),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx),

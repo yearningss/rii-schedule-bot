@@ -1,5 +1,6 @@
 // Сервис взаимодействия с REST API бэкенда РИИ
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/models.dart';
 
@@ -98,8 +99,12 @@ class ApiService {
     String currentVersion = '1.0.0',
   }) async {
     AppUpdateInfo? serverUpdate;
+    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+    final platformParam = isIOS ? '?platform=ios' : '?platform=android';
+    final targetAsset = isIOS ? 'RiiSchedule.ipa' : 'RiiSchedule.apk';
+
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/app/version')).timeout(
+      final res = await http.get(Uri.parse('$baseUrl/api/app/version$platformParam')).timeout(
         const Duration(seconds: 5),
       );
       if (res.statusCode == 200) {
@@ -131,7 +136,7 @@ class ApiService {
         var downloadUrl = 'https://github.com/yearningss/rii-schedule-bot/releases/latest';
         if (data['assets'] is List) {
           for (final asset in data['assets']) {
-            if (asset is Map && asset['name'] == 'RiiSchedule.apk') {
+            if (asset is Map && asset['name'] == targetAsset) {
               downloadUrl = asset['browser_download_url'] ?? downloadUrl;
               break;
             }
