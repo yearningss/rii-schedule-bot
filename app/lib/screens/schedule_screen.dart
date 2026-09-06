@@ -571,25 +571,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ),
           ),
 
-          // Переключатель подгруппы внизу
+          // Переключатель подгруппы внизу с учетом безопасного отступа iOS и Android
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E232D) : Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: isDark ? const Color(0xFF2C3340) : const Color(0xFFE2E8F0),
+            color: isDark ? const Color(0xFF1E232D) : Colors.white,
+            child: SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark ? const Color(0xFF2C3340) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    _buildSubgroupBtn(0, 'Все подгруппы'),
+                    const SizedBox(width: 8),
+                    _buildSubgroupBtn(1, '1 п/г'),
+                    const SizedBox(width: 8),
+                    _buildSubgroupBtn(2, '2 п/г'),
+                  ],
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                _buildSubgroupBtn(0, 'Все подгруппы'),
-                const SizedBox(width: 8),
-                _buildSubgroupBtn(1, '1 п/г'),
-                const SizedBox(width: 8),
-                _buildSubgroupBtn(2, '2 п/г'),
-              ],
             ),
           ),
         ],

@@ -264,7 +264,7 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
-            "latest_build": latest.get("build", 5),
+            "latest_build": latest.get("build", 6),
             "download_url": download_url,
             "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
             "is_required": False
@@ -272,10 +272,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.4",
-        "latest_build": 5,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/{target_ext}",
-        "release_notes": "Обновление приложения РИИ (v1.0.4, сборка 5):\n- Автоматическое разделение APK (Android) и IPA (iOS)\n- Устранена блокировка скачивания через браузер\n- Очищено меню настроек",
+        "latest_version": "1.0.5",
+        "latest_build": 6,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/{target_ext}",
+        "release_notes": "Обновление приложения РИИ (v1.0.5, сборка 6):\n- Добавлен безопасный отступ снизу SafeArea на iOS и Android под панелью подгрупп\n- Исправлена сборка пакета IPA для iOS\n- Раздельное скачивание APK для Android и IPA для iOS",
         "is_required": False
     }
 

@@ -1,5 +1,6 @@
 // Экран истории обновлений и списка изменений (Changelog)
 // Загружает актуальные данные напрямую из GitHub Releases в режиме реального времени
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
@@ -140,10 +141,32 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.5',
+        title: 'Релиз v1.0.5 (сборка 6)',
+        publishedAt: '2026-09-06T06:30:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.5',
+        rawBody: '''* Исправлен отступ безопасной зоны (SafeArea) снизу экрана: переключатель подгрупп теперь корректно приподнят над системной полосой жестов iOS (Home Bar) и панелью Android.
+* Устранены ошибки компиляции Flutter и добавлена поддержка сборки пакета iOS IPA без цифровой подписи.
+* Оптимизирована работа диалогов обновления и проверки дистрибутивов.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 55597479,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8196388,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.4',
         title: 'Релиз v1.0.4 (сборка 5)',
         publishedAt: '2026-09-06T06:10:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.4',
         rawBody: '''* Автоматическое разделение загрузки обновлений: для Android скачивается APK (RiiSchedule.apk), для iOS предлагается пакет IPA (RiiSchedule.ipa).
 * Устранена блокировка скачивания файлов через браузер (убран баг метода canLaunchUrl в Flutter).
@@ -534,11 +557,11 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                   children: [
                                     Expanded(
                                       child: OutlinedButton.icon(
-                                        onPressed: () => _launchUrl(releaseAsset.downloadUrl),
+                                        onPressed: () => _launchUrl(releaseAsset!.downloadUrl),
                                         icon: const Icon(Icons.download_rounded, size: 18),
                                         label: Text(
-                                          releaseAsset.formattedSize.isNotEmpty
-                                              ? 'Скачать $targetLabel (${releaseAsset.formattedSize})'
+                                          releaseAsset!.formattedSize.isNotEmpty
+                                              ? 'Скачать $targetLabel (${releaseAsset!.formattedSize})'
                                               : 'Скачать $targetLabel',
                                           style: const TextStyle(fontSize: 12.5),
                                         ),
