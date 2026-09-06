@@ -141,10 +141,34 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.9',
+        title: 'Релиз v1.0.9 (сборка 10)',
+        publishedAt: '2026-09-06T07:20:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.9',
+        rawBody: '''* Исправлен критический баг сопоставления структуры данных в нативном виджете iOS (WidgetKit): восстановлено чтение расписания по номеру недели и дня.
+* Добавлена поддержка фона виджетов для iOS 17 и новее с использованием containerBackground.
+* В Info.plist добавлен белый список схем LSApplicationQueriesSchemes для бесперебойного открытия приложения Telegram.
+* Повышена отказоустойчивость авторизации: прямой вызов launchUrl с автоматическим резервным переходом в браузер.
+* Устранена утечка памяти контроллера поиска (TextEditingController.dispose) на экране выбора учебной группы.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 55597479,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.9/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8196388,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.9/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.8',
         title: 'Релиз v1.0.8 (сборка 9)',
         publishedAt: '2026-09-06T07:10:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.8',
         rawBody: '''* Устранена циклическая зависимость фаз сборки Xcode (Cycle inside Runner) при интеграции виджета WidgetKit.
 * Порядок фаз сборки Runner скорректирован: встраивание расширения Embed App Extensions перенесено перед скриптом Thin Binary.

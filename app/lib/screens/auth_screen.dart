@@ -44,16 +44,24 @@ class _AuthScreenState extends State<AuthScreen> {
 
       // Открываем Telegram приложение напрямую (или браузер при отсутствии приложения)
       final uri = Uri.parse(deepLink);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
+      try {
+        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!launched) {
+          await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
+        }
+      } catch (_) {
+        try {
+          await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
+        } catch (_) {}
       }
 
       // Запускаем фоновый опрос сервера на подтверждение
       _pollTimer?.cancel();
       _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-        if (_sessionToken == null) return;
+        if (!mounted || _sessionToken == null) {
+          timer.cancel();
+          return;
+        }
         try {
           final res = await widget.api.checkAuthSession(_sessionToken!);
           final status = res['status'] as String?;
