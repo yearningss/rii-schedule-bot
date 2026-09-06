@@ -67,8 +67,12 @@ struct ScheduleProvider: TimelineProvider {
     ]
     
     func placeholder(in context: Context) -> ScheduleEntry {
+        defaultPlaceholder(date: Date())
+    }
+
+    private func defaultPlaceholder(date: Date) -> ScheduleEntry {
         ScheduleEntry(
-            date: Date(),
+            date: date,
             groupName: "РИИ",
             dateFormatted: "1 Сен",
             dayOfWeek: "Пн",
@@ -156,7 +160,7 @@ struct ScheduleProvider: TimelineProvider {
         
         guard let data = jsonStr.data(using: .utf8),
               let jsonObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return placeholder(in: Context())
+            return defaultPlaceholder(date: date)
         }
         
         var weekNumber = jsonObj["weekNumber"] as? Int ?? 1
