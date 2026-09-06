@@ -828,6 +828,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text('Изменения и замены'),
                     subtitle: const Text('Оповещение при публикации нового расписания'),
                   ),
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                  SwitchListTile(
+                    value: _notifSettings.bgUpdateCheck,
+                    onChanged: (val) {
+                      _updateNotificationSettings(_notifSettings.copyWith(bgUpdateCheck: val));
+                    },
+                    secondary: const Icon(Icons.system_update_rounded, color: Color(0xFF0284C7)),
+                    title: const Text('Фоновая проверка обновлений'),
+                    subtitle: const Text('Проверять наличие новой версии каждые 15 минут и присылать уведомление'),
+                  ),
                 ],
               ],
             ),

@@ -119,6 +119,7 @@ class StorageService {
       lessonStart: prefs.getBool('notify_lesson_start') ?? true,
       breaks: prefs.getBool('notify_breaks') ?? true,
       changes: prefs.getBool('notify_changes') ?? true,
+      bgUpdateCheck: prefs.getBool('notify_bg_update_check') ?? true,
     );
   }
 
@@ -129,6 +130,28 @@ class StorageService {
     await prefs.setBool('notify_lesson_start', settings.lessonStart);
     await prefs.setBool('notify_breaks', settings.breaks);
     await prefs.setBool('notify_changes', settings.changes);
+    await prefs.setBool('notify_bg_update_check', settings.bgUpdateCheck);
+  }
+
+  // Кэширование истории изменений для постоянного офлайн-доступа
+  List<Map<String, dynamic>>? getChangelogCache() {
+    final raw = prefs.getString('changelog_cache_json');
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return List<Map<String, dynamic>>.from(
+          decoded.map((e) => Map<String, dynamic>.from(e as Map)),
+        );
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> saveChangelogCache(List<Map<String, dynamic>> list) async {
+    try {
+      await prefs.setString('changelog_cache_json', jsonEncode(list));
+    } catch (_) {}
   }
 
   Future<void> clearAuth() async {

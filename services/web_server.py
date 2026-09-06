@@ -283,7 +283,7 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
-            "latest_build": latest.get("build", 12),
+            "latest_build": latest.get("build", 13),
             "download_url": download_url,
             "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
             "is_required": False
@@ -291,10 +291,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.11",
-        "latest_build": 12,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/{target_ext}",
-        "release_notes": "Обновление приложения РИИ (v1.0.11, сборка 12):\n- Интеллектуальный офлайн-режим с предупреждением об использовании кэша при отсутствии сети\n- Отображение текущего сетевого режима (онлайн/офлайн) в настройках\n- Расширенная настройка уведомлений: выбор времени напоминания до пары (5, 10, 15, 30 минут), оповещения о начале пары, переменах и изменениях в расписании",
+        "latest_version": "1.0.12",
+        "latest_build": 13,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.12/{target_ext}",
+        "release_notes": "Обновление приложения РИИ (v1.0.12, сборка 13):\n- Фоновая проверка обновлений каждые 15 минут с отправкой уведомления\n- Очистка шапки расписания: удалена лишняя плашка статуса возле номера группы\n- Полная история изменений: отображение всех версий с кэшированием для офлайн-режима",
         "is_required": False
     }
 

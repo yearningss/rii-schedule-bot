@@ -26,7 +26,7 @@ class ScheduleScreen extends StatefulWidget {
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
+class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObserver {
   late UserProfile _profile;
   Map<String, dynamic>? _scheduleJson;
   bool _isLoading = true;
@@ -36,12 +36,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   int _selectedDay = 1;
   bool _userSelectedManually = false;
   Timer? _statusTimer;
+  Timer? _bgUpdateTimer;
 
   final List<String> _dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _profile = widget.storage.getUserProfile();
 
     // Первичная инициализация дня и недели на основе текущего времени
@@ -63,53 +65,95 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (mounted) setState(() {});
     });
 
+    // Фоновая проверка обновлений каждые 15 минут
+    _bgUpdateTimer = Timer.periodic(const Duration(minutes: 15), (_) {
+      _checkPeriodicUpdate();
+    });
+
     // Фоновая тихая проверка обновлений и запрос разрешения на уведомления
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAppUpdateSilently();
+      _checkPeriodicUpdate(isStartup: true);
       NotificationService.requestPermission();
     });
   }
 
-  // Фоновая тихая проверка обновлений при запуске
-  Future<void> _checkAppUpdateSilently() async {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final lastCheck = widget.storage.prefs.getInt('last_bg_update_check_time') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      // Если прошло 15 минут или более с последней проверки
+      if (now - lastCheck >= 15 * 60 * 1000) {
+        _checkPeriodicUpdate();
+      }
+    }
+  }
+
+  // Фоновая периодическая проверка обновлений каждые 15 минут с отправкой системного уведомления
+  Future<void> _checkPeriodicUpdate({bool isStartup = false}) async {
+    final notifSettings = widget.storage.getNotificationSettings();
+    if (!notifSettings.bgUpdateCheck) return;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await widget.storage.prefs.setInt('last_bg_update_check_time', now);
+
     try {
       final update = await widget.api.checkAppUpdate(
         currentBuild: AppInfo.versionCode,
         currentVersion: AppInfo.versionName,
       );
-      if (mounted && update != null && update.hasUpdate) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Доступна новая версия приложения (v${update.latestVersion})'),
-            duration: const Duration(seconds: 8),
-            action: SnackBarAction(
-              label: 'Обновить',
-              onPressed: () async {
-                try {
-                  final uri = Uri.parse(update.downloadUrl);
-                  final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  if (!launched) {
-                    await launchUrl(uri, mode: LaunchMode.platformDefault);
-                  }
-                } catch (_) {
-                  try {
-                    await launchUrl(
-                      Uri.parse('https://github.com/yearningss/rii-schedule-bot/releases/latest'),
-                      mode: LaunchMode.externalApplication,
-                    );
-                  } catch (_) {}
-                }
-              },
+
+      if (update != null && update.hasUpdate) {
+        final lastNotified = widget.storage.prefs.getInt('last_notified_update_build') ?? 0;
+        if (update.latestBuild > lastNotified) {
+          await widget.storage.prefs.setInt('last_notified_update_build', update.latestBuild);
+
+          // Отправка системного push-уведомления
+          await NotificationService.showNotification(
+            title: 'Доступно обновление РИИ',
+            message: 'Вышла новая версия v${update.latestVersion} (сборка ${update.latestBuild}). Нажмите для скачивания.',
+          );
+        }
+
+        if (mounted && isStartup) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Доступна новая версия приложения (v${update.latestVersion})'),
+              duration: const Duration(seconds: 8),
+              action: SnackBarAction(
+                label: 'Обновить',
+                onPressed: () => _openUpdateUrl(update.downloadUrl),
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (_) {}
   }
 
+  Future<void> _openUpdateUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(
+          Uri.parse('https://github.com/yearningss/rii-schedule-bot/releases/latest'),
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (_) {}
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _statusTimer?.cancel();
+    _bgUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -313,25 +357,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   _profile.groupName ?? 'Выбрать группу',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                if (_isOffline) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD97706).withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFD97706), width: 1),
-                    ),
-                    child: const Text(
-                      'Офлайн',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD97706),
-                      ),
-                    ),
-                  ),
-                ],
                 const SizedBox(width: 4),
                 const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
               ],

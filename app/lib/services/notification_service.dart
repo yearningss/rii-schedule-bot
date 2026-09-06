@@ -23,4 +23,17 @@ class NotificationService {
       return true;
     }
   }
+
+  // Отправка системного всплывающего уведомления
+  static Future<void> showNotification({
+    required String title,
+    required String message,
+  }) async {
+    try {
+      await _channel.invokeMethod('showNotification', {
+        'title': title,
+        'message': message,
+      });
+    } catch (_) {}
+  }
 }

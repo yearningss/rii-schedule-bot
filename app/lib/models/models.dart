@@ -235,6 +235,7 @@ class NotificationSettings {
   final bool lessonStart;
   final bool breaks;
   final bool changes;
+  final bool bgUpdateCheck;
 
   const NotificationSettings({
     this.enabled = true,
@@ -242,6 +243,7 @@ class NotificationSettings {
     this.lessonStart = true,
     this.breaks = true,
     this.changes = true,
+    this.bgUpdateCheck = true,
   });
 
   NotificationSettings copyWith({
@@ -250,6 +252,7 @@ class NotificationSettings {
     bool? lessonStart,
     bool? breaks,
     bool? changes,
+    bool? bgUpdateCheck,
   }) {
     return NotificationSettings(
       enabled: enabled ?? this.enabled,
@@ -257,14 +260,15 @@ class NotificationSettings {
       lessonStart: lessonStart ?? this.lessonStart,
       breaks: breaks ?? this.breaks,
       changes: changes ?? this.changes,
+      bgUpdateCheck: bgUpdateCheck ?? this.bgUpdateCheck,
     );
   }
 }
 
 // Данные о текущей версии мобильного приложения РИИ
 class AppInfo {
-  static const String versionName = '1.0.11';
-  static const int versionCode = 12;
+  static const String versionName = '1.0.12';
+  static const int versionCode = 13;
   static const String fullVersionText = 'v$versionName (сборка $versionCode)';
 }
 

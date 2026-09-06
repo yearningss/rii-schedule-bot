@@ -1,7 +1,7 @@
-// Экран истории обновлений и списка изменений (Changelog)
-// Загружает актуальные данные напрямую из GitHub Releases в режиме реального времени
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -101,9 +101,27 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   }
 
   Future<void> _loadReleases({bool isRefresh = false}) async {
-    if (!isRefresh) {
+    if (!isRefresh && _releases.isEmpty) {
+      final cached = await _getCachedReleases();
+      if (cached.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _releases = cached;
+            _isLoading = false;
+            _isFromCache = true;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _releases = _fallbackHistory();
+            _isLoading = false;
+            _isFromCache = true;
+          });
+        }
+      }
+    } else if (isRefresh) {
       setState(() {
-        _isLoading = true;
         _errorMessage = null;
       });
     }
@@ -114,6 +132,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         final parsed = rawList
             .map((item) => ReleaseModel.fromJson(item, currentVersion: AppInfo.versionName))
             .toList();
+
+        await _saveCachedReleases(rawList);
 
         if (mounted) {
           setState(() {
@@ -127,8 +147,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       }
     } catch (_) {}
 
-    // Если сеть недоступна, используем резервную встроенную историю
-    if (mounted) {
+    // Если сеть недоступна и список еще не заполнен
+    if (mounted && _releases.isEmpty) {
       setState(() {
         _releases = _fallbackHistory();
         _isLoading = false;
@@ -138,13 +158,59 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
     }
   }
 
+  Future<List<ReleaseModel>> _getCachedReleases() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('cached_changelog_list');
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded
+              .map((item) => ReleaseModel.fromJson(Map<String, dynamic>.from(item as Map), currentVersion: AppInfo.versionName))
+              .toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<void> _saveCachedReleases(List<Map<String, dynamic>> list) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_changelog_list', jsonEncode(list));
+    } catch (_) {}
+  }
+
   List<ReleaseModel> _fallbackHistory() {
     return [
+      ReleaseModel(
+        tag: '1.0.12',
+        title: 'Релиз v1.0.12 (сборка 13)',
+        publishedAt: '2026-09-06T09:10:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.12',
+        rawBody: '''* Фоновая проверка обновлений каждые 15 минут: периодическая проверка новых версий и отправка системных уведомлений.
+* Очистка интерфейса шапки расписания: удалена лишняя плашка статуса возле номера учебной группы для исключения наложений.
+* Полная история изменений: гарантированное отображение всех версий приложения от v1.0.1 до актуальной с локальным кэшированием для офлайн-режима.
+* Добавлен переключатель фоновой проверки обновлений в расширенные настройки уведомлений.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56050000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.12/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8350000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.12/RiiSchedule.ipa',
+          ),
+        ],
+      ),
       ReleaseModel(
         tag: '1.0.11',
         title: 'Релиз v1.0.11 (сборка 12)',
         publishedAt: '2026-09-06T08:50:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.11',
         rawBody: '''* Интеллектуальный офлайн-режим: при отсутствии интернет-соединения при запуске отображается локально сохраненное расписание с понятным уведомлением.
 * Отображение сетевого режима в Настройках: статус онлайн/офлайн с индикатором и кнопкой мгновенной проверки соединения.
