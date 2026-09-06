@@ -8,6 +8,8 @@ import 'group_picker_screen.dart';
 import 'auth_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/widget_service.dart';
+import '../services/notification_service.dart';
+import 'changelog_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final StorageService storage;
@@ -167,9 +169,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Обновлений нет'),
-            content: const Text('У вас установлена последняя версия приложения (v1.0.0).'),
+            content: Text('У вас установлена самая актуальная версия приложения (${AppInfo.fullVersionText}).'),
             actions: [
               TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
+                },
+                child: const Text('Что нового'),
+              ),
+              FilledButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Понятно'),
               ),
@@ -626,6 +635,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
                 ListTile(
+                  leading: const Icon(Icons.history_rounded, color: Color(0xFF2563EB)),
+                  title: const Text('История изменений (Changelog)'),
+                  subtitle: Text('Что нового в версии ${AppInfo.versionName}'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
+                  },
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                ListTile(
+                  leading: const Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB)),
+                  title: const Text('Уведомления о парах'),
+                  subtitle: const Text('Проверить или запросить системное разрешение'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () async {
+                    final granted = await NotificationService.requestPermission();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(granted
+                              ? 'Уведомления разрешены системой'
+                              : 'Запрос отправлен. Убедитесь, что уведомления включены в настройках Android'),
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                ListTile(
                   leading: const Icon(Icons.system_update_rounded, color: Color(0xFF2563EB)),
                   title: const Text('Проверить обновления'),
                   subtitle: Text(_isCheckingUpdate ? 'Проверка...' : 'Версия: ${AppInfo.fullVersionText}'),
@@ -642,8 +681,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.info_outline_rounded, color: Color(0xFF64748B)),
                   title: const Text('О приложении'),
-                  subtitle: const Text('РИИ Расписание v1.0.0 (Flutter)'),
+                  subtitle: Text('РИИ Расписание ${AppInfo.fullVersionText}'),
                   trailing: Text('2026', style: TextStyle(color: subColor, fontSize: 13)),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
+                  },
                 ),
                 if (_profile.userId != null) ...[
                   Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),

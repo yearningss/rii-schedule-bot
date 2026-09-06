@@ -33,6 +33,92 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    data class ParaParsed(
+        val num: Int,
+        val startMin: Int,
+        val endMin: Int,
+        val timeStr: String,
+        val subject: String,
+        val details: String
+    )
+
+    private val defaultTimes = mapOf(
+        1 to Pair(510, 600),   // 08:30 - 10:00
+        2 to Pair(610, 700),   // 10:10 - 11:40
+        3 to Pair(730, 820),   // 12:10 - 13:40
+        4 to Pair(830, 920),   // 13:50 - 15:20
+        5 to Pair(930, 1020),  // 15:30 - 17:00
+        6 to Pair(1030, 1120)  // 17:10 - 18:40
+    )
+
+    private val timeStrings = mapOf(
+        1 to "08:30 - 10:00",
+        2 to "10:10 - 11:40",
+        3 to "12:10 - 13:40",
+        4 to "13:50 - 15:20",
+        5 to "15:30 - 17:00",
+        6 to "17:10 - 18:40"
+    )
+
+    private fun parseDayParas(dayObj: JSONObject?, subgroup: Int): List<ParaParsed> {
+        if (dayObj == null) return emptyList()
+        val list = mutableListOf<ParaParsed>()
+
+        for (pNum in 1..6) {
+            val pObj = dayObj.optJSONObject(pNum.toString()) ?: continue
+            val times = defaultTimes[pNum] ?: Pair(0, 0)
+            val isDouble = pObj.optBoolean("isDouble", false)
+
+            var subj = ""
+            var aud = ""
+            var teacher = ""
+            var pType = ""
+
+            if (!isDouble) {
+                subj = pObj.optString("subj1", "")
+                aud = pObj.optString("aud1", "")
+                teacher = pObj.optString("teacher1", "")
+                pType = pObj.optString("type1", "")
+            } else {
+                if (subgroup == 2) {
+                    subj = pObj.optString("subj2", "").ifEmpty { pObj.optString("subj1", "") }
+                    aud = pObj.optString("aud2", "").ifEmpty { pObj.optString("aud1", "") }
+                    teacher = pObj.optString("teacher2", "").ifEmpty { pObj.optString("teacher1", "") }
+                    pType = pObj.optString("type2", "").ifEmpty { pObj.optString("type1", "") }
+                } else {
+                    subj = pObj.optString("subj1", "")
+                    aud = pObj.optString("aud1", "")
+                    teacher = pObj.optString("teacher1", "")
+                    pType = pObj.optString("type1", "")
+                }
+            }
+
+            if (subj.isNotEmpty()) {
+                var detailsStr = ""
+                if (aud.isNotEmpty()) detailsStr += "Ауд. " + aud
+                if (teacher.isNotEmpty()) {
+                    if (detailsStr.isNotEmpty()) detailsStr += " • "
+                    detailsStr += teacher
+                }
+                if (pType.isNotEmpty()) {
+                    if (detailsStr.isNotEmpty()) detailsStr += " (" + pType + ")"
+                }
+
+                list.add(
+                    ParaParsed(
+                        num = pNum,
+                        startMin = times.first,
+                        endMin = times.second,
+                        timeStr = timeStrings[pNum] ?: "",
+                        subject = subj,
+                        details = detailsStr
+                    )
+                )
+            }
+        }
+        return list
+    }
+
     private fun getIntOrLong(prefs: android.content.SharedPreferences, key: String, defaultVal: Int = 0): Int {
         return try {
             prefs.getInt(key, defaultVal)
@@ -67,13 +153,13 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             // Пытаемся взять JSON расписания
             var scheduleJsonStr = prefs.getString("flutter.widget_schedule_json", null)
             if (scheduleJsonStr.isNullOrEmpty() && groupId > 0) {
-                scheduleJsonStr = prefs.getString("flutter.schedule_cache_$groupId", null)
+                scheduleJsonStr = prefs.getString("flutter.schedule_cache_" + groupId, null)
             }
 
             views.setTextViewText(R.id.widget_group_name, groupName)
 
-            // Время по Рубцовску (UTC+7)
-            val tz = TimeZone.getTimeZone("GMT+7")
+            // Время по Рубцовску (UTC+7, Asia/Barnaul)
+            val tz = TimeZone.getTimeZone("Asia/Barnaul")
             val cal = Calendar.getInstance(tz)
             val dayOfWeekCalendar = cal.get(Calendar.DAY_OF_WEEK) // 1=Sun, 2=Mon...
             val curHour = cal.get(Calendar.HOUR_OF_DAY)
@@ -88,7 +174,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 Calendar.THURSDAY -> 4
                 Calendar.FRIDAY -> 5
                 Calendar.SATURDAY -> 6
-                else -> 7 // Воскресенье
+                Calendar.SUNDAY -> 7
+                else -> 1
             }
 
             val dayNames = arrayOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
@@ -109,125 +196,71 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
 
             val json = JSONObject(scheduleJsonStr)
             val weekNumber = json.optInt("weekNumber", 1)
+            val scheduleData = json.optJSONObject("scheduleData")
+
+            // 1. Обработка воскресенья (rDay == 7)
+            if (rDay == 7) {
+                val nextWeek = if (weekNumber == 1) 2 else 1
+                val mondayObj = scheduleData?.optJSONObject(nextWeek.toString())?.optJSONObject("1")
+                val mondayParas = parseDayParas(mondayObj, subgroup)
+                val nextWeekRoman = if (nextWeek == 2) "II" else "I"
+
+                views.setTextViewText(
+                    R.id.widget_date_week,
+                    "$curDayStr, $dateFormatted • Пн: $nextWeekRoman нед"
+                )
+
+                if (mondayParas.isNotEmpty()) {
+                    val first = mondayParas[0]
+                    views.setTextViewText(R.id.widget_status_text, "Воскресенье • Завтра понедельник")
+                    views.setTextViewText(R.id.widget_subject_text, "${first.num} пара: ${first.subject}")
+                    views.setTextViewText(R.id.widget_details_text, "${first.timeStr} • ${first.details}")
+                    views.setTextViewText(R.id.widget_next_text, "Всего в понедельник: ${mondayParas.size} пар")
+                } else {
+                    views.setTextViewText(R.id.widget_status_text, "Воскресенье • Выходной день")
+                    views.setTextViewText(R.id.widget_subject_text, "В понедельник пар нет")
+                    views.setTextViewText(R.id.widget_details_text, "Подготовка к следующей учебной неделе")
+                    views.setTextViewText(R.id.widget_next_text, "Новая неделя ($nextWeekRoman нед)")
+                }
+                appWidgetManager.updateAppWidget(appWidgetId, views)
+                return
+            }
+
+            // 2. Обработка учебных дней (Пн-Сб)
             val weekRoman = if (weekNumber == 2) "II нед" else "I нед"
             views.setTextViewText(R.id.widget_date_week, "$curDayStr, $dateFormatted • $weekRoman")
 
-            if (rDay == 7) {
-                // Воскресенье
-                views.setTextViewText(R.id.widget_status_text, "Выходной день")
-                views.setTextViewText(R.id.widget_subject_text, "Занятий нет")
-                views.setTextViewText(R.id.widget_details_text, "Подготовка к следующей учебной неделе")
-                views.setTextViewText(R.id.widget_next_text, "В понедельник новая учебная неделя")
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-                return
-            }
-
-            val scheduleData = json.optJSONObject("scheduleData")
             val weekObj = scheduleData?.optJSONObject(weekNumber.toString())
             val dayObj = weekObj?.optJSONObject(rDay.toString())
+            val dayParas = parseDayParas(dayObj, subgroup)
 
-            if (dayObj == null || dayObj.length() == 0) {
-                views.setTextViewText(R.id.widget_status_text, "Сегодня пар нет")
-                views.setTextViewText(R.id.widget_subject_text, "Свободный день")
-                views.setTextViewText(R.id.widget_details_text, "Занятия по расписанию отсутствуют")
-                views.setTextViewText(R.id.widget_next_text, "Далее: отдых")
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-                return
-            }
-
-            // Стандартное расписание звонков РИИ
-            val defaultTimes = mapOf(
-                1 to Pair(510, 600),   // 08:30 - 10:00
-                2 to Pair(610, 700),   // 10:10 - 11:40
-                3 to Pair(730, 820),   // 12:10 - 13:40
-                4 to Pair(830, 920),   // 13:50 - 15:20
-                5 to Pair(930, 1020),  // 15:30 - 17:00
-                6 to Pair(1030, 1120)  // 17:10 - 18:40
-            )
-
-            val timeStrings = mapOf(
-                1 to "08:30 - 10:00",
-                2 to "10:10 - 11:40",
-                3 to "12:10 - 13:40",
-                4 to "13:50 - 15:20",
-                5 to "15:30 - 17:00",
-                6 to "17:10 - 18:40"
-            )
-
-            data class ParaParsed(
-                val num: Int,
-                val startMin: Int,
-                val endMin: Int,
-                val timeStr: String,
-                val subject: String,
-                val details: String
-            )
-
-            val dayParas = mutableListOf<ParaParsed>()
-
-            for (pNum in 1..6) {
-                val pObj = dayObj.optJSONObject(pNum.toString()) ?: continue
-                val times = defaultTimes[pNum] ?: Pair(0, 0)
-
-                val isDouble = pObj.optBoolean("isDouble", false)
-                var subj = ""
-                var aud = ""
-                var teacher = ""
-                var pType = ""
-
-                if (!isDouble) {
-                    subj = pObj.optString("subj1", "")
-                    aud = pObj.optString("aud1", "")
-                    teacher = pObj.optString("teacher1", "")
-                    pType = pObj.optString("type1", "")
-                } else {
-                    // Подгрупповая пара
-                    if (subgroup == 2) {
-                        subj = pObj.optString("subj2", "").ifEmpty { pObj.optString("subj1", "") }
-                        aud = pObj.optString("aud2", "").ifEmpty { pObj.optString("aud1", "") }
-                        teacher = pObj.optString("teacher2", "").ifEmpty { pObj.optString("teacher1", "") }
-                        pType = pObj.optString("type2", "").ifEmpty { pObj.optString("type1", "") }
-                    } else {
-                        subj = pObj.optString("subj1", "")
-                        aud = pObj.optString("aud1", "")
-                        teacher = pObj.optString("teacher1", "")
-                        pType = pObj.optString("type1", "")
-                    }
-                }
-
-                if (subj.isNotEmpty()) {
-                    var detailsStr = ""
-                    if (aud.isNotEmpty()) detailsStr += "Ауд. $aud"
-                    if (teacher.isNotEmpty()) {
-                        if (detailsStr.isNotEmpty()) detailsStr += " • "
-                        detailsStr += teacher
-                    }
-                    if (pType.isNotEmpty()) {
-                        if (detailsStr.isNotEmpty()) detailsStr += " ($pType)"
-                    }
-
-                    dayParas.add(
-                        ParaParsed(
-                            num = pNum,
-                            startMin = times.first,
-                            endMin = times.second,
-                            timeStr = timeStrings[pNum] ?: "",
-                            subject = subj,
-                            details = detailsStr
-                        )
-                    )
-                }
-            }
-
+            // Если на сегодня пар нет (например, суббота без занятий)
             if (dayParas.isEmpty()) {
-                views.setTextViewText(R.id.widget_status_text, "Пар на сегодня нет")
-                views.setTextViewText(R.id.widget_subject_text, "Занятия отсутствуют")
-                views.setTextViewText(R.id.widget_details_text, "День самостоятельной работы")
-                views.setTextViewText(R.id.widget_next_text, "Далее: отдых")
+                val nextWeek = if (rDay == 6) (if (weekNumber == 1) 2 else 1) else weekNumber
+                val nextDayTarget = if (rDay == 6) 1 else (rDay + 1)
+                val targetObj = scheduleData?.optJSONObject(nextWeek.toString())?.optJSONObject(nextDayTarget.toString())
+                val targetParas = parseDayParas(targetObj, subgroup)
+                val nextWeekRoman = if (nextWeek == 2) "II" else "I"
+
+                val dayTitle = if (rDay == 6) "Суббота • Выходной день" else "Сегодня пар нет"
+                views.setTextViewText(R.id.widget_status_text, dayTitle)
+
+                if (targetParas.isNotEmpty()) {
+                    val targetFirst = targetParas[0]
+                    val nextLabel = if (rDay == 6) "В понедельник" else "Завтра"
+                    views.setTextViewText(R.id.widget_subject_text, "$nextLabel: ${targetFirst.num} пара (${targetFirst.subject})")
+                    views.setTextViewText(R.id.widget_details_text, "${targetFirst.timeStr} • ${targetFirst.details}")
+                    views.setTextViewText(R.id.widget_next_text, "Всего занятий: ${targetParas.size} пар ($nextWeekRoman нед)")
+                } else {
+                    views.setTextViewText(R.id.widget_subject_text, "Занятия по расписанию отсутствуют")
+                    views.setTextViewText(R.id.widget_details_text, "День самостоятельной работы")
+                    views.setTextViewText(R.id.widget_next_text, "Далее: отдых")
+                }
                 appWidgetManager.updateAppWidget(appWidgetId, views)
                 return
             }
 
+            // Поиск текущей и следующей пары
             var ongoing: ParaParsed? = null
             var nextPara: ParaParsed? = null
 
@@ -269,10 +302,22 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(R.id.widget_next_text, "Далее: пар больше нет")
                 }
             } else {
-                views.setTextViewText(R.id.widget_status_text, "Все пары завершены")
-                views.setTextViewText(R.id.widget_subject_text, "Учебный день окончен")
-                views.setTextViewText(R.id.widget_details_text, "Все запланированные занятия прошли")
-                views.setTextViewText(R.id.widget_next_text, "Далее: отдых")
+                // Все пары на сегодня завершены -> смотрим расписание на следующий день
+                val nextDayTarget = rDay + 1
+                val tomorrowObj = if (nextDayTarget <= 6) weekObj?.optJSONObject(nextDayTarget.toString()) else null
+                val tomorrowParas = parseDayParas(tomorrowObj, subgroup)
+
+                views.setTextViewText(R.id.widget_status_text, "Все пары на сегодня завершены")
+                if (tomorrowParas.isNotEmpty()) {
+                    val tFirst = tomorrowParas[0]
+                    views.setTextViewText(R.id.widget_subject_text, "Завтра: ${tFirst.num} пара (${tFirst.subject})")
+                    views.setTextViewText(R.id.widget_details_text, "${tFirst.timeStr} • ${tFirst.details}")
+                    views.setTextViewText(R.id.widget_next_text, "Всего завтра: ${tomorrowParas.size} пар")
+                } else {
+                    views.setTextViewText(R.id.widget_subject_text, "Учебный день окончен")
+                    views.setTextViewText(R.id.widget_details_text, "Все запланированные занятия прошли")
+                    views.setTextViewText(R.id.widget_next_text, "Далее: отдых")
+                }
             }
 
         } catch (e: Exception) {

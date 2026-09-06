@@ -49,11 +49,17 @@ android {
     signingConfigs {
         release {
             def keyFilePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties['storeFile']
+            if (!keyFilePath) {
+                def defaultKey = rootProject.file("release-keystore.jks")
+                if (defaultKey.exists()) {
+                    keyFilePath = defaultKey.absolutePath
+                }
+            }
             if (keyFilePath && file(keyFilePath).exists()) {
                 storeFile file(keyFilePath)
-                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: "Goll7535"
-                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: "yearnings"
-                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: "Goll7535"
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: "RiiSchedule2026"
+                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: "rii_release"
+                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: "RiiSchedule2026"
             }
         }
     }
@@ -61,6 +67,12 @@ android {
     buildTypes {
         release {
             def keyFilePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties['storeFile']
+            if (!keyFilePath) {
+                def defaultKey = rootProject.file("release-keystore.jks")
+                if (defaultKey.exists()) {
+                    keyFilePath = defaultKey.absolutePath
+                }
+            }
             if (keyFilePath && file(keyFilePath).exists()) {
                 signingConfig signingConfigs.release
             } else {

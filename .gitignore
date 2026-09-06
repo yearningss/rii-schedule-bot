@@ -20,6 +20,7 @@ certs/
 *.jks
 *.keystore
 key.properties
+keystore_base64.txt
 
 # Flutter и Android артефакты
 app/.dart_tool/

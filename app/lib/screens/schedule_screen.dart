@@ -10,6 +10,7 @@ import 'bells_screen.dart';
 import 'group_picker_screen.dart';
 import 'settings_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/notification_service.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final StorageService storage;
@@ -32,6 +33,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   int _selectedWeek = 1;
   int _selectedDay = 1;
+  bool _userSelectedManually = false;
   Timer? _statusTimer;
 
   final List<String> _dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -40,6 +42,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void initState() {
     super.initState();
     _profile = widget.storage.getUserProfile();
+
+    // Первичная инициализация дня и недели на основе текущего времени
+    final rTime = _getRubtsovskTime();
+    final realWeekday = rTime.weekday; // 1=Пн .. 6=Сб, 7=Вс
+    if (realWeekday > 6) {
+      // Воскресенье: настраиваемся на понедельник
+      _selectedDay = 1;
+      _selectedWeek = 1;
+    } else {
+      _selectedDay = realWeekday;
+      _selectedWeek = 1;
+    }
+
     _initSchedule();
 
     // Обновляем статус времени каждую минуту
@@ -47,9 +62,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (mounted) setState(() {});
     });
 
-    // Фоновая тихая проверка доступности обновлений
+    // Фоновая тихая проверка обновлений и запрос разрешения на уведомления
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAppUpdateSilently();
+      NotificationService.requestPermission();
     });
   }
 
@@ -122,15 +138,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void _applyScheduleData(Map<String, dynamic> data, {required bool isFromCache}) {
     final siteWeek = int.tryParse(data['weekNumber']?.toString() ?? '1') ?? 1;
     final rTime = _getRubtsovskTime();
-    int rDay = rTime.weekday; // 1 = Monday, 7 = Sunday
-    if (rDay > 6) rDay = 1;
+    final realWeekday = rTime.weekday; // 1 = Monday .. 6 = Saturday, 7 = Sunday
 
     setState(() {
       _scheduleJson = data;
       _isLoading = false;
-      if (!isFromCache) {
-        _selectedWeek = siteWeek;
-        _selectedDay = rDay;
+      if (!_userSelectedManually) {
+        if (realWeekday > 6) {
+          // Воскресенье: открываем расписание на понедельник следующей учебной недели
+          _selectedDay = 1;
+          _selectedWeek = (siteWeek == 1) ? 2 : 1;
+        } else {
+          _selectedDay = realWeekday;
+          _selectedWeek = siteWeek;
+        }
       }
     });
 
@@ -235,8 +256,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final paraTimes = _scheduleJson?['paraTimes'] as Map<String, dynamic>? ?? {};
 
     final rTime = _getRubtsovskTime();
+    final realWeekday = rTime.weekday; // 1=Пн .. 6=Сб, 7=Вс
     final siteWeek = int.tryParse(_scheduleJson?['weekNumber']?.toString() ?? '1') ?? 1;
-    final isToday = (_selectedWeek == siteWeek && _selectedDay == (rTime.weekday > 6 ? 1 : rTime.weekday));
+    final isToday = (realWeekday <= 6 && _selectedWeek == siteWeek && _selectedDay == realWeekday);
+    final isSunday = (realWeekday == 7);
+    final isSaturday = (realWeekday == 6);
 
     final curMins = rTime.hour * 60 + rTime.minute;
     final sortedKeys = dayMap.keys.map((k) => int.tryParse(k) ?? 0).where((n) => n > 0).toList()..sort();
@@ -323,13 +347,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               children: List.generate(6, (idx) {
                 final dayNum = idx + 1;
                 final isSelected = _selectedDay == dayNum;
-                final isCurrentRealDay = (rTime.weekday == dayNum);
+                final isCurrentRealDay = (realWeekday == dayNum);
 
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: InkWell(
-                      onTap: () => setState(() => _selectedDay = dayNum),
+                      onTap: () => setState(() {
+                        _selectedDay = dayNum;
+                        _userSelectedManually = true;
+                      }),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -377,7 +404,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
 
-          // Плашка статуса для сегодняшнего дня
+          // Плашка статуса для сегодняшнего дня или выходных
           if (isToday)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -409,6 +436,56 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ),
                 ],
               ),
+            )
+          else if (isSunday && _selectedDay == 1)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.weekend_rounded, size: 18, color: Color(0xFF10B981)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Сегодня воскресенье (выходной) • Показан понедельник (${_selectedWeek == 2 ? 'II' : 'I'} нед)',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (isSaturday && _selectedDay == 6 && sortedKeys.isEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.event_available_rounded, size: 18, color: Color(0xFFD97706)),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Сегодня суббота • По расписанию пар нет (выходной день)',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFD97706),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
           // Список пар на выбранный день
@@ -422,7 +499,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           children: [
                             Icon(Icons.event_busy_rounded, size: 54, color: Colors.grey[400]),
                             const SizedBox(height: 12),
-                            const Text('В этот день занятий нет', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text(
+                              _selectedDay == 6
+                                  ? 'В субботу занятий нет (выходной)'
+                                  : 'В этот день занятий нет',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            if (_selectedDay == 6) ...[
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedDay = 1;
+                                    _selectedWeek = (_selectedWeek == 1) ? 2 : 1;
+                                    _userSelectedManually = true;
+                                  });
+                                },
+                                icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                                label: const Text('Открыть понедельник'),
+                              ),
+                            ],
                           ],
                         ),
                       )
@@ -494,7 +590,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildWeekBtn(int week, String label) {
     final isActive = _selectedWeek == week;
     return GestureDetector(
-      onTap: () => setState(() => _selectedWeek = week),
+      onTap: () => setState(() {
+        _selectedWeek = week;
+        _userSelectedManually = true;
+      }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(

@@ -9,7 +9,8 @@ from services.api import (
     format_day_schedule,
     format_week_schedule,
     format_bells,
-    format_exams
+    format_exams,
+    get_rubtsovsk_now
 )
 from keyboards import get_day_nav_keyboard, get_courses_keyboard
 from config import WEBAPP_URL
@@ -43,14 +44,19 @@ async def show_today(message: Message):
         await message.answer("Не удалось получить данные о расписании. Попробуй позже.")
         return
 
-    cur_week = int(sched.get("weekNumber", 1))
-    cur_day = int(sched.get("dayNumber", 1))
+    now = get_rubtsovsk_now()
+    real_weekday = now.isoweekday()  # 1=Пн .. 6=Сб, 7=Вс
+    site_week = int(sched.get("weekNumber", 1))
     subgroup = user.get("subgroup", 0)
 
-    if cur_day > 6:
+    if real_weekday > 6:
+        # Воскресенье: показываем понедельник следующей учебной недели
         cur_day = 1
-        note = "Сегодня воскресенье (пар нет). Расписание на понедельник:\n\n"
+        cur_week = 2 if site_week == 1 else 1
+        note = "Сегодня воскресенье (выходной). Расписание на понедельник:\n\n"
     else:
+        cur_day = real_weekday
+        cur_week = site_week
         note = ""
 
     text = note + format_day_schedule(user["group_name"], sched, cur_week, cur_day, subgroup)
@@ -68,16 +74,18 @@ async def show_tomorrow(message: Message):
         await message.answer("Не удалось получить расписание. Попробуй позже.")
         return
 
-    cur_week = int(sched.get("weekNumber", 1))
-    cur_day = int(sched.get("dayNumber", 1))
+    now = get_rubtsovsk_now()
+    real_weekday = now.isoweekday()
+    site_week = int(sched.get("weekNumber", 1))
     subgroup = user.get("subgroup", 0)
 
-    if cur_day >= 6:
+    if real_weekday >= 6:
+        # Суббота или воскресенье: завтра следующий рабочий день (понедельник новой недели)
         next_day = 1
-        next_week = 2 if cur_week == 1 else 1
+        next_week = 2 if site_week == 1 else 1
     else:
-        next_day = cur_day + 1
-        next_week = cur_week
+        next_day = real_weekday + 1
+        next_week = site_week
 
     text = format_day_schedule(user["group_name"], sched, next_week, next_day, subgroup)
     await message.answer(text, reply_markup=get_day_nav_keyboard(next_week, next_day, group_id))

@@ -239,8 +239,13 @@ def format_day_schedule(
     user_subgroup: int = 0,
     check_live_status: bool = True
 ) -> str:
-    week_days = schedule.get("weekDays", {})
-    day_name = week_days.get(str(day_num), f"День {day_num}")
+    if day_num <= 0:
+        day_num = 1
+    day_names_ru = {
+        "1": "Понедельник", "2": "Вторник", "3": "Среда",
+        "4": "Четверг", "5": "Пятница", "6": "Суббота", "7": "Воскресенье"
+    }
+    day_name = week_days.get(str(day_num)) or day_names_ru.get(str(day_num), f"День {day_num}")
     para_times = schedule.get("paraTimes", {})
     
     schedule_data = schedule.get("scheduleData", {})
@@ -248,13 +253,12 @@ def format_day_schedule(
     day_data = week_data.get(str(day_num), {})
     
     cur_week_site = int(schedule.get("weekNumber", 1))
-    cur_day_site = int(schedule.get("dayNumber", 1))
-    
     now = get_rubtsovsk_now()
+    real_weekday = now.isoweekday()
     cur_mins = now.hour * 60 + now.minute
     time_str = now.strftime("%H:%M")
     
-    is_today = (week_num == cur_week_site and day_num == cur_day_site)
+    is_today = (real_weekday <= 6 and week_num == cur_week_site and day_num == real_weekday)
     
     week_rome = "I" if week_num == 1 else "II"
     header_parts = [
