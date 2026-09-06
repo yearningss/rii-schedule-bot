@@ -702,6 +702,7 @@ struct ScheduleMediumView: View {
     }
 }
 
+// Настройка фона виджета с поддержкой containerBackground для iOS 17 и выше
 extension View {
     func widgetBackground(_ backgroundView: some View) -> some View {
         if #available(iOSApplicationExtension 17.0, *) {

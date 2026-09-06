@@ -141,10 +141,32 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.10',
+        title: 'Релиз v1.0.10 (сборка 11)',
+        publishedAt: '2026-09-06T07:25:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.10',
+        rawBody: '''* Документирование кодовой базы: все комментарии в исходном коде переведены и стандартизированы на русском языке.
+* Подтверждена стабильная работа нативного виджета расписания для iOS (WidgetKit) и Android (RemoteViews).
+* Фиксация обновлений манифеста схем и оптимизация управления памятью.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 55712671,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8284792,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.9',
         title: 'Релиз v1.0.9 (сборка 10)',
         publishedAt: '2026-09-06T07:20:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.9',
         rawBody: '''* Исправлен критический баг сопоставления структуры данных в нативном виджете iOS (WidgetKit): восстановлено чтение расписания по номеру недели и дня.
 * Добавлена поддержка фона виджетов для iOS 17 и новее с использованием containerBackground.

@@ -73,6 +73,7 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
     });
   }
 
+  // Освобождение ресурсов текстового контроллера поиска при закрытии экрана
   @override
   void dispose() {
     _searchController.dispose();

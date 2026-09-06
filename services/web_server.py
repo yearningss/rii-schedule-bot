@@ -264,7 +264,7 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
-            "latest_build": latest.get("build", 10),
+            "latest_build": latest.get("build", 11),
             "download_url": download_url,
             "release_notes": latest.get("body") or "Исправления ошибок и улучшения стабильности.",
             "is_required": False
@@ -272,10 +272,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.9",
-        "latest_build": 10,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.9/{target_ext}",
-        "release_notes": "Обновление приложения РИИ (v1.0.9, сборка 10):\n- Исправлен парсинг расписания в нативном виджете iOS (устранено отображение пустого дня)\n- Добавлена поддержка фона виджетов iOS 17 (containerBackground)\n- Добавлен список схем LSApplicationQueriesSchemes в Info.plist для авторизации через Telegram\n- Устранена утечка памяти контроллера поиска на экране выбора группы",
+        "latest_version": "1.0.10",
+        "latest_build": 11,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/{target_ext}",
+        "release_notes": "Обновление приложения РИИ (v1.0.10, сборка 11):\n- Документирование исходного кода на русском языке\n- Фиксация стабильного чтения расписания в нативных виджетах Android и iOS\n- Повышение производительности и оптимизация сборки",
         "is_required": False
     }
 
