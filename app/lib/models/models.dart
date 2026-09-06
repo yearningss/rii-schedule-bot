@@ -203,7 +203,7 @@ class AppUpdateInfo {
     final notes = json['release_notes']?.toString();
     final req = json['is_required'] == true;
 
-    final hasNewer = (lBuild > currentBuild) || (_compareVersions(lVersion, currentVersion) > 0);
+    final hasNewer = (lBuild > currentBuild) || (compareVersions(lVersion, currentVersion) > 0);
 
     return AppUpdateInfo(
       latestVersion: lVersion,
@@ -215,7 +215,7 @@ class AppUpdateInfo {
     );
   }
 
-  static int _compareVersions(String v1, String v2) {
+  static int compareVersions(String v1, String v2) {
     final parts1 = v1.replaceAll(RegExp(r'[^0-9.]'), '').split('.').map((p) => int.tryParse(p) ?? 0).toList();
     final parts2 = v2.replaceAll(RegExp(r'[^0-9.]'), '').split('.').map((p) => int.tryParse(p) ?? 0).toList();
     for (int i = 0; i < parts1.length || i < parts2.length; i++) {

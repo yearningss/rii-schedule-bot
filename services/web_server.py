@@ -2,7 +2,10 @@
 import os
 import logging
 import json
+import time
+import re
 from pathlib import Path
+import aiohttp
 from aiohttp import web
 from services.api import api_client
 from database import get_user, set_user_group, set_user_subgroup
@@ -172,16 +175,67 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
         "has_mobile_app": user.get("has_mobile_app", 1)
     })
 
+_version_cache = {
+    "timestamp": 0.0,
+    "data": {
+        "status": "ok",
+        "latest_version": "1.0.3",
+        "latest_build": 4,
+        "download_url": "https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.3/RiiSchedule.apk",
+        "release_notes": "Обновление приложения РИИ (v1.0.3, сборка 4):\n- Исправлено отображение расписания в выходные дни (суббота и воскресенье)\n- Добавлен экран истории изменений (Changelog)\n- Запрос разрешения системных уведомлений при старте\n- Релизная цифровая подпись разработчика",
+        "is_required": False
+    }
+}
+
+async def get_latest_app_version_data() -> dict:
+    now = time.time()
+    # Кэширование на 10 минут (600 секунд) для предотвращения превышения лимитов GitHub API
+    if now - _version_cache["timestamp"] < 600 and _version_cache["data"]:
+        return _version_cache["data"]
+
+    try:
+        headers = {
+            "User-Agent": "RiiScheduleServer/1.0",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                "https://api.github.com/repos/yearningss/rii-schedule-bot/releases/latest",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=4)
+            ) as resp:
+                if resp.status == 200:
+                    payload = await resp.json()
+                    tag = (payload.get("tag_name") or "").lstrip("v").strip()
+                    name = payload.get("name") or ""
+                    build_match = re.search(r'(?:сборка|\+)\s*(\d+)', name, re.IGNORECASE)
+                    build_num = int(build_match.group(1)) if build_match else 4
+                    notes = payload.get("body") or "Исправления ошибок и улучшения стабильности."
+
+                    download_url = "https://github.com/yearningss/rii-schedule-bot/releases/latest"
+                    for asset in payload.get("assets", []):
+                        if asset.get("name") == "RiiSchedule.apk":
+                            download_url = asset.get("browser_download_url", download_url)
+                            break
+
+                    _version_cache["data"] = {
+                        "status": "ok",
+                        "latest_version": tag if tag else "1.0.3",
+                        "latest_build": build_num,
+                        "download_url": download_url,
+                        "release_notes": notes,
+                        "is_required": False
+                    }
+                    _version_cache["timestamp"] = now
+    except Exception as e:
+        logger.warning("Не удалось получить актуальную версию с GitHub: %s", e)
+
+    return _version_cache["data"]
+
 async def handle_api_app_version(request: web.Request) -> web.Response:
     # Проверка актуальной версии мобильного приложения РИИ
-    return web.json_response({
-        "status": "ok",
-        "latest_version": "1.0.2",
-        "latest_build": 3,
-        "download_url": "https://github.com/yearningss/rii-schedule-bot/releases/latest",
-        "release_notes": "Обновление приложения РИИ (v1.0.2):\n- Новый фирменный логотип приложения\n- Обновлены иконки рабочего стола и интерфейса\n- Повышена стабильность и производительность",
-        "is_required": False
-    })
+    data = await get_latest_app_version_data()
+    return web.json_response(data)
 
 def create_web_app() -> web.Application:
     app = web.Application()

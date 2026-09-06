@@ -97,19 +97,57 @@ class ApiService {
     int currentBuild = 1,
     String currentVersion = '1.0.0',
   }) async {
+    AppUpdateInfo? serverUpdate;
     try {
       final res = await http.get(Uri.parse('$baseUrl/api/app/version')).timeout(
         const Duration(seconds: 5),
       );
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-        return AppUpdateInfo.fromJson(
+        serverUpdate = AppUpdateInfo.fromJson(
           data,
           currentBuild: currentBuild,
           currentVersion: currentVersion,
         );
+        if (serverUpdate.hasUpdate) {
+          return serverUpdate;
+        }
       }
     } catch (_) {}
-    return null;
+
+    // Резервная проверка напрямую через GitHub Releases
+    try {
+      final res = await http.get(
+        Uri.parse('https://api.github.com/repos/yearningss/rii-schedule-bot/releases/latest'),
+        headers: {'Accept': 'application/vnd.github.v3+json'},
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+        final tagName = (data['tag_name'] ?? '').toString().replaceAll('v', '').trim();
+        final name = (data['name'] ?? '').toString();
+        final match = RegExp(r'(?:сборка|\+)\s*(\d+)', caseSensitive: false).firstMatch(name);
+        final buildNum = match != null ? int.tryParse(match.group(1)!) ?? 1 : 1;
+        final notes = data['body']?.toString();
+        var downloadUrl = 'https://github.com/yearningss/rii-schedule-bot/releases/latest';
+        if (data['assets'] is List) {
+          for (final asset in data['assets']) {
+            if (asset is Map && asset['name'] == 'RiiSchedule.apk') {
+              downloadUrl = asset['browser_download_url'] ?? downloadUrl;
+              break;
+            }
+          }
+        }
+        final hasNewer = (buildNum > currentBuild) || (AppUpdateInfo.compareVersions(tagName, currentVersion) > 0);
+        return AppUpdateInfo(
+          latestVersion: tagName.isNotEmpty ? tagName : '1.0.0',
+          latestBuild: buildNum,
+          downloadUrl: downloadUrl,
+          releaseNotes: notes,
+          hasUpdate: hasNewer,
+        );
+      }
+    } catch (_) {}
+
+    return serverUpdate;
   }
 }
