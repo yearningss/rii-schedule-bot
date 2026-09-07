@@ -184,10 +184,34 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.15',
+        title: 'Релиз v1.0.15 (сборка 16)',
+        publishedAt: '2026-09-07T09:20:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.15',
+        rawBody: '''* Модульная организация экрана настроек: параметры разделены по 6 удобным категориям.
+* Интерактивные карточки-кнопки категорий (Оформление, Уведомления, Обновления, Учебный профиль, Сеть, Справка).
+* Плавное раскрытие подкнопок при нажатии на категорию без визуального нагромождения экрана.
+* Быстрые бейджи статуса для каждой категории настроек.
+* Кнопка быстрого сворачивания и разворачивания всех категорий одновременно.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56210000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.15/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8350000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.15/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.14',
         title: 'Релиз v1.0.14 (сборка 15)',
         publishedAt: '2026-09-07T08:45:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.14',
         rawBody: '''* Полноценная система системных push-уведомлений о парах, переменах и начале занятий на смартфоне.
 * Высокоприоритетный канал уведомлений Android со всплывающими баннерами, звуком и вибрацией.

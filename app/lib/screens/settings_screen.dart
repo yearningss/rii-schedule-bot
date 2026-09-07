@@ -34,6 +34,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isOnline = true;
   bool _isCheckingConnection = false;
 
+  // Идентификаторы раскрытых категорий настроек
+  final Set<String> _expandedCategories = {};
+
+  void _toggleCategory(String id) {
+    setState(() {
+      if (_expandedCategories.contains(id)) {
+        _expandedCategories.remove(id);
+      } else {
+        _expandedCategories.add(id);
+      }
+    });
+  }
+
+  void _toggleAllCategories() {
+    setState(() {
+      if (_expandedCategories.length >= 6) {
+        _expandedCategories.clear();
+      } else {
+        _expandedCategories.addAll([
+          'appearance',
+          'notifications',
+          'updates',
+          'profile',
+          'network',
+          'help',
+        ]);
+      }
+    });
+  }
+
   // Список встроенных иконок для выбора аватара
   static const List<Map<String, dynamic>> _presetAvatars = [
     {'id': 'school', 'name': 'Академик', 'icon': Icons.school_rounded, 'color': 0xFF2563EB},
@@ -682,40 +712,370 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // Секция: Режим работы и сеть
-          _buildSectionHeader('Режим работы и сеть'),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
-              ),
-            ),
+          // Заголовок секции категорий с возможностью развернуть/свернуть всё
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: _isOnline
-                        ? const Color(0xFF059669).withOpacity(0.12)
-                        : const Color(0xFFD97706).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                    color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
-                    size: 24,
+                Text(
+                  'КАТЕГОРИИ НАСТРОЕК',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                    color: subColor,
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
+                TextButton(
+                  onPressed: _toggleAllCategories,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    _expandedCategories.length >= 6 ? 'Свернуть все' : 'Развернуть все',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 1. Категория: Оформление
+          _buildCategoryCard(
+            id: 'appearance',
+            title: 'Оформление',
+            subtitle: 'Светлая и тёмная темы, значок аватара',
+            icon: Icons.palette_rounded,
+            iconColor: const Color(0xFF6366F1),
+            badgeText: _currentThemeMode == ThemeMode.dark
+                ? 'Тёмная'
+                : (_currentThemeMode == ThemeMode.light ? 'Светлая' : 'Системная'),
+            badgeColor: const Color(0xFF6366F1),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                child: Text(
+                  'Тема приложения:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: subColor),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    _buildThemeChoiceBtn(
+                      title: 'Светлая',
+                      icon: Icons.light_mode_rounded,
+                      mode: ThemeMode.light,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildThemeChoiceBtn(
+                      title: 'Тёмная',
+                      icon: Icons.dark_mode_rounded,
+                      mode: ThemeMode.dark,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildThemeChoiceBtn(
+                      title: 'Авто',
+                      icon: Icons.brightness_auto_rounded,
+                      mode: ThemeMode.system,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              ListTile(
+                leading: const Icon(Icons.account_circle_rounded, color: Color(0xFF6366F1)),
+                title: const Text('Сменить значок профиля', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Выбрать значок академической специальности'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: _openAvatarPicker,
+              ),
+            ],
+          ),
+
+          // 2. Категория: Уведомления
+          _buildCategoryCard(
+            id: 'notifications',
+            title: 'Уведомления',
+            subtitle: 'Напоминания о парах, звонках и переменах',
+            icon: Icons.notifications_active_rounded,
+            iconColor: const Color(0xFF2563EB),
+            badgeText: _notifSettings.enabled ? 'Вкл (${_notifSettings.beforeMins} мин)' : 'Выкл',
+            badgeColor: _notifSettings.enabled ? const Color(0xFF059669) : const Color(0xFF64748B),
+            children: [
+              SwitchListTile(
+                value: _notifSettings.enabled,
+                onChanged: (val) {
+                  _updateNotificationSettings(_notifSettings.copyWith(enabled: val));
+                },
+                secondary: const Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB)),
+                title: const Text('Уведомления о занятиях', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Получать напоминания о парах и изменениях'),
+              ),
+              if (_notifSettings.enabled) ...[
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Напоминать до начала пары:',
+                            style: TextStyle(fontSize: 13, color: subColor, fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            '${_notifSettings.beforeMins} минут',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [5, 10, 15, 30].map((mins) {
+                          final isSel = _notifSettings.beforeMins == mins;
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              child: InkWell(
+                                onTap: () {
+                                  _updateNotificationSettings(_notifSettings.copyWith(beforeMins: mins));
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSel
+                                        ? const Color(0xFF2563EB)
+                                        : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSel ? const Color(0xFF2563EB) : Colors.transparent,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '$mins мин',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                      color: isSel ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[800]),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                SwitchListTile(
+                  value: _notifSettings.lessonStart,
+                  onChanged: (val) {
+                    _updateNotificationSettings(_notifSettings.copyWith(lessonStart: val));
+                  },
+                  secondary: const Icon(Icons.alarm_on_rounded, color: Color(0xFF059669)),
+                  title: const Text('Звонок на пару'),
+                  subtitle: const Text('Оповещение в момент начала занятия'),
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                SwitchListTile(
+                  value: _notifSettings.breaks,
+                  onChanged: (val) {
+                    _updateNotificationSettings(_notifSettings.copyWith(breaks: val));
+                  },
+                  secondary: const Icon(Icons.coffee_rounded, color: Color(0xFFD97706)),
+                  title: const Text('Оповещения о переменах'),
+                  subtitle: const Text('Оповещение о завершении пары и времени перемены'),
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                SwitchListTile(
+                  value: _notifSettings.changes,
+                  onChanged: (val) {
+                    _updateNotificationSettings(_notifSettings.copyWith(changes: val));
+                  },
+                  secondary: const Icon(Icons.sync_problem_rounded, color: Color(0xFF8B5CF6)),
+                  title: const Text('Изменения и замены'),
+                  subtitle: const Text('Оповещение при публикации нового расписания'),
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                ListTile(
+                  leading: const Icon(Icons.mark_email_read_rounded, color: Color(0xFF059669)),
+                  title: const Text('Отправить тестовое уведомление', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Проверить всплывающие баннеры и звук на телефоне'),
+                  trailing: const Icon(Icons.send_rounded, size: 20),
+                  onTap: _sendTestNotification,
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                ListTile(
+                  leading: const Icon(Icons.app_settings_alt_rounded, color: Color(0xFF6366F1)),
+                  title: const Text('Системные настройки уведомлений', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Открыть параметры разрешений и звука в Android / iOS'),
+                  trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                  onTap: () => NotificationService.openNotificationSettings(),
+                ),
+              ],
+            ],
+          ),
+
+          // 3. Категория: Обновления
+          _buildCategoryCard(
+            id: 'updates',
+            title: 'Обновления',
+            subtitle: 'Проверка новой версии, история и автообновление',
+            icon: Icons.system_update_rounded,
+            iconColor: const Color(0xFF059669),
+            badgeText: 'v${AppInfo.versionName}',
+            badgeColor: const Color(0xFF059669),
+            children: [
+              ListTile(
+                leading: const Icon(Icons.refresh_rounded, color: Color(0xFF059669)),
+                title: const Text('Проверить обновления', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(_isCheckingUpdate ? 'Проверка...' : 'Текущая версия: ${AppInfo.fullVersionText}'),
+                trailing: _isCheckingUpdate
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.chevron_right_rounded),
+                onTap: _isCheckingUpdate ? null : _checkForUpdate,
+              ),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              SwitchListTile(
+                value: _notifSettings.bgUpdateCheck,
+                onChanged: (val) {
+                  _updateNotificationSettings(_notifSettings.copyWith(bgUpdateCheck: val));
+                },
+                secondary: const Icon(Icons.update_rounded, color: Color(0xFF0284C7)),
+                title: const Text('Фоновая проверка каждые 15 минут'),
+                subtitle: const Text('Автоматически проверять наличие новой версии и присылать уведомление'),
+              ),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              ListTile(
+                leading: const Icon(Icons.history_rounded, color: Color(0xFF8B5CF6)),
+                title: const Text('История изменений', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Список всех релизов с GitHub и описание новшеств'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
+                },
+              ),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              ListTile(
+                leading: const Icon(Icons.download_rounded, color: Color(0xFF2563EB)),
+                title: const Text('Скачать установочный файл заново', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Прямая загрузка APK для Android или IPA для iOS'),
+                trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+                onTap: () {
+                  final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+                  final package = isIOS ? 'RiiSchedule.ipa' : 'RiiSchedule.apk';
+                  _openDownloadUrl('https://github.com/yearningss/rii-schedule-bot/releases/download/v${AppInfo.versionName}/$package');
+                },
+              ),
+            ],
+          ),
+
+          // 4. Категория: Учебный профиль
+          _buildCategoryCard(
+            id: 'profile',
+            title: 'Учебный профиль',
+            subtitle: 'Выбор учебной группы и фильтра подгруппы',
+            icon: Icons.school_rounded,
+            iconColor: const Color(0xFFEA580C),
+            badgeText: _profile.groupName ?? 'Не выбрана',
+            badgeColor: const Color(0xFFEA580C),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Текущая учебная группа:', style: TextStyle(fontSize: 12, color: subColor)),
+                          const SizedBox(height: 4),
+                          Text(
+                            _profile.groupName ?? 'Группа не выбрана',
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    FilledButton.tonalIcon(
+                      onPressed: _changeGroup,
+                      icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                      label: const Text('Сменить'),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Подгруппа для фильтрации расписания:', style: TextStyle(fontSize: 12, color: subColor)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        _buildSubgroupBtn(0, 'Все'),
+                        const SizedBox(width: 8),
+                        _buildSubgroupBtn(1, '1-я подгруппа'),
+                        const SizedBox(width: 8),
+                        _buildSubgroupBtn(2, '2-я подгруппа'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // 5. Категория: Сеть и режим работы
+          _buildCategoryCard(
+            id: 'network',
+            title: 'Сеть и режим работы',
+            subtitle: 'Связь с сервером РИИ и офлайн-кэш',
+            icon: _isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+            iconColor: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+            badgeText: _isOnline ? 'Онлайн' : 'Офлайн',
+            badgeColor: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: (_isOnline ? const Color(0xFF059669) : const Color(0xFFD97706)).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                        color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             _isOnline ? 'Онлайн-режим' : 'Офлайн-режим',
@@ -725,409 +1085,284 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
-                            ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _isOnline
+                                ? 'Связь с сервером активна, расписание синхронизировано'
+                                : 'Связь отсутствует, отображается сохраненный кэш',
+                            style: TextStyle(fontSize: 12, color: subColor),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _isOnline
-                            ? 'Связь с сервером активна, расписание синхронизировано'
-                            : 'Связь отсутствует, отображается локальный кэш',
-                        style: TextStyle(fontSize: 12, color: subColor),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _isCheckingConnection ? null : () => _checkNetworkConnection(showFeedback: true),
-                  tooltip: 'Проверить соединение',
-                  icon: _isCheckingConnection
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh_rounded),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Секция: Настройки уведомлений
-          _buildSectionHeader('Настройки уведомлений'),
-          Container(
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
-              ),
-            ),
-            child: Column(
-              children: [
-                SwitchListTile(
-                  value: _notifSettings.enabled,
-                  onChanged: (val) {
-                    _updateNotificationSettings(_notifSettings.copyWith(enabled: val));
-                  },
-                  secondary: const Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB)),
-                  title: const Text('Уведомления о занятиях', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Получать напоминания о парах и изменениях'),
-                ),
-                if (_notifSettings.enabled) ...[
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Напоминать до начала пары:',
-                              style: TextStyle(fontSize: 13, color: subColor, fontWeight: FontWeight.w500),
-                            ),
-                            Text(
-                              '${_notifSettings.beforeMins} минут',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [5, 10, 15, 30].map((mins) {
-                            final isSel = _notifSettings.beforeMins == mins;
-                            return Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 3),
-                                child: InkWell(
-                                  onTap: () {
-                                    _updateNotificationSettings(_notifSettings.copyWith(beforeMins: mins));
-                                  },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: isSel
-                                          ? const Color(0xFF2563EB)
-                                          : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isSel ? const Color(0xFF2563EB) : Colors.transparent,
-                                      ),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '$mins мин',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                        color: isSel ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[800]),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  SwitchListTile(
-                    value: _notifSettings.lessonStart,
-                    onChanged: (val) {
-                      _updateNotificationSettings(_notifSettings.copyWith(lessonStart: val));
-                    },
-                    secondary: const Icon(Icons.alarm_on_rounded, color: Color(0xFF059669)),
-                    title: const Text('Звонок на пару'),
-                    subtitle: const Text('Оповещение в момент начала занятия'),
-                  ),
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  SwitchListTile(
-                    value: _notifSettings.breaks,
-                    onChanged: (val) {
-                      _updateNotificationSettings(_notifSettings.copyWith(breaks: val));
-                    },
-                    secondary: const Icon(Icons.coffee_rounded, color: Color(0xFFD97706)),
-                    title: const Text('Оповещения о переменах'),
-                    subtitle: const Text('Оповещение о завершении пары и времени перемены'),
-                  ),
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  SwitchListTile(
-                    value: _notifSettings.changes,
-                    onChanged: (val) {
-                      _updateNotificationSettings(_notifSettings.copyWith(changes: val));
-                    },
-                    secondary: const Icon(Icons.sync_problem_rounded, color: Color(0xFF8B5CF6)),
-                    title: const Text('Изменения и замены'),
-                    subtitle: const Text('Оповещение при публикации нового расписания'),
-                  ),
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  SwitchListTile(
-                    value: _notifSettings.bgUpdateCheck,
-                    onChanged: (val) {
-                      _updateNotificationSettings(_notifSettings.copyWith(bgUpdateCheck: val));
-                    },
-                    secondary: const Icon(Icons.system_update_rounded, color: Color(0xFF0284C7)),
-                    title: const Text('Фоновая проверка обновлений'),
-                    subtitle: const Text('Проверять наличие новой версии каждые 15 минут и присылать уведомление'),
-                  ),
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  ListTile(
-                    leading: const Icon(Icons.mark_email_read_rounded, color: Color(0xFF059669)),
-                    title: const Text('Отправить тестовое уведомление', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Проверить всплывающие баннеры и звук на телефоне'),
-                    trailing: const Icon(Icons.send_rounded, size: 20),
-                    onTap: _sendTestNotification,
-                  ),
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  ListTile(
-                    leading: const Icon(Icons.app_settings_alt_rounded, color: Color(0xFF6366F1)),
-                    title: const Text('Системные настройки уведомлений', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Открыть параметры разрешений и звука в Android / iOS'),
-                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                    onTap: () => NotificationService.openNotificationSettings(),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Секция: Учебный профиль
-          _buildSectionHeader('Учебный профиль'),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Текущая группа', style: TextStyle(fontSize: 12, color: subColor)),
-                        const SizedBox(height: 4),
-                        Text(
-                          _profile.groupName ?? 'Не выбрана',
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    OutlinedButton(
-                      onPressed: _changeGroup,
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: const Text('Сменить'),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Text('Подгруппа для фильтрации пар', style: TextStyle(fontSize: 12, color: subColor)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildSubgroupBtn(0, 'Все'),
-                    const SizedBox(width: 8),
-                    _buildSubgroupBtn(1, '1-я'),
-                    const SizedBox(width: 8),
-                    _buildSubgroupBtn(2, '2-я'),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              ListTile(
+                leading: const Icon(Icons.wifi_tethering_rounded, color: Color(0xFF0284C7)),
+                title: const Text('Проверить соединение с сервером', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Отправить запрос проверки доступности API РИИ'),
+                trailing: _isCheckingConnection
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                onTap: _isCheckingConnection ? null : () => _checkNetworkConnection(showFeedback: true),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 20),
-
-          // Секция: Тема оформления
-          _buildSectionHeader('Оформление темы'),
-          Container(
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
+          // 6. Категория: Справка и аккаунт
+          _buildCategoryCard(
+            id: 'help',
+            title: 'Справка и аккаунт',
+            subtitle: 'Звонки, разрешения ОС и привязка к Telegram',
+            icon: Icons.help_outline_rounded,
+            iconColor: const Color(0xFF64748B),
+            badgeText: _profile.userId != null ? 'TG привязан' : 'Справка',
+            badgeColor: const Color(0xFF64748B),
+            children: [
+              ListTile(
+                leading: const Icon(Icons.access_time_rounded, color: Color(0xFF2563EB)),
+                title: const Text('Расписание звонков', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Длительность пар и перемен в РИИ'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BellsScreen()));
+                },
               ),
-            ),
-            child: Column(
-              children: [
-                _buildThemeTile(
-                  title: 'Светлая тема',
-                  subtitle: 'Классический белый фон с синими акцентами',
-                  icon: Icons.light_mode_rounded,
-                  mode: ThemeMode.light,
-                ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                _buildThemeTile(
-                  title: 'Тёмная тема',
-                  subtitle: 'Глубокий темный фон для комфорта глаз',
-                  icon: Icons.dark_mode_rounded,
-                  mode: ThemeMode.dark,
-                ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                _buildThemeTile(
-                  title: 'Системная тема',
-                  subtitle: 'Следовать настройкам операционной системы',
-                  icon: Icons.brightness_auto_rounded,
-                  mode: ThemeMode.system,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Секция: Дополнительно
-          _buildSectionHeader('Дополнительно'),
-          Container(
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              ListTile(
+                leading: const Icon(Icons.verified_user_rounded, color: Color(0xFF059669)),
+                title: const Text('Системные разрешения', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Проверить разрешение на показ уведомлений в ОС'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () async {
+                  final granted = await NotificationService.requestPermission();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(granted
+                            ? 'Уведомления разрешены системой'
+                            : 'Запрос отправлен. Убедитесь, что уведомления включены в настройках системы'),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                },
               ),
-            ),
-            child: Column(
-              children: [
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              if (_profile.userId == null)
                 ListTile(
-                  leading: const Icon(Icons.access_time_rounded, color: Color(0xFF2563EB)),
-                  title: const Text('Расписание звонков'),
-                  subtitle: const Text('Длительность пар и перемен в РИИ'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const BellsScreen()));
-                  },
-                ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                ListTile(
-                  leading: const Icon(Icons.verified_user_rounded, color: Color(0xFF2563EB)),
-                  title: const Text('Системные разрешения'),
-                  subtitle: const Text('Проверить разрешение на показ уведомлений в ОС'),
+                  leading: const Icon(Icons.send_rounded, color: Color(0xFF2563EB)),
+                  title: const Text('Привязать Telegram аккаунт', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Синхронизация профиля и уведомлений с ботом'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
-                    final granted = await NotificationService.requestPermission();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(granted
-                              ? 'Уведомления разрешены системой'
-                              : 'Запрос отправлен. Убедитесь, что уведомления включены в настройках системы'),
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AuthScreen(storage: widget.storage, api: widget.api),
+                      ),
+                    );
+                    if (mounted) {
+                      setState(() {
+                        _profile = widget.storage.getUserProfile();
+                      });
                     }
                   },
-                ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                )
+              else
                 ListTile(
-                  leading: const Icon(Icons.history_rounded, color: Color(0xFF8B5CF6)),
-                  title: const Text('История изменений'),
-                  subtitle: const Text('Список всех релизов с GitHub и что нового'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
-                  },
+                  leading: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626)),
+                  title: const Text('Выйти из Telegram аккаунта', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Отвязать текущий профиль Telegram от приложения'),
+                  onTap: _logout,
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                ListTile(
-                  leading: const Icon(Icons.system_update_rounded, color: Color(0xFF2563EB)),
-                  title: const Text('Проверить обновления'),
-                  subtitle: Text(_isCheckingUpdate ? 'Проверка...' : 'Версия: ${AppInfo.fullVersionText}'),
-                  trailing: _isCheckingUpdate
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.chevron_right_rounded),
-                  onTap: _isCheckingUpdate ? null : _checkForUpdate,
-                ),
-                if (_profile.userId != null) ...[
-                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
-                  ListTile(
-                    leading: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626)),
-                    title: const Text('Выйти из Telegram аккаунта', style: TextStyle(color: Color(0xFFDC2626))),
-                    onTap: _logout,
-                  ),
-                ],
-              ],
-            ),
+            ],
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.8,
-          color: Color(0xFF64748B),
+  Widget _buildCategoryCard({
+    required String id,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required String badgeText,
+    required Color badgeColor,
+    required List<Widget> children,
+  }) {
+    final isExpanded = _expandedCategories.contains(id);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0);
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isExpanded ? iconColor.withOpacity(0.55) : borderColor,
+          width: isExpanded ? 1.5 : 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Кнопка категории
+          InkWell(
+            onTap: () => _toggleCategory(id),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: iconColor, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(fontSize: 12, color: subColor),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      badgeText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: badgeColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: subColor,
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Подкнопки категории
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity, height: 0),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(height: 1, color: borderColor),
+                ...children,
+              ],
+            ),
+            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildThemeTile({
+  Widget _buildThemeChoiceBtn({
     required String title,
-    required String subtitle,
     required IconData icon,
     required ThemeMode mode,
   }) {
     final isSelected = _currentThemeMode == mode;
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => _setTheme(mode),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF6366F1)
+                : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF6366F1) : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[700]),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[700]),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-      trailing: isSelected
-          ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB))
-          : null,
-      onTap: () => _setTheme(mode),
     );
   }
 
   Widget _buildSubgroupBtn(int sg, String label) {
     final isSelected = _profile.subgroup == sg;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: InkWell(
         onTap: () => _setSubgroup(sg),
@@ -1137,12 +1372,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? const Color(0xFF2563EB)
-                : (Theme.of(context).brightness == Brightness.dark
+                : (isDark
                     ? const Color(0xFF1E232D)
                     : const Color(0xFFF1F5F9)),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+              color: isSelected ? const Color(0xFF2563EB) : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
             ),
           ),
           child: Text(
