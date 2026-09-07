@@ -229,6 +229,13 @@ yearningss (Влад):
 * GitHub: https://github.com/yearningss
 * Связь и почта: yearwist@gmail.com, doki@dotirr.ru
 
+MRYROKGG 
+* Github: https://github.com/MRYROKGG
+
+TheKalina
+*Github: https://github.com/TheKalina
+
+
 ---
 
 ## Лицензия
