@@ -1,4 +1,4 @@
-// Сервис управления уведомлениями и проверки разрешений (Android 13+)
+// Сервис управления уведомлениями, проверки разрешений и открытия настроек
 import 'package:flutter/services.dart';
 
 class NotificationService {
@@ -21,6 +21,16 @@ class NotificationService {
       return res ?? true;
     } catch (_) {
       return true;
+    }
+  }
+
+  // Открытие системных настроек уведомлений приложения
+  static Future<bool> openNotificationSettings() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('openNotificationSettings');
+      return res ?? false;
+    } catch (_) {
+      return false;
     }
   }
 

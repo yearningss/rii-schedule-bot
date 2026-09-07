@@ -142,6 +142,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Отправка тестового уведомления для проверки разрешений и звука
+  Future<void> _sendTestNotification() async {
+    await NotificationService.requestPermission();
+    final granted = await NotificationService.checkPermission();
+    if (!granted) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Уведомления отключены'),
+            content: const Text(
+              'В системе телефона отключены разрешения для приложения РИИ Расписание. Откройте настройки телефона и разрешите уведомления.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Отмена'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  NotificationService.openNotificationSettings();
+                },
+                child: const Text('Настройки'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    await NotificationService.showNotification(
+      title: 'Тестовое уведомление РИИ',
+      message: 'Уведомления работают отлично! Вы будете получать напоминания о парах и переменах.',
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Тестовое уведомление отправлено. Проверьте шторку уведомлений.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
   Future<void> _setTheme(ThemeMode mode) async {
     setState(() => _currentThemeMode = mode);
     await widget.storage.saveThemeMode(mode);
@@ -837,6 +885,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     secondary: const Icon(Icons.system_update_rounded, color: Color(0xFF0284C7)),
                     title: const Text('Фоновая проверка обновлений'),
                     subtitle: const Text('Проверять наличие новой версии каждые 15 минут и присылать уведомление'),
+                  ),
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                  ListTile(
+                    leading: const Icon(Icons.mark_email_read_rounded, color: Color(0xFF059669)),
+                    title: const Text('Отправить тестовое уведомление', style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Проверить всплывающие баннеры и звук на телефоне'),
+                    trailing: const Icon(Icons.send_rounded, size: 20),
+                    onTap: _sendTestNotification,
+                  ),
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                  ListTile(
+                    leading: const Icon(Icons.app_settings_alt_rounded, color: Color(0xFF6366F1)),
+                    title: const Text('Системные настройки уведомлений', style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Открыть параметры разрешений и звука в Android / iOS'),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: () => NotificationService.openNotificationSettings(),
                   ),
                 ],
               ],

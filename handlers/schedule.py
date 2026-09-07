@@ -19,7 +19,8 @@ from keyboards import (
     get_day_nav_keyboard,
     get_week_nav_keyboard,
     get_now_nav_keyboard,
-    get_courses_keyboard
+    get_courses_keyboard,
+    get_app_download_keyboard
 )
 from config import WEBAPP_URL
 
@@ -195,13 +196,56 @@ async def show_about(message: Message):
         "Разработчик: yearningss (Влад)\n"
         "GitHub: https://github.com/yearningss/rii-schedule-bot\n"
         "Связь и обратная связь: yearwist@gmail.com / doki@dotirr.ru\n\n"
+        "Мобильное приложение: доступно для Android (APK) и iOS (IPA). Полный офлайн-режим, виджеты и уведомления (/download).\n\n"
         "Проект полностью с открытым исходным кодом. Расписание и список групп подтягиваются динамически с сервера rubinst.ru."
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Скачать мобильное приложение", callback_data="btn_download_app")],
         [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=WEBAPP_URL))],
         [InlineKeyboardButton(text="Репозиторий на GitHub", url="https://github.com/yearningss/rii-schedule-bot")]
     ])
     await message.answer(text, reply_markup=kb)
+
+@router.message(Command("download", "mobile", "скачать", "apk", "ipa", ignore_case=True))
+@router.message(F.text.casefold().in_({
+    "скачать приложение",
+    "мобильное приложение",
+    "приложение на телефон",
+    "скачать apk",
+    "скачать ipa",
+    "установить приложение"
+}))
+async def show_download(message: Message):
+    text = (
+        "Мобильное приложение РИИ Расписание\n\n"
+        "Официальное нативное приложение для смартфонов на Android и iOS:\n"
+        "- Расписание занятий на сегодня, завтра и обе учебные недели\n"
+        "- Полный офлайн-режим (работает без подключения к интернету)\n"
+        "- Системные push-уведомления о начале пар и переменах\n"
+        "- Нативные виджеты расписания для рабочего стола Android и iOS\n"
+        "- Быстрая авторизация и синхронизация с Telegram-ботом\n\n"
+        "Выберите файл для установки на ваше устройство:"
+    )
+    await message.answer(text, reply_markup=get_app_download_keyboard())
+
+@router.callback_query(F.data == "btn_download_app")
+async def cb_btn_download_app(callback: CallbackQuery):
+    text = (
+        "Мобильное приложение РИИ Расписание\n\n"
+        "Официальное нативное приложение для смартфонов на Android и iOS:\n"
+        "- Расписание занятий на сегодня, завтра и обе учебные недели\n"
+        "- Полный офлайн-режим (работает без подключения к интернету)\n"
+        "- Системные push-уведомления о начале пар и переменах\n"
+        "- Нативные виджеты расписания для рабочего стола Android и iOS\n"
+        "- Быстрая авторизация и синхронизация с Telegram-ботом\n\n"
+        "Выберите файл для установки на ваше устройство:"
+    )
+    try:
+        await callback.message.answer(text, reply_markup=get_app_download_keyboard())
+    except Exception:
+        pass
+    finally:
+        await callback.answer()
 
 @router.message(Command("app", "webapp", "miniapp", "приложение", ignore_case=True))
 @router.message(F.text.casefold().in_({
@@ -211,8 +255,7 @@ async def show_about(message: Message):
     "расписание",
     "web app",
     "mini app",
-    "приложение",
-    "скачать приложение"
+    "приложение"
 }))
 async def show_app(message: Message):
     user = await get_user(message.from_user.id)

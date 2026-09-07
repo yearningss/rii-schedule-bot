@@ -31,6 +31,10 @@ import UserNotifications
         }
       }
 
+      if #available(iOS 10.0, *) {
+        UNUserNotificationCenter.current().delegate = self
+      }
+
       let notifChannel = FlutterMethodChannel(name: "com.yearnings.rii/notifications", binaryMessenger: messenger)
       notifChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
         if call.method == "checkPermission" {
@@ -61,6 +65,11 @@ import UserNotifications
             UNUserNotificationCenter.current().add(req)
           }
           result(true)
+        } else if call.method == "openNotificationSettings" {
+          if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+          }
+          result(true)
         } else {
           result(FlutterMethodNotImplemented)
         }
@@ -68,6 +77,20 @@ import UserNotifications
     }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // Гарантированное отображение баннера уведомлений, даже если приложение открыто на переднем плане
+  @available(iOS 10.0, *)
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .sound, .badge, .list])
+    } else {
+      completionHandler([.alert, .sound, .badge])
+    }
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {

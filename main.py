@@ -36,6 +36,7 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="exams", description="Расписание экзаменов"),
         BotCommand(command="settings", description="Настройки и уведомления"),
         BotCommand(command="about", description="О проекте и разработчике"),
+        BotCommand(command="download", description="Скачать приложение (Android / iOS)"),
         BotCommand(command="help", description="Справка по командам"),
     ]
     await bot.set_my_commands(commands)

@@ -17,9 +17,36 @@ def get_main_keyboard(group_id: Optional[int] = None) -> ReplyKeyboardMarkup:
         [KeyboardButton(text="Текущая неделя"), KeyboardButton(text="Следующая неделя")],
         [KeyboardButton(text="Выбрать группу"), KeyboardButton(text="Звонки")],
         [KeyboardButton(text="Экзамены"), KeyboardButton(text="Настройки")],
-        [KeyboardButton(text="О проекте")]
+        [KeyboardButton(text="О проекте"), KeyboardButton(text="Скачать приложение")]
     ]
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+
+def get_app_download_keyboard() -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text="Скачать APK для Android",
+                url="https://github.com/yearningss/rii-schedule-bot/releases/latest/download/RiiSchedule.apk"
+            ),
+            InlineKeyboardButton(
+                text="Скачать IPA для iOS",
+                url="https://github.com/yearningss/rii-schedule-bot/releases/latest/download/RiiSchedule.ipa"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="Все версии и история изменений",
+                url="https://github.com/yearningss/rii-schedule-bot/releases"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="Открыть расписание (Mini App)",
+                web_app=WebAppInfo(url=WEBAPP_URL)
+            )
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_courses_keyboard(courses: List[int], allow_cancel: bool = False) -> InlineKeyboardMarkup:
     buttons = []

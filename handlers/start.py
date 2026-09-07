@@ -61,7 +61,8 @@ async def cmd_start(message: Message, command: CommandObject = None):
             f"Привет, {message.from_user.first_name}!\n\n"
             f"{DISCLAIMER}\n\n"
             f"Текущая группа: {user['group_name']}\n\n"
-            "Используй кнопки меню или открой приложение в Mini App.",
+            "Используй кнопки меню или открой расписание в приложении.\n"
+            "Также доступно нативное мобильное приложение для Android и iOS: /download",
             reply_markup=get_main_keyboard(gid)
         )
         return
@@ -139,6 +140,7 @@ async def cmd_help(message: Message):
         "/exams - Расписание сессии/экзаменов\n"
         "/settings - Настройки и уведомления\n"
         "/about - О проекте и разработчике\n"
+        "/download - Скачать мобильное приложение (Android / iOS)\n"
         "/help - Справка по командам\n\n"
         "Также можно написать название группы в чат (например: ИВТ-61 или 9-61), чтобы быстро найти её."
     )

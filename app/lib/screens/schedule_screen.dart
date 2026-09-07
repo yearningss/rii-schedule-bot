@@ -60,9 +60,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
 
     _initSchedule();
 
-    // Обновляем статус времени каждую минуту
+    // Обновляем статус времени и проверяем расписание каждую минуту
     _statusTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+        _checkScheduleNotifications();
+      }
     });
 
     // Фоновая проверка обновлений каждые 15 минут
@@ -74,12 +77,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPeriodicUpdate(isStartup: true);
       NotificationService.requestPermission();
+      _checkScheduleNotifications();
     });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _checkScheduleNotifications();
       final lastCheck = widget.storage.prefs.getInt('last_bg_update_check_time') ?? 0;
       final now = DateTime.now().millisecondsSinceEpoch;
       // Если прошло 15 минут или более с последней проверки
@@ -130,6 +135,134 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
         }
       }
     } catch (_) {}
+  }
+
+  // Проверка расписания на сегодня и отправка системных уведомлений о парах и переменах
+  Future<void> _checkScheduleNotifications() async {
+    if (_scheduleJson == null) return;
+    final notifSettings = widget.storage.getNotificationSettings();
+    if (!notifSettings.enabled) return;
+
+    final rTime = _getRubtsovskTime();
+    final realWeekday = rTime.weekday;
+    if (realWeekday > 6) return; // Воскресенье: занятий нет
+
+    final siteWeek = int.tryParse(_scheduleJson!['weekNumber']?.toString() ?? '1') ?? 1;
+    final scheduleData = _scheduleJson!['scheduleData'];
+    if (scheduleData is! Map) return;
+
+    final weekData = scheduleData[siteWeek.toString()];
+    if (weekData is! Map) return;
+
+    final dayData = weekData[realWeekday.toString()];
+    if (dayData is! Map || dayData.isEmpty) return;
+
+    final paraTimes = _scheduleJson!['paraTimes'];
+    final paraTimesMap = paraTimes is Map ? paraTimes : {};
+
+    final curMins = rTime.hour * 60 + rTime.minute;
+    final todayStr = '${rTime.year}_${rTime.month}_${rTime.day}';
+
+    final sortedParaNums = dayData.keys
+        .map((k) => int.tryParse(k.toString()))
+        .where((k) => k != null)
+        .cast<int>()
+        .toList()..sort();
+
+    final userSubgroup = _profile.subgroup;
+
+    for (int i = 0; i < sortedParaNums.length; i++) {
+      final pNum = sortedParaNums[i];
+      final pData = dayData[pNum.toString()];
+      if (pData is! Map) continue;
+
+      final timeStr = paraTimesMap[pNum.toString()]?.toString();
+      final pTime = ParaTime.parse(timeStr, pNum);
+
+      String subjText = '';
+      String audText = '';
+      if (pData['isDouble'] == true) {
+        if (userSubgroup == 2 && pData['subj2'] != null) {
+          subjText = pData['subj2'].toString();
+          audText = pData['aud2'] != null ? ' (ауд. ${pData['aud2']})' : '';
+        } else {
+          subjText = pData['subj1']?.toString() ?? pData['subj2']?.toString() ?? 'Пара';
+          final a = userSubgroup == 2 ? pData['aud2'] : pData['aud1'];
+          audText = a != null ? ' (ауд. $a)' : '';
+        }
+      } else {
+        subjText = pData['subj1']?.toString() ?? 'Пара';
+        if (pData['aud1'] != null && pData['aud1'].toString().isNotEmpty) {
+          audText = ' (ауд. ${pData['aud1']})';
+        }
+      }
+
+      // 1. Напоминание перед началом пары (за 5, 10, 15, 30 минут)
+      if (notifSettings.beforeMins > 0) {
+        final targetBefore = pTime.startMinutes - notifSettings.beforeMins;
+        if (curMins >= targetBefore && curMins < pTime.startMinutes) {
+          final sentKey = 'notif_sent_${todayStr}_p${pNum}_before_${notifSettings.beforeMins}';
+          if (widget.storage.prefs.getBool(sentKey) != true) {
+            await widget.storage.prefs.setBool(sentKey, true);
+            await NotificationService.showNotification(
+              title: 'Скоро пара: $subjText',
+              message: 'Через ${notifSettings.beforeMins} мин начнется $pNum пара (${pTime.startStr} - ${pTime.endStr})$audText.',
+            );
+          }
+        }
+      }
+
+      // 2. Оповещение о начале пары
+      if (notifSettings.lessonStart) {
+        if (curMins >= pTime.startMinutes && curMins < (pTime.startMinutes + 5)) {
+          final sentKey = 'notif_sent_${todayStr}_p${pNum}_start';
+          if (widget.storage.prefs.getBool(sentKey) != true) {
+            await widget.storage.prefs.setBool(sentKey, true);
+            await NotificationService.showNotification(
+              title: 'Началась $pNum пара',
+              message: '$subjText$audText (${pTime.startStr} - ${pTime.endStr}).',
+            );
+          }
+        }
+      }
+
+      // 3. Оповещение об окончании пары и начале перемены
+      if (notifSettings.breaks) {
+        if (curMins >= pTime.endMinutes && curMins < (pTime.endMinutes + 5)) {
+          final sentKey = 'notif_sent_${todayStr}_p${pNum}_break';
+          if (widget.storage.prefs.getBool(sentKey) != true) {
+            await widget.storage.prefs.setBool(sentKey, true);
+
+            if (i + 1 < sortedParaNums.length) {
+              final nextPNum = sortedParaNums[i + 1];
+              final nextPData = dayData[nextPNum.toString()];
+              final nextTimeStr = paraTimesMap[nextPNum.toString()]?.toString();
+              final nextPTime = ParaTime.parse(nextTimeStr, nextPNum);
+              final breakLen = (nextPTime.startMinutes - pTime.endMinutes).clamp(0, 180);
+
+              String nextSubj = 'следующая пара';
+              if (nextPData is Map) {
+                if (nextPData['isDouble'] == true && userSubgroup == 2 && nextPData['subj2'] != null) {
+                  nextSubj = nextPData['subj2'].toString();
+                } else if (nextPData['subj1'] != null) {
+                  nextSubj = nextPData['subj1'].toString();
+                }
+              }
+
+              await NotificationService.showNotification(
+                title: 'Перемена $breakLen мин',
+                message: 'Закончилась $pNum пара. Следующая: $nextPNum пара в ${nextPTime.startStr} ($nextSubj).',
+              );
+            } else {
+              await NotificationService.showNotification(
+                title: 'Занятия завершены',
+                message: 'Закончилась $pNum пара. На сегодня занятий больше нет.',
+              );
+            }
+          }
+        }
+      }
+    }
   }
 
   Future<void> _openUpdateUrl(String url) async {
@@ -233,6 +366,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
     });
 
     WidgetService.updateWidgetData(profile: _profile, scheduleJson: data);
+    _checkScheduleNotifications();
   }
 
   Future<void> _changeGroup() async {

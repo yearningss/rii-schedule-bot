@@ -184,10 +184,34 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.14',
+        title: 'Релиз v1.0.14 (сборка 15)',
+        publishedAt: '2026-09-07T08:45:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.14',
+        rawBody: '''* Полноценная система системных push-уведомлений о парах, переменах и начале занятий на смартфоне.
+* Высокоприоритетный канал уведомлений Android со всплывающими баннерами, звуком и вибрацией.
+* В Настройки добавлена кнопка мгновенной проверки уведомлений (тестовое уведомление) и открытие системных параметров.
+* В Telegram-бот добавлена кнопка 'Скачать приложение' в главное меню и команда /download для прямой загрузки приложения на Android и iOS.
+* Информация о мобильном приложении добавлена в справку и команду /about Telegram-бота.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56060000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.14/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8350000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.14/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.13',
         title: 'Релиз v1.0.13 (сборка 14)',
         publishedAt: '2026-09-07T08:00:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.13',
         rawBody: '''* Исправлена критическая ошибка обработки дней недели в Telegram-боте: полностью восстановлена работа команд /today, /tomorrow и кнопок 'Сегодня', 'Завтра'.
 * Восстановлена работа интерактивных кнопок дней недели (Пн-Сб, переключение недели, обновление расписания).

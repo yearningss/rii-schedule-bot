@@ -7,7 +7,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -18,9 +20,14 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity: FlutterActivity() {
     private val widgetChannel = "com.yearnings.rii/widget"
     private val notificationChannel = "com.yearnings.rii/notifications"
+    private val scheduleChannelId = "rii_schedule_alerts_v2"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Инициализируем системный канал уведомлений высокой важности сразу при запуске
+        setupNotificationChannels()
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, widgetChannel).setMethodCallHandler { call, result ->
             if (call.method == "updateWidget") {
                 ScheduleWidgetProvider.updateAllWidgets(applicationContext)
@@ -55,10 +62,8 @@ class MainActivity: FlutterActivity() {
                                 arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                                 1001
                             )
-                            result.success(false)
-                        } else {
-                            result.success(true)
                         }
+                        result.success(granted)
                     } else {
                         result.success(true)
                     }
@@ -69,26 +74,52 @@ class MainActivity: FlutterActivity() {
                     showLocalNotification(title, message)
                     result.success(true)
                 }
+                "openNotificationSettings" -> {
+                    try {
+                        val intent = Intent().apply {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                            } else {
+                                action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                                data = Uri.fromParts("package", packageName, null)
+                            }
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
     }
 
-    // Отображение локального системного уведомления на Android
-    private fun showLocalNotification(title: String, message: String) {
-        val channelId = "rii_app_updates"
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
+    // Создание каналов уведомлений с максимальным приоритетом и всплывающими баннерами
+    private fun setupNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
             val channel = NotificationChannel(
-                channelId,
-                "Обновления приложения",
-                NotificationManager.IMPORTANCE_DEFAULT
+                scheduleChannelId,
+                "Расписание и пары РИИ",
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Уведомления о доступных обновлениях расписания и приложения"
+                description = "Уведомления о парах, переменах и обновлениях расписания"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 250, 150, 250)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
             notificationManager.createNotificationChannel(channel)
         }
+    }
+
+    // Отображение локального системного уведомления с гарантированным всплытием на экран
+    private fun showLocalNotification(title: String, message: String) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        setupNotificationChannels()
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -100,20 +131,22 @@ class MainActivity: FlutterActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        val builder = NotificationCompat.Builder(this, channelId)
+        val builder = NotificationCompat.Builder(this, scheduleChannelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         ) {
-            notificationManager.notify(2001, builder.build())
+            val notifId = (System.currentTimeMillis() % 100000).toInt() + 1000
+            notificationManager.notify(notifId, builder.build())
         }
     }
 }
-
