@@ -245,6 +245,7 @@ def format_day_schedule(
         "1": "Понедельник", "2": "Вторник", "3": "Среда",
         "4": "Четверг", "5": "Пятница", "6": "Суббота", "7": "Воскресенье"
     }
+    week_days = schedule.get("weekDays", {})
     day_name = week_days.get(str(day_num)) or day_names_ru.get(str(day_num), f"День {day_num}")
     para_times = schedule.get("paraTimes", {})
     
@@ -330,6 +331,73 @@ def format_day_schedule(
     result_parts.append("\n\n".join(pairs))
     
     return "\n".join(result_parts)
+
+def format_now_status(group_name: str, schedule: Dict[str, Any], user_subgroup: int = 0) -> str:
+    now = get_rubtsovsk_now()
+    real_weekday = now.isoweekday()
+    if real_weekday > 6:
+        return f"Расписание: {group_name}\nСегодня воскресенье (выходной день). Занятий нет."
+
+    cur_week = int(schedule.get("weekNumber", 1))
+    week_rome = "I" if cur_week == 1 else "II"
+    day_names_ru = {
+        "1": "Понедельник", "2": "Вторник", "3": "Среда",
+        "4": "Четверг", "5": "Пятница", "6": "Суббота", "7": "Воскресенье"
+    }
+    week_days = schedule.get("weekDays", {})
+    day_name = week_days.get(str(real_weekday)) or day_names_ru.get(str(real_weekday), f"День {real_weekday}")
+    time_str = now.strftime("%H:%M")
+    cur_mins = now.hour * 60 + now.minute
+
+    para_times = schedule.get("paraTimes", {})
+    schedule_data = schedule.get("scheduleData", {})
+    day_data = schedule_data.get(str(cur_week), {}).get(str(real_weekday), {})
+
+    header = (
+        f"Текущий статус: {group_name}\n"
+        f"{day_name} ({week_rome} неделя), время в Рубцовске: {time_str}\n"
+        + "-" * 35
+    )
+
+    if not day_data:
+        return f"{header}\nНа сегодня пар нет."
+
+    sorted_paras = sorted(day_data.keys(), key=lambda x: int(x))
+    ongoing_para = None
+    next_para = None
+
+    for p_str in sorted_paras:
+        p_n = int(p_str)
+        s_m, e_m, s_s, e_s = parse_para_time_range(para_times.get(p_str), p_n)
+        if s_m <= cur_mins <= e_m:
+            ongoing_para = (p_n, s_s, e_s, e_m - cur_mins, day_data[p_str], p_str)
+            break
+        elif cur_mins < s_m and next_para is None:
+            next_para = (p_n, s_s, e_s, s_m - cur_mins, day_data[p_str], p_str)
+
+    if ongoing_para:
+        p_n, s_s, e_s, rem, p_info, p_str = ongoing_para
+        p_time_clean = clean_time(para_times.get(p_str, ""))
+        item_text = format_para_item(p_str, p_time_clean, p_info, user_subgroup)
+        return (
+            f"{header}\n"
+            f"Сейчас идет {p_n} пара (до {e_s}, осталось {rem} мин):\n\n"
+            f"{item_text}"
+        )
+
+    if next_para:
+        p_n, s_s, e_s, rem, p_info, p_str = next_para
+        first_p_n = int(sorted_paras[0])
+        first_s_m, _, _, _ = parse_para_time_range(para_times.get(str(first_p_n)), first_p_n)
+        p_time_clean = clean_time(para_times.get(p_str, ""))
+        item_text = format_para_item(p_str, p_time_clean, p_info, user_subgroup)
+        if cur_mins < first_s_m:
+            status_desc = f"Занятия еще не начались.\nПервая пара ({p_n} пара) начнется в {s_s} (через {rem} мин):"
+        else:
+            status_desc = f"Сейчас перемена (до {s_s}, осталось {rem} мин).\nСледующая {p_n} пара:"
+        return f"{header}\n{status_desc}\n\n{item_text}"
+
+    return f"{header}\nВсе пары на сегодня завершены!"
 
 def format_week_schedule(
     group_name: str,

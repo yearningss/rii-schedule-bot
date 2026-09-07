@@ -1,13 +1,17 @@
 # Обработчики команды /start, справки, выбора и поиска группы
+import os
+import logging
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command, CommandObject
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.exceptions import TelegramBadRequest
 
 from database import get_user, set_user_group, get_auth_session, confirm_auth_session
 from services.api import api_client
 from keyboards import get_main_keyboard, get_courses_keyboard, get_groups_keyboard
 from config import WEBAPP_URL
 
+logger = logging.getLogger("rii_schedule_bot.start")
 router = Router()
 
 DISCLAIMER = (
@@ -84,7 +88,6 @@ async def cb_app_auth(callback: CallbackQuery):
         from_user = callback.from_user
         avatar_url = None
         try:
-            import os
             photos = await callback.bot.get_user_profile_photos(from_user.id, limit=1)
             if photos.total_count > 0:
                 file_info = await callback.bot.get_file(photos.photos[0][-1].file_id)
@@ -116,7 +119,8 @@ async def cb_app_auth(callback: CallbackQuery):
         await callback.message.edit_text("Вход в мобильное приложение отклонен.")
     await callback.answer()
 
-@router.message(Command("help"))
+@router.message(Command("help", "помощь", "справка", ignore_case=True))
+@router.message(F.text.casefold().in_({"помощь", "справка", "команды", "что умеет бот"}))
 async def cmd_help(message: Message):
     user = await get_user(message.from_user.id)
     gid = user.get("group_id") if user else None
@@ -125,32 +129,34 @@ async def cmd_help(message: Message):
         "Команды бота:\n"
         "/start - Главное меню и приветствие\n"
         "/app - Открыть расписание в Mini App\n"
-        "/group - Выбор или смена учебной группы\n"
         "/today - Расписание на сегодня\n"
         "/tomorrow - Расписание на завтра\n"
+        "/now - Что идет прямо сейчас\n"
         "/week - Расписание на текущую неделю\n"
         "/nextweek - Расписание на следующую неделю\n"
+        "/group - Выбор или смена учебной группы\n"
         "/bells - Расписание звонков\n"
         "/exams - Расписание сессии/экзаменов\n"
         "/settings - Настройки и уведомления\n"
         "/about - О проекте и разработчике\n"
-        "/help - Справка\n\n"
-        "Также можно написать название группы в чат (например: ИВТ-61), чтобы быстро найти её."
+        "/help - Справка по командам\n\n"
+        "Также можно написать название группы в чат (например: ИВТ-61 или 9-61), чтобы быстро найти её."
     )
     await message.answer(text, reply_markup=get_main_keyboard(gid))
 
-@router.message(Command("app"))
-async def cmd_app(message: Message):
+@router.message(Command("menu", "меню", ignore_case=True))
+@router.message(F.text.casefold().in_({"меню", "главное меню", "кнопки", "старт"}))
+async def cmd_menu(message: Message):
     user = await get_user(message.from_user.id)
     gid = user.get("group_id") if user else None
-    url = f"{WEBAPP_URL}?group_id={gid}" if gid else WEBAPP_URL
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=url))]
-    ])
-    await message.answer("Нажми кнопку ниже, чтобы открыть интерактивное расписание в приложении:", reply_markup=kb)
+    g_name = user.get("group_name") if user else "не выбрана"
+    await message.answer(
+        f"Главное меню бота.\nТекущая группа: {g_name}.\n\nИспользуй кнопки ниже:",
+        reply_markup=get_main_keyboard(gid)
+    )
 
-@router.message(Command("group"))
-@router.message(F.text == "Выбрать группу")
+@router.message(Command("group", "groups", "группа", "группы", ignore_case=True))
+@router.message(F.text.casefold().in_({"выбрать группу", "сменить группу", "моя группа", "группа", "группы", "выбор группы"}))
 async def cmd_choose_group(message: Message):
     courses_map = await api_client.get_courses_map(force_refresh=True)
     if not courses_map:
@@ -166,11 +172,19 @@ async def cmd_choose_group(message: Message):
 @router.callback_query(F.data == "change_group")
 async def cb_back_to_courses(callback: CallbackQuery):
     courses_map = await api_client.get_courses_map()
-    await callback.message.edit_text(
-        "Выбери курс:",
-        reply_markup=get_courses_keyboard(list(courses_map.keys()))
-    )
-    await callback.answer()
+    user = await get_user(callback.from_user.id)
+    has_group = bool(user and user.get("group_name"))
+    try:
+        await callback.message.edit_text(
+            "Выбери курс:",
+            reply_markup=get_courses_keyboard(list(courses_map.keys()), allow_cancel=has_group)
+        )
+    except TelegramBadRequest:
+        pass
+    except Exception as e:
+        logger.warning("Ошибка в cb_back_to_courses: %s", e)
+    finally:
+        await callback.answer()
 
 @router.callback_query(F.data.startswith("course:"))
 async def cb_select_course(callback: CallbackQuery):
@@ -182,11 +196,17 @@ async def cb_select_course(callback: CallbackQuery):
         await callback.answer("Группы для данного курса не найдены.", show_alert=True)
         return
 
-    await callback.message.edit_text(
-        f"Группы {course} курса:\nВыбери свою группу из списка:",
-        reply_markup=get_groups_keyboard(course, groups)
-    )
-    await callback.answer()
+    try:
+        await callback.message.edit_text(
+            f"Группы {course} курса:\nВыбери свою группу из списка:",
+            reply_markup=get_groups_keyboard(course, groups)
+        )
+    except TelegramBadRequest:
+        pass
+    except Exception as e:
+        logger.warning("Ошибка в cb_select_course: %s", e)
+    finally:
+        await callback.answer()
 
 @router.callback_query(F.data.startswith("set_group:"))
 async def cb_set_group(callback: CallbackQuery):
@@ -198,13 +218,17 @@ async def cb_set_group(callback: CallbackQuery):
         return
 
     await set_user_group(callback.from_user.id, group["id"], group["name"])
-    await callback.message.delete()
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
     await callback.message.answer(
         f"Группа сохранена: {group['name']}\n\n"
         "Теперь ты можешь смотреть расписание через кнопки или в Mini App.",
         reply_markup=get_main_keyboard(group["id"])
     )
-    await callback.answer()
+    await callback.answer(f"Выбрана {group['name']}")
 
 @router.message(F.text)
 async def handle_text_group_search(message: Message):
@@ -212,6 +236,25 @@ async def handle_text_group_search(message: Message):
         return
 
     query = message.text.strip()
+    lower = query.casefold()
+
+    # Простые приветствия и вежливые фразы
+    if lower in {"привет", "здравствуйте", "добрый день", "добрый вечер", "доброе утро", "хай", "ку", "салам"}:
+        user = await get_user(message.from_user.id)
+        gid = user.get("group_id") if user else None
+        g_name = user.get("group_name") if user else "не выбрана"
+        await message.answer(
+            f"Привет, {message.from_user.first_name}!\n"
+            f"Твоя текущая группа: {g_name}.\n"
+            "Используй кнопки меню для просмотра расписания:",
+            reply_markup=get_main_keyboard(gid)
+        )
+        return
+
+    if lower in {"спасибо", "спс", "благодарю", "отлично", "супер", "класс", "топ"}:
+        await message.answer("Всегда пожалуйста! Обращайся в любое время.")
+        return
+
     if len(query) < 2:
         return
 
@@ -222,8 +265,10 @@ async def handle_text_group_search(message: Message):
         gid = user.get("group_id") if user else None
         await message.answer(
             f"По запросу '{query}' группа не найдена.\n"
-            "Попробуй написать точнее или нажми 'Выбрать группу'.",
-            reply_markup=get_main_keyboard(gid)
+            "Нажми кнопку ниже, чтобы выбрать группу из списка курсов:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Выбрать группу из списка", callback_data="change_group")]
+            ])
         )
         return
 

@@ -184,10 +184,35 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.13',
+        title: 'Релиз v1.0.13 (сборка 14)',
+        publishedAt: '2026-09-07T08:00:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.13',
+        rawBody: '''* Исправлена критическая ошибка обработки дней недели в Telegram-боте: полностью восстановлена работа команд /today, /tomorrow и кнопок 'Сегодня', 'Завтра'.
+* Восстановлена работа интерактивных кнопок дней недели (Пн-Сб, переключение недели, обновление расписания).
+* Добавлена новая команда /now ('Сейчас') с оперативным расчетом текущей пары, времени до конца и информации о переменах.
+* Добавлены интерактивные кнопки навигации по неделям для полного расписания.
+* Добавлена нечувствительность к регистру ввода и поддержка русскоязычных псевдонимов команд.
+* Добавлена кнопка отмены при выборе группы и предотвращены сбои при удалении сообщений в Telegram.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56060000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.13/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8350000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.13/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.12',
         title: 'Релиз v1.0.12 (сборка 13)',
         publishedAt: '2026-09-06T09:10:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.12',
         rawBody: '''* Фоновая проверка обновлений каждые 15 минут: периодическая проверка новых версий и отправка системных уведомлений.
 * Очистка интерфейса шапки расписания: удалена лишняя плашка статуса возле номера учебной группы для исключения наложений.

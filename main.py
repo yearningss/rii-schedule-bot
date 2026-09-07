@@ -28,6 +28,7 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="app", description="Открыть расписание (Mini App)"),
         BotCommand(command="today", description="Расписание на сегодня"),
         BotCommand(command="tomorrow", description="Расписание на завтра"),
+        BotCommand(command="now", description="Что идет прямо сейчас"),
         BotCommand(command="week", description="Расписание на текущую неделю"),
         BotCommand(command="nextweek", description="Расписание на следующую неделю"),
         BotCommand(command="group", description="Выбрать учебную группу"),
