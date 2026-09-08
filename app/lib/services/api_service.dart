@@ -180,9 +180,7 @@ class ApiService {
           currentBuild: currentBuild,
           currentVersion: currentVersion,
         );
-        if (serverUpdate.hasUpdate) {
-          return serverUpdate;
-        }
+        return serverUpdate;
       }
     } catch (_) {}
 
