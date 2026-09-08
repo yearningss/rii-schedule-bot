@@ -388,7 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Navigator.pop(ctx);
                   final downloadUrl = (update?.downloadUrl.isNotEmpty == true)
                       ? update!.downloadUrl
-                      : 'https://github.com/yearningss/rii-schedule-bot/releases/download/v${AppInfo.versionName}/$fallbackPackage';
+                      : 'https://github.com/yearningss/rii-schedule-bot/releases/latest/download/$fallbackPackage';
                   _openDownloadUrl(downloadUrl);
                 },
                 label: Text('Скачать $extName заново'),
@@ -1188,7 +1188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () {
                   final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
                   final package = isIOS ? 'RiiSchedule.ipa' : 'RiiSchedule.apk';
-                  _openDownloadUrl('https://github.com/yearningss/rii-schedule-bot/releases/download/v${AppInfo.versionName}/$package');
+                  _openDownloadUrl('https://github.com/yearningss/rii-schedule-bot/releases/latest/download/$package');
                 },
               ),
             ],

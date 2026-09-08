@@ -313,13 +313,9 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
     changelog = await get_app_changelog_data()
     is_ios = (platform.lower() == "ios")
     target_ext = "RiiSchedule.ipa" if is_ios else "RiiSchedule.apk"
+    download_url = f"https://github.com/yearningss/rii-schedule-bot/releases/latest/download/{target_ext}"
     if changelog:
         latest = changelog[0]
-        download_url = f"https://github.com/yearningss/rii-schedule-bot/releases/download/v{latest['tag_name']}/{target_ext}"
-        for asset in latest.get("assets", []):
-            if asset.get("name") == target_ext:
-                download_url = asset.get("download_url", download_url)
-                break
         return {
             "status": "ok",
             "latest_version": latest["tag_name"],
