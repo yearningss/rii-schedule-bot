@@ -1,8 +1,9 @@
 # Обработчики просмотра расписания (сегодня, завтра, недели, текущий статус, звонки, экзамены, Web App)
 import logging
 from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.filters import Command, CommandObject
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, FSInputFile
+from services.season_service import resolve_auto_theme, get_theme_by_id, get_icon_path, ALL_THEMES
 from aiogram.exceptions import TelegramBadRequest
 
 from database import get_user
@@ -268,6 +269,111 @@ async def show_app(message: Message):
         "Нажми кнопку ниже, чтобы открыть интерактивное расписание РИИ в приложении:",
         reply_markup=kb
     )
+
+@router.message(Command("pic", "icon", "avatar", "иконка", "лого", "логотип", "сезон", ignore_case=True))
+@router.message(F.text.casefold().in_({
+    "иконка",
+    "лого",
+    "логотип",
+    "сезон",
+    "сезонная иконка",
+    "аватарка",
+    "сменить иконку"
+}))
+async def show_season_pic(message: Message, command: CommandObject = None):
+    arg = command.args.strip().lower() if command and command.args else None
+    theme = get_theme_by_id(arg) if arg and arg in ALL_THEMES else resolve_auto_theme()
+
+    icon_path = get_icon_path(theme["filename"])
+    if not icon_path.exists():
+        await message.answer("Файл иконки временно недоступен.")
+        return
+
+    text = (
+        f"Сезонная иконка: {theme['title']}\n"
+        f"Период действия: {theme['subtitle']}\n\n"
+        "Динамическая смена темы автоматически работает в мобильном приложении и Web App.\n\n"
+        "Как установить эту аватарку боту в Telegram:\n"
+        "1. Сохраните отправленное изображение\n"
+        "2. Перейдите в диалог с @BotFather\n"
+        "3. Отправьте команду /setuserpic, выберите бота и загрузите фото."
+    )
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Все 12 вариантов оформления", callback_data="season_list")],
+        [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=WEBAPP_URL))]
+    ])
+
+    await message.answer_photo(
+        photo=FSInputFile(str(icon_path)),
+        caption=text,
+        reply_markup=kb
+    )
+
+@router.callback_query(F.data == "season_list")
+async def cb_season_list(callback: CallbackQuery):
+    kb_rows = []
+    current_auto = resolve_auto_theme()
+    row = []
+    for theme_id, item in ALL_THEMES.items():
+        is_active = (theme_id == current_auto["id"])
+        prefix = "[Активно] " if is_active else ""
+        btn_text = f"{prefix}{item['title']}"
+        row.append(InlineKeyboardButton(text=btn_text, callback_data=f"season_pick:{theme_id}"))
+        if len(row) == 2:
+            kb_rows.append(row)
+            row = []
+    if row:
+        kb_rows.append(row)
+
+    kb_rows.append([InlineKeyboardButton(text="Вернуться к автовыбору", callback_data="season_pick:auto")])
+
+    text = (
+        "Коллекция всех 12 сезонных и праздничных иконок РИИ:\n\n"
+        "Выберите интересующую тему для просмотра и скачивания изображения:"
+    )
+
+    try:
+        await callback.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows))
+    except Exception:
+        pass
+    finally:
+        await callback.answer()
+
+@router.callback_query(F.data.startswith("season_pick:"))
+async def cb_season_pick(callback: CallbackQuery):
+    theme_id = callback.data.split(":")[1]
+    if theme_id == "auto":
+        theme = resolve_auto_theme()
+    else:
+        theme = get_theme_by_id(theme_id)
+
+    icon_path = get_icon_path(theme["filename"])
+    if not icon_path.exists():
+        await callback.answer("Файл темы не найден.", show_alert=True)
+        return
+
+    text = (
+        f"Тема: {theme['title']}\n"
+        f"Период: {theme['subtitle']}\n\n"
+        "Для установки в качестве аватарки бота сохраните фото и отправьте его в @BotFather через команду /setuserpic."
+    )
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="К списку всех тем", callback_data="season_list")]
+    ])
+
+    try:
+        await callback.message.answer_photo(
+            photo=FSInputFile(str(icon_path)),
+            caption=text,
+            reply_markup=kb
+        )
+    except Exception:
+        pass
+    finally:
+        await callback.answer()
+
 
 @router.callback_query(F.data.startswith("nav_day:"))
 async def cb_navigate_day(callback: CallbackQuery):

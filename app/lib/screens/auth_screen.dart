@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import 'group_picker_screen.dart';
 import 'schedule_screen.dart';
+import '../services/season_icon_service.dart';
 
 class AuthScreen extends StatefulWidget {
   final StorageService storage;
@@ -144,6 +145,8 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
+    final effectiveTheme = SeasonIconService.getEffectiveTheme(widget.storage.getSeasonIconPreference(), rTime);
 
     return Scaffold(
       body: SafeArea(
@@ -158,7 +161,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(28),
                 child: Image.asset(
-                  'assets/logo_app.png',
+                  effectiveTheme.assetPath,
                   width: 110,
                   height: 110,
                   fit: BoxFit.cover,

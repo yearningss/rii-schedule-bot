@@ -119,8 +119,72 @@ async function fetchUserBotSettings() {
   return null;
 }
 
+// Сезонные и праздничные темы оформления иконок
+const SEASON_THEMES = {
+  new_year: { title: "С Новым Годом!", icon: "logo_app_zima.png" },
+  student_day: { title: "День студента", icon: "logo_app_denisydenta.png" },
+  defender_day: { title: "День защитника Отечества", icon: "logo_app_23fevrala.png" },
+  women_day: { title: "Международный женский день", icon: "logo_app_8marta.png" },
+  spring: { title: "Весна", icon: "logo_app_vesna.png" },
+  victory_day: { title: "День Победы", icon: "logo_app_denpobed.png" },
+  graduation: { title: "Выпускной и День молодежи", icon: "logo_app_vipsk.png" },
+  summer: { title: "Лето", icon: "logo_app_leto.png" },
+  city_day: { title: "День города Рубцовска", icon: "logo_app_dengoroda.png" },
+  machinist_day: { title: "День машиностроителя (АТЗ)", icon: "logo_app_ATZ.png" },
+  autumn: { title: "Золотая осень", icon: "logo_app_osen.png" },
+  default: { title: "Классический РИИ", icon: "logo_app.png" }
+};
+
+function getActiveSeasonTheme(date = getRubtsovskDate()) {
+  const m = date.getMonth() + 1; // 1-12
+  const d = date.getDate();
+
+  // 1. Точечные праздники
+  if ((m === 12 && d >= 20) || (m === 1 && d <= 10)) return SEASON_THEMES.new_year;
+  if (m === 1 && d === 25) return SEASON_THEMES.student_day;
+  if (m === 2 && d >= 21 && d <= 24) return SEASON_THEMES.defender_day;
+  if (m === 3 && d >= 7 && d <= 9) return SEASON_THEMES.women_day;
+  if (m === 5 && d <= 10) return SEASON_THEMES.victory_day;
+  if (m === 6 && d >= 20) return SEASON_THEMES.graduation;
+  if (m === 9 && d >= 10 && d <= 20) return SEASON_THEMES.city_day;
+  if (m === 9 && d >= 21 && d <= 30) return SEASON_THEMES.machinist_day;
+
+  // 2. Сезоны
+  if (m === 3 || m === 4 || m === 5) return SEASON_THEMES.spring;
+  if (m === 6 || m === 7 || m === 8) return SEASON_THEMES.summer;
+  if (m === 10 || m === 11) return SEASON_THEMES.autumn;
+
+  return SEASON_THEMES.default;
+}
+
+function updateDynamicFavicon() {
+  try {
+    const theme = getActiveSeasonTheme();
+    const iconUrl = `/icons/${theme.icon}`;
+    const favUrl = `/icons/fav_${theme.icon}`;
+
+    const link32 = document.querySelector("link[sizes='32x32']") || document.querySelector("link[rel='icon']");
+    if (link32) link32.href = favUrl;
+
+    const link512 = document.querySelector("link[sizes='512x512']");
+    if (link512) link512.href = iconUrl;
+
+    const linkShortcut = document.querySelector("link[rel='shortcut icon']");
+    if (linkShortcut) linkShortcut.href = favUrl;
+
+    const linkApple = document.querySelector("link[rel='apple-touch-icon']");
+    if (linkApple) linkApple.href = iconUrl;
+
+    const pwaIcon = document.querySelector(".pwa-icon");
+    if (pwaIcon) pwaIcon.src = favUrl;
+  } catch (e) {
+    console.warn("Ошибка обновления динамического favicon:", e);
+  }
+}
+
 // Загрузка списка групп и инициализация
 async function initApp() {
+  updateDynamicFavicon();
   try {
     const res = await fetch('/api/groups');
     if (!res.ok) throw new Error('Ошибка сети');

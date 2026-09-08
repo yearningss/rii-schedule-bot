@@ -331,10 +331,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.16",
-        "latest_build": 17,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/{target_ext}",
-        "release_notes": "Обновление виджета, уведомлений и базы данных (v1.0.16, сборка 17):\n- Виджет рабочего стола обновляет время в реальном времени каждую минуту (iOS WidgetKit поминутный таймлайн и точный AlarmManager в Android)\n- Устранена задержка отправки уведомлений: системное планирование через точные будильники ОС\n- Динамический расчет оставшихся минут в тексте уведомлений\n- Расширен выбор времени напоминания до начала пары (5, 10, 15, 20, 30, 45, 60 минут)\n- Автоматический учет и синхронизация пользователей мобильного приложения в базе данных SQLite без обязательной авторизации в Telegram",
+        "latest_version": "1.0.17",
+        "latest_build": 18,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/{target_ext}",
+        "release_notes": "Сезонные и праздничные иконки приложения, веб-версии и бота (v1.0.17, сборка 18):\n- Динамическая смена иконки по сезонам и праздникам (Новый год, День студента, 23 февраля, 8 марта, День Победы, День города Рубцовска, День машиностроителя/АТЗ, весна, лето, осень)\n- Выбор темы оформления иконки в настройках приложения (автоматически по календарю или вручную)\n- Динамический favicon и иконка веб-версии Mini App\n- Команда /pic в Telegram-боте для получения актуальной сезонной иконки",
         "is_required": False
     }
 
@@ -348,6 +348,16 @@ async def handle_api_app_changelog(request: web.Request) -> web.Response:
     # Возвращает список всех релизов и изменений напрямую из GitHub Releases
     data = await get_app_changelog_data()
     return web.json_response(data)
+
+async def handle_api_season_theme(request: web.Request) -> web.Response:
+    # Возвращает активную сезонную тему оформления
+    from services.season_service import resolve_auto_theme, ALL_THEMES
+    theme = resolve_auto_theme()
+    return web.json_response({
+        "status": "ok",
+        "current_theme": theme,
+        "all_themes": list(ALL_THEMES.values())
+    })
 
 def create_web_app() -> web.Application:
     app = web.Application()
@@ -363,6 +373,7 @@ def create_web_app() -> web.Application:
     app.router.add_post("/api/app/device/sync", handle_api_app_device_sync)
     app.router.add_get("/api/app/version", handle_api_app_version)
     app.router.add_get("/api/app/changelog", handle_api_app_changelog)
+    app.router.add_get("/api/season/theme", handle_api_season_theme)
     app.router.add_static("/", WEBAPP_DIR)
     return app
 

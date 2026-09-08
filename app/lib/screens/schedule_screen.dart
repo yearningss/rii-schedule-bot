@@ -12,6 +12,7 @@ import 'group_picker_screen.dart';
 import 'settings_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/notification_service.dart';
+import '../services/season_icon_service.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final StorageService storage;
@@ -593,6 +594,32 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 10, top: 8, bottom: 8),
+          child: Tooltip(
+            message: SeasonIconService.getEffectiveTheme(widget.storage.getSeasonIconPreference(), rTime).title,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () {
+                final curTheme = SeasonIconService.getEffectiveTheme(widget.storage.getSeasonIconPreference(), rTime);
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Тема оформления: ${curTheme.title} (${curTheme.subtitle})'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  SeasonIconService.getEffectiveTheme(widget.storage.getSeasonIconPreference(), rTime).assetPath,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        ),
         title: InkWell(
           onTap: _changeGroup,
           borderRadius: BorderRadius.circular(10),
