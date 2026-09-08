@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/api_service.dart';
 import 'services/storage_service.dart';
+import 'services/season_icon_service.dart';
 import 'screens/auth_screen.dart';
 import 'screens/schedule_screen.dart';
 
@@ -19,6 +20,11 @@ void main() async {
 
   final storage = await StorageService.init();
   final api = ApiService();
+
+  // Применить сезонную иконку на рабочем столе (автоматически по дате или по настройке)
+  final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
+  final theme = SeasonIconService.getEffectiveTheme(storage.getSeasonIconPreference(), rTime);
+  await SeasonIconService.applyLauncherIcon(theme);
 
   runApp(RiiScheduleApp(storage: storage, api: api));
 }

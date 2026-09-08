@@ -20,7 +20,24 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity: FlutterActivity() {
     private val widgetChannel = "com.yearnings.rii/widget"
     private val notificationChannel = "com.yearnings.rii/notifications"
+    private val launcherIconChannel = "com.yearnings.rii/launcher_icon"
     private val scheduleChannelId = "rii_schedule_alerts_v2"
+
+    // Все возможные alias'ы (должны совпадать с AndroidManifest.xml)
+    private val allAliases = listOf(
+        ".MainActivityDefault",
+        ".MainActivityNewYear",
+        ".MainActivityStudentDay",
+        ".MainActivityDefenderDay",
+        ".MainActivityWomenDay",
+        ".MainActivitySpring",
+        ".MainActivityVictoryDay",
+        ".MainActivityGraduation",
+        ".MainActivitySummer",
+        ".MainActivityCityDay",
+        ".MainActivityMachinistDay",
+        ".MainActivityAutumn",
+    )
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -32,6 +49,35 @@ class MainActivity: FlutterActivity() {
             if (call.method == "updateWidget") {
                 ScheduleWidgetProvider.updateAllWidgets(applicationContext)
                 result.success(true)
+            } else {
+                result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, launcherIconChannel).setMethodCallHandler { call, result ->
+            if (call.method == "setIcon") {
+                val targetAlias = call.argument<String>("androidAlias") ?: ".MainActivityDefault"
+                try {
+                    val pm = packageManager
+                    val pkg = packageName
+                    // Включаем нужный alias, отключаем все остальные
+                    for (alias in allAliases) {
+                        val componentName = android.content.ComponentName(pkg, "$pkg$alias")
+                        val newState = if (alias == targetAlias) {
+                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                        } else {
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                        }
+                        pm.setComponentEnabledSetting(
+                            componentName,
+                            newState,
+                            PackageManager.DONT_KILL_APP
+                        )
+                    }
+                    result.success(true)
+                } catch (e: Exception) {
+                    result.success(false)
+                }
             } else {
                 result.notImplemented()
             }

@@ -595,6 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 : null,
                             onTap: () async {
                               await widget.storage.saveSeasonIconPreference('auto');
+                              await SeasonIconService.applyLauncherIcon(autoTheme);
                               if (mounted) {
                                 setState(() {
                                   _seasonIconPref = 'auto';
@@ -655,6 +656,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     : null,
                                 onTap: () async {
                                   await widget.storage.saveSeasonIconPreference(themeItem.id);
+                                  await SeasonIconService.applyLauncherIcon(themeItem);
                                   if (mounted) {
                                     setState(() {
                                       _seasonIconPref = themeItem.id;

@@ -1,5 +1,6 @@
 // Сервис динамических сезонных и праздничных иконок приложения РИИ
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SeasonThemeItem {
   final String id;
@@ -8,6 +9,10 @@ class SeasonThemeItem {
   final String assetPath;
   final String webIconName;
   final Color accentColor;
+  // Суффикс activity-alias для Android (например 'NewYear' -> '.MainActivityNewYear')
+  final String? androidAlias;
+  // Имя alternate icon для iOS (например 'AppIcon-NewYear')
+  final String? iosIconName;
 
   const SeasonThemeItem({
     required this.id,
@@ -16,6 +21,8 @@ class SeasonThemeItem {
     required this.assetPath,
     required this.webIconName,
     required this.accentColor,
+    this.androidAlias,
+    this.iosIconName,
   });
 }
 
@@ -29,6 +36,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app.png',
       webIconName: 'logo_app.png',
       accentColor: Color(0xFF2563EB),
+      androidAlias: '.MainActivityDefault',
+      iosIconName: null,
     ),
     SeasonThemeItem(
       id: 'city_day',
@@ -37,6 +46,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_dengoroda.png',
       webIconName: 'logo_app_dengoroda.png',
       accentColor: Color(0xFF059669),
+      androidAlias: '.MainActivityCityDay',
+      iosIconName: 'AppIcon-CityDay',
     ),
     SeasonThemeItem(
       id: 'machinist_day',
@@ -45,6 +56,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_ATZ.png',
       webIconName: 'logo_app_ATZ.png',
       accentColor: Color(0xFF1E3A8A),
+      androidAlias: '.MainActivityMachinistDay',
+      iosIconName: 'AppIcon-MachinistDay',
     ),
     SeasonThemeItem(
       id: 'autumn',
@@ -53,6 +66,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_osen.png',
       webIconName: 'logo_app_osen.png',
       accentColor: Color(0xFFD97706),
+      androidAlias: '.MainActivityAutumn',
+      iosIconName: 'AppIcon-Autumn',
     ),
     SeasonThemeItem(
       id: 'new_year',
@@ -61,6 +76,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_zima.png',
       webIconName: 'logo_app_zima.png',
       accentColor: Color(0xFF0284C7),
+      androidAlias: '.MainActivityNewYear',
+      iosIconName: 'AppIcon-NewYear',
     ),
     SeasonThemeItem(
       id: 'student_day',
@@ -69,6 +86,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_denisydenta.png',
       webIconName: 'logo_app_denisydenta.png',
       accentColor: Color(0xFF7C3AED),
+      androidAlias: '.MainActivityStudentDay',
+      iosIconName: 'AppIcon-StudentDay',
     ),
     SeasonThemeItem(
       id: 'defender_day',
@@ -77,6 +96,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_23fevrala.png',
       webIconName: 'logo_app_23fevrala.png',
       accentColor: Color(0xFF15803D),
+      androidAlias: '.MainActivityDefenderDay',
+      iosIconName: 'AppIcon-DefenderDay',
     ),
     SeasonThemeItem(
       id: 'women_day',
@@ -85,6 +106,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_8marta.png',
       webIconName: 'logo_app_8marta.png',
       accentColor: Color(0xFFDB2777),
+      androidAlias: '.MainActivityWomenDay',
+      iosIconName: 'AppIcon-WomenDay',
     ),
     SeasonThemeItem(
       id: 'spring',
@@ -93,6 +116,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_vesna.png',
       webIconName: 'logo_app_vesna.png',
       accentColor: Color(0xFF10B981),
+      androidAlias: '.MainActivitySpring',
+      iosIconName: 'AppIcon-Spring',
     ),
     SeasonThemeItem(
       id: 'victory_day',
@@ -101,6 +126,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_denpobed.png',
       webIconName: 'logo_app_denpobed.png',
       accentColor: Color(0xFFB91C1C),
+      androidAlias: '.MainActivityVictoryDay',
+      iosIconName: 'AppIcon-VictoryDay',
     ),
     SeasonThemeItem(
       id: 'graduation',
@@ -109,6 +136,8 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_vipsk.png',
       webIconName: 'logo_app_vipsk.png',
       accentColor: Color(0xFF6366F1),
+      androidAlias: '.MainActivityGraduation',
+      iosIconName: 'AppIcon-Graduation',
     ),
     SeasonThemeItem(
       id: 'summer',
@@ -117,8 +146,26 @@ class SeasonIconService {
       assetPath: 'assets/icons/logo_app_leto.png',
       webIconName: 'logo_app_leto.png',
       accentColor: Color(0xFFEAB308),
+      androidAlias: '.MainActivitySummer',
+      iosIconName: 'AppIcon-Summer',
     ),
   ];
+
+  // MethodChannel для нативной смены иконки лаунчера
+  static const MethodChannel _channel = MethodChannel('com.yearnings.rii/launcher_icon');
+
+  // Применить иконку лаунчера на рабочем столе телефона.
+  // Вызывать при старте приложения и при ручной смене темы в настройках.
+  static Future<void> applyLauncherIcon(SeasonThemeItem theme) async {
+    try {
+      await _channel.invokeMethod('setIcon', {
+        'androidAlias': theme.androidAlias,
+        'iosIconName': theme.iosIconName,
+      });
+    } catch (_) {
+      // Игнорируем ошибки платформы: иконка - не критичный функционал
+    }
+  }
 
   // Определение актуальной темы по времени Рубцовска (UTC+7)
   static SeasonThemeItem resolveAutoSeason(DateTime rubtsovskTime) {

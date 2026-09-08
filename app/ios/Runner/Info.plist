@@ -73,5 +73,67 @@
 		<string>http</string>
 		<string>tg</string>
 	</array>
+	<!-- Альтернативные иконки приложения для динамической смены -->
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>AppIcon-NewYear</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-NewYear</string></array>
+			</dict>
+			<key>AppIcon-StudentDay</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-StudentDay</string></array>
+			</dict>
+			<key>AppIcon-DefenderDay</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-DefenderDay</string></array>
+			</dict>
+			<key>AppIcon-WomenDay</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-WomenDay</string></array>
+			</dict>
+			<key>AppIcon-Spring</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Spring</string></array>
+			</dict>
+			<key>AppIcon-VictoryDay</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-VictoryDay</string></array>
+			</dict>
+			<key>AppIcon-Graduation</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Graduation</string></array>
+			</dict>
+			<key>AppIcon-Summer</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Summer</string></array>
+			</dict>
+			<key>AppIcon-CityDay</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-CityDay</string></array>
+			</dict>
+			<key>AppIcon-MachinistDay</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-MachinistDay</string></array>
+			</dict>
+			<key>AppIcon-Autumn</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array><string>AppIcon-Autumn</string></array>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>
