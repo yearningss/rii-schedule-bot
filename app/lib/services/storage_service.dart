@@ -16,6 +16,7 @@ class StorageService {
   static const String _keyAvatarUrl = 'avatar_url';
   static const String _keyCustomAvatar = 'custom_avatar';
   static const String _keyThemeMode = 'theme_mode';
+  static const String _keySeasonIcon = 'season_icon_preference';
   static const String _keyScheduleCache = 'schedule_cache_';
   static const String _keyGroupsCache = 'groups_cache';
   static const String _keyDeviceId = 'device_id';
@@ -57,6 +58,14 @@ class StorageService {
     if (mode == ThemeMode.light) val = 'light';
     await prefs.setString(_keyThemeMode, val);
     themeModeNotifier.value = mode;
+  }
+
+  String getSeasonIconPreference() {
+    return prefs.getString(_keySeasonIcon) ?? 'auto';
+  }
+
+  Future<void> saveSeasonIconPreference(String id) async {
+    await prefs.setString(_keySeasonIcon, id);
   }
 
   UserProfile getUserProfile() {

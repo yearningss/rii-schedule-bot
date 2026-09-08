@@ -8,6 +8,7 @@ import 'bells_screen.dart';
 import 'group_picker_screen.dart';
 import 'auth_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/season_icon_service.dart';
 import '../services/widget_service.dart';
 import '../services/notification_service.dart';
 import 'changelog_screen.dart';
@@ -30,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late UserProfile _profile;
   late ThemeMode _currentThemeMode;
   late NotificationSettings _notifSettings;
+  late String _seasonIconPref;
+  late SeasonThemeItem _currentSeasonTheme;
   bool _isCheckingUpdate = false;
   bool _isOnline = true;
   bool _isCheckingConnection = false;
@@ -82,6 +85,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _profile = widget.storage.getUserProfile();
     _currentThemeMode = widget.storage.getThemeMode();
     _notifSettings = widget.storage.getNotificationSettings();
+    _seasonIconPref = widget.storage.getSeasonIconPreference();
+    final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
+    _currentSeasonTheme = SeasonIconService.getEffectiveTheme(_seasonIconPref, rTime);
     _checkNetworkConnection();
     _refreshProfileFromServer();
   }
@@ -506,6 +512,174 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _openSeasonIconPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
+        final autoTheme = SeasonIconService.resolveAutoSeason(rTime);
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.78,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Иконка приложения',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        'Выберите тему оформления и иконку. В авторежиме стиль переключается по календарю Рубцовска.',
+                        style: TextStyle(fontSize: 13, color: subColor),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          // Опция автоматического переключения
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: _seasonIconPref == 'auto'
+                                    ? const Color(0xFF2563EB)
+                                    : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                                width: _seasonIconPref == 'auto' ? 2 : 1,
+                              ),
+                            ),
+                            leading: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2563EB).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF2563EB)),
+                            ),
+                            title: const Text(
+                              'Авто (по календарю)',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            subtitle: Text(
+                              'Сейчас активно: ${autoTheme.title}',
+                              style: TextStyle(fontSize: 13, color: subColor),
+                            ),
+                            trailing: _seasonIconPref == 'auto'
+                                ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB))
+                                : null,
+                            onTap: () async {
+                              await widget.storage.saveSeasonIconPreference('auto');
+                              if (mounted) {
+                                setState(() {
+                                  _seasonIconPref = 'auto';
+                                  _currentSeasonTheme = autoTheme;
+                                });
+                              }
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 8),
+                            child: Text(
+                              'ВСЕ 12 СТИЛЕЙ ОФОРМЛЕНИЯ',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                                color: subColor,
+                              ),
+                            ),
+                          ),
+                          ...SeasonIconService.allThemes.map((themeItem) {
+                            final isSelected = _seasonIconPref == themeItem.id;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E232D) : Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? themeItem.accentColor
+                                      : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                                  width: isSelected ? 2 : 1,
+                                ),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                leading: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.asset(
+                                    themeItem.assetPath,
+                                    width: 44,
+                                    height: 44,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                title: Text(
+                                  themeItem.title,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                ),
+                                subtitle: Text(
+                                  themeItem.subtitle,
+                                  style: TextStyle(fontSize: 12, color: subColor),
+                                ),
+                                trailing: isSelected
+                                    ? Icon(Icons.check_circle_rounded, color: themeItem.accentColor)
+                                    : null,
+                                onTap: () async {
+                                  await widget.storage.saveSeasonIconPreference(themeItem.id);
+                                  if (mounted) {
+                                    setState(() {
+                                      _seasonIconPref = themeItem.id;
+                                      _currentSeasonTheme = themeItem;
+                                    });
+                                  }
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                },
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildAvatarWidget() {
     final avatarUrl = _profile.avatarUrl;
     final customAvatar = _profile.customAvatar;
@@ -803,6 +977,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    _currentSeasonTheme.assetPath,
+                    width: 34,
+                    height: 34,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                title: const Text('Сезонная иконка и стиль', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                  _seasonIconPref == 'auto'
+                      ? 'Авто: ${_currentSeasonTheme.title}'
+                      : _currentSeasonTheme.title,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: _openSeasonIconPicker,
+              ),
               Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
               ListTile(
                 leading: const Icon(Icons.account_circle_rounded, color: Color(0xFF6366F1)),

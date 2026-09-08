@@ -184,10 +184,33 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.17',
+        title: 'Релиз v1.0.17 (сборка 18)',
+        publishedAt: '2026-09-08T09:30:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.17',
+        rawBody: '''* Динамическая смена темы и иконки по сезонам и праздникам: День города Рубцовска (10 - 20 сентября), День машиностроителя/АТЗ (21 - 30 сентября), Золотая осень, С Новым Годом, День студента (Татьянин день), 23 февраля, 8 марта, День Победы, Выпускной и День молодежи, весна, лето.
+* Интерактивный выбор темы оформления и иконки в Настройках приложения: авторежим по календарю Рубцовска (UTC+7) или выбор любого из 12 праздничных стилей.
+* Динамический favicon и значок веб-версии Telegram Mini App в зависимости от активного сезона и праздника.
+* Команда /pic в Telegram-боте для просмотра актуальной сезонной иконки и инструкций по установке аватарки через @BotFather.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56500000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8380000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.16',
         title: 'Релиз v1.0.16 (сборка 17)',
         publishedAt: '2026-09-08T07:15:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.16',
         rawBody: '''* Время в виджете рабочего стола обновляется в реальном времени каждую минуту (WidgetKit поминутный таймлайн на iOS и точный AlarmManager в Android).
 * Устранена задержка отправки уведомлений: прямое системное планирование напоминаний о парах и переменах через точные системные будильники ОС.
