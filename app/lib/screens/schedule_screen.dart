@@ -123,7 +123,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
           );
         }
 
-        if (mounted && isStartup) {
+        final lastPrompted = widget.storage.prefs.getInt('last_prompted_update_build') ?? 0;
+        if (mounted && isStartup && update.latestBuild > lastPrompted) {
+          await widget.storage.prefs.setInt('last_prompted_update_build', update.latestBuild);
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

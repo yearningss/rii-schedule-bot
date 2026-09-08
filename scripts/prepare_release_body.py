@@ -31,6 +31,9 @@ def main():
         except Exception:
             changes = "* Плановое обновление приложения и исправления ошибок."
 
+    # Заменяем случайные теги вроде @BotFather на код, чтобы GitHub не считал их контрибьюторами
+    changes = re.sub(r'@BotFather\b', '`BotFather`', changes, flags=re.IGNORECASE)
+
     body = f"""Официальный релиз мобильного приложения РИИ АлтГТУ (версия {ver}, сборка {build}).
 
 ### Что нового в этом обновлении:
@@ -40,6 +43,11 @@ def main():
 * **RiiSchedule.apk** - Релизный подписанный APK для Android (рекомендуется для установки и обновления поверх старых версий).
 * **RiiSchedule-debug.apk** - Отладочный APK со встроенными логами для тестирования.
 * **RiiSchedule.ipa** - Пакет приложения для iOS (установка через AltStore, Sideloadly, TrollStore или личный сертификат Apple ID).
+
+### Разработчики:
+* @yearningss
+* @TheKalina
+* @MRYROKGG
 """
 
     with open('release_body.md', 'w', encoding='utf-8') as f:

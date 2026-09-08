@@ -184,15 +184,60 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.19',
+        title: 'Релиз v1.0.19 (сборка 20)',
+        publishedAt: '2026-09-08T11:00:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.19',
+        rawBody: '''* Устранено бесконечное появление диалога и баннера обновления при уже установленной актуальной версии приложения.
+* Синхронизация кода сборки и версии AppInfo (v1.0.19, сборка 20).
+* Ограничение частоты показа баннера обновлений: ненавязчивое однократное уведомление на релиз вместо показа при каждом открытии.
+* Автоматическая валидация авторов и контрибьюторов репозитория (@yearningss, @TheKalina, @MRYROKGG).''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56500000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.19/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8380000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.19/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
+        tag: '1.0.18',
+        title: 'Релиз v1.0.18 (сборка 19)',
+        publishedAt: '2026-09-08T10:15:00Z',
+        isCurrent: false,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.18',
+        rawBody: '''* Динамическая смена иконки приложения прямо на рабочем столе смартфона: автоматическая смена по сезонам и праздникам или вручную через Настройки.
+* Нативная поддержка Android: 12 activity-alias в AndroidManifest.xml со всеми плотностями экранов (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi).
+* Нативная поддержка iOS: регистрация CFBundleAlternateIcons с комплектами иконок высокого разрешения.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56500000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.18/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8380000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.18/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.17',
         title: 'Релиз v1.0.17 (сборка 18)',
         publishedAt: '2026-09-08T09:30:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.17',
         rawBody: '''* Динамическая смена темы и иконки по сезонам и праздникам: День города Рубцовска (10 - 20 сентября), День машиностроителя/АТЗ (21 - 30 сентября), Золотая осень, С Новым Годом, День студента (Татьянин день), 23 февраля, 8 марта, День Победы, Выпускной и День молодежи, весна, лето.
 * Интерактивный выбор темы оформления и иконки в Настройках приложения: авторежим по календарю Рубцовска (UTC+7) или выбор любого из 12 праздничных стилей.
 * Динамический favicon и значок веб-версии Telegram Mini App в зависимости от активного сезона и праздника.
-* Команда /pic в Telegram-боте для просмотра актуальной сезонной иконки и инструкций по установке аватарки через @BotFather.''',
+* Команда /pic в Telegram-боте для просмотра актуальной сезонной иконки и инструкций по установке аватарки через BotFather.''',
         assets: [
           const ReleaseAsset(
             name: 'RiiSchedule.apk',

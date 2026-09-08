@@ -331,10 +331,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.17",
-        "latest_build": 18,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/{target_ext}",
-        "release_notes": "Сезонные и праздничные иконки приложения, веб-версии и бота (v1.0.17, сборка 18):\n- Динамическая смена иконки по сезонам и праздникам (Новый год, День студента, 23 февраля, 8 марта, День Победы, День города Рубцовска, День машиностроителя/АТЗ, весна, лето, осень)\n- Выбор темы оформления иконки в настройках приложения (автоматически по календарю или вручную)\n- Динамический favicon и иконка веб-версии Mini App\n- Команда /pic в Telegram-боте для получения актуальной сезонной иконки",
+        "latest_version": "1.0.19",
+        "latest_build": 20,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.19/{target_ext}",
+        "release_notes": "Обновление v1.0.19 (сборка 20):\n- Синхронизация версий приложения\n- Исправление бесконечного окна обновления\n- Динамическая смена иконки приложения на рабочем столе",
         "is_required": False
     }
 
