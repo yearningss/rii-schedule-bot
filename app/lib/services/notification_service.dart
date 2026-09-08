@@ -46,4 +46,21 @@ class NotificationService {
       });
     } catch (_) {}
   }
+
+  // Точное системное планирование уведомления без задержек через AlarmManager / UNUserNotificationCenter
+  static Future<void> scheduleNotification({
+    required int id,
+    required String title,
+    required String message,
+    required DateTime scheduledDate,
+  }) async {
+    try {
+      await _channel.invokeMethod('scheduleNotification', {
+        'id': id,
+        'title': title,
+        'message': message,
+        'epochMillis': scheduledDate.millisecondsSinceEpoch,
+      });
+    } catch (_) {}
+  }
 }

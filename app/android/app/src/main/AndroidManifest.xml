@@ -47,10 +47,16 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.yearnings.rii.ACTION_SCHEDULE_TICK" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/schedule_widget_info" />
-        </receiver>
+        <!-- Приемник запланированных будильников уведомлений о парах -->
+        <receiver
+            android:name=".NotificationAlarmReceiver"
+            android:exported="false" />
     </application>
 </manifest>

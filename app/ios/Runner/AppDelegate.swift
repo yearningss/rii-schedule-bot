@@ -65,6 +65,32 @@ import UserNotifications
             UNUserNotificationCenter.current().add(req)
           }
           result(true)
+        } else if call.method == "scheduleNotification" {
+          if #available(iOS 10.0, *) {
+            if let args = call.arguments as? [String: Any] {
+              let title = args["title"] as? String ?? "РИИ Расписание"
+              let message = args["message"] as? String ?? ""
+              let epochMillis = args["epochMillis"] as? Double ?? 0
+              let id = args["id"] as? String ?? UUID().uuidString
+
+              let triggerDate = Date(timeIntervalSince1970: epochMillis / 1000.0)
+              let interval = triggerDate.timeIntervalSinceNow
+              let content = UNMutableNotificationContent()
+              content.title = title
+              content.body = message
+              content.sound = .default
+
+              if interval <= 1.0 {
+                let req = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(req)
+              } else {
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+                let req = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+                UNUserNotificationCenter.current().add(req)
+              }
+            }
+          }
+          result(true)
         } else if call.method == "openNotificationSettings" {
           if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)

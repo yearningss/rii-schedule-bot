@@ -111,6 +111,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Сохранение и двусторонняя синхронизация параметров профиля и уведомлений
+  Future<void> _syncProfileToServer({NotificationSettings? notif}) async {
+    try {
+      final n = notif ?? _notifSettings;
+      final deviceId = widget.storage.getDeviceId();
+      final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+
+      await widget.api.syncDeviceUser(
+        deviceId: deviceId,
+        platform: isIOS ? 'ios' : 'android',
+        groupId: _profile.groupId,
+        groupName: _profile.groupName,
+        subgroup: _profile.subgroup,
+        notificationsEnabled: n.enabled,
+        notifyBeforeMins: n.beforeMins,
+        notifyLessonStart: n.lessonStart,
+        notifyBreaks: n.breaks,
+        notifyChanges: n.changes,
+        appVersion: AppInfo.versionName,
+        authToken: _profile.authToken,
+      );
+
+      if (_profile.authToken != null) {
+        await widget.api.syncProfile(
+          authToken: _profile.authToken!,
+          groupId: _profile.groupId,
+          groupName: _profile.groupName,
+          subgroup: _profile.subgroup,
+          notificationsEnabled: n.enabled,
+          notifyBeforeMins: n.beforeMins,
+          notifyLessonStart: n.lessonStart,
+          notifyBreaks: n.breaks,
+          notifyChanges: n.changes,
+        );
+      }
+    } catch (_) {}
+  }
+
   // Сохранение и синхронизация параметров уведомлений
   Future<void> _updateNotificationSettings(NotificationSettings newSettings) async {
     setState(() {
@@ -122,16 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await NotificationService.requestPermission();
     }
 
-    if (_profile.authToken != null) {
-      await widget.api.syncProfile(
-        authToken: _profile.authToken!,
-        notificationsEnabled: newSettings.enabled,
-        notifyBeforeMins: newSettings.beforeMins,
-        notifyLessonStart: newSettings.lessonStart,
-        notifyBreaks: newSettings.breaks,
-        notifyChanges: newSettings.changes,
-      );
-    }
+    await _syncProfileToServer(notif: newSettings);
   }
 
   Future<void> _refreshProfileFromServer() async {
@@ -230,13 +259,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _profile = _profile.copyWith(subgroup: sg);
     });
     await widget.storage.saveSubgroup(sg);
-
-    if (_profile.authToken != null) {
-      widget.api.syncProfile(
-        authToken: _profile.authToken!,
-        subgroup: sg,
-      );
-    }
+    await _syncProfileToServer();
     WidgetService.updateWidgetData(profile: _profile);
   }
 
@@ -253,14 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _profile = _profile.copyWith(groupId: selected.id, groupName: selected.name);
       });
       await widget.storage.saveUserProfile(_profile);
-
-      if (_profile.authToken != null) {
-        widget.api.syncProfile(
-          authToken: _profile.authToken!,
-          groupId: selected.id,
-          groupName: selected.name,
-        );
-      }
+      await _syncProfileToServer();
       WidgetService.updateWidgetData(profile: _profile);
     }
   }
@@ -838,37 +854,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [5, 10, 15, 30].map((mins) {
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [5, 10, 15, 20, 30, 45, 60].map((mins) {
                           final isSel = _notifSettings.beforeMins == mins;
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 3),
-                              child: InkWell(
-                                onTap: () {
-                                  _updateNotificationSettings(_notifSettings.copyWith(beforeMins: mins));
-                                },
+                          return InkWell(
+                            onTap: () {
+                              _updateNotificationSettings(_notifSettings.copyWith(beforeMins: mins));
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSel
+                                    ? const Color(0xFF2563EB)
+                                    : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
                                 borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: isSel
-                                        ? const Color(0xFF2563EB)
-                                        : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: isSel ? const Color(0xFF2563EB) : Colors.transparent,
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '$mins мин',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                      color: isSel ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[800]),
-                                    ),
-                                  ),
+                                border: Border.all(
+                                  color: isSel ? const Color(0xFF2563EB) : Colors.transparent,
+                                ),
+                              ),
+                              child: Text(
+                                '$mins мин',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                  color: isSel ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[800]),
                                 ),
                               ),
                             ),

@@ -99,11 +99,18 @@ struct ScheduleProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ScheduleEntry>) -> Void) {
         let currentDate = Date()
-        let entry = createEntry(for: currentDate)
+        var entries: [ScheduleEntry] = []
         
-        // Обновление каждые 15 минут
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: currentDate) ?? currentDate.addingTimeInterval(900)
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        // Генерация записей таймлайна с шагом в 1 минуту на ближайшие 2 часа.
+        // Благодаря этому WidgetKit обновляет виджет каждую минуту в реальном времени.
+        for minOffset in 0..<120 {
+            if let entryDate = Calendar.current.date(byAdding: .minute, value: minOffset, to: currentDate) {
+                entries.append(createEntry(for: entryDate))
+            }
+        }
+        
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 60, to: currentDate) ?? currentDate.addingTimeInterval(3600)
+        let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
         completion(timeline)
     }
     

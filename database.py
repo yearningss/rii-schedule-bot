@@ -83,7 +83,16 @@ async def init_db():
             await db.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
         if "mobile_app_installed_at" not in columns:
             await db.execute("ALTER TABLE users ADD COLUMN mobile_app_installed_at TIMESTAMP")
+        if "device_id" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN device_id TEXT")
+        if "platform" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN platform TEXT")
+        if "last_active" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN last_active TIMESTAMP")
+        if "app_version" not in columns:
+            await db.execute("ALTER TABLE users ADD COLUMN app_version TEXT")
 
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id)")
         await db.commit()
 
 async def get_user(user_id: int):
@@ -95,7 +104,7 @@ async def get_user(user_id: int):
                    notifications_enabled, notify_before_mins, notify_breaks,
                    notify_lesson_start, notify_changes,
                    has_mobile_app, first_name, last_name, username, avatar_url,
-                   mobile_app_installed_at
+                   mobile_app_installed_at, device_id, platform, last_active, app_version
             FROM users WHERE user_id = ?
             """,
             (user_id,),
@@ -238,6 +247,10 @@ async def get_stats():
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT COUNT(*) FROM users") as cursor:
             total_users = (await cursor.fetchone())[0]
+        async with db.execute("SELECT COUNT(*) FROM users WHERE user_id > 0") as cursor:
+            telegram_users = (await cursor.fetchone())[0]
+        async with db.execute("SELECT COUNT(*) FROM users WHERE user_id < 0") as cursor:
+            guest_app_users = (await cursor.fetchone())[0]
         async with db.execute("SELECT COUNT(*) FROM users WHERE group_id IS NOT NULL") as cursor:
             active_users = (await cursor.fetchone())[0]
         async with db.execute("SELECT COUNT(*) FROM users WHERE notifications_enabled = 1") as cursor:
@@ -246,6 +259,8 @@ async def get_stats():
             mobile_users = (await cursor.fetchone())[0]
         return {
             "total_users": total_users,
+            "telegram_users": telegram_users,
+            "guest_app_users": guest_app_users,
             "active_users": active_users,
             "notif_users": notif_users,
             "mobile_users": mobile_users
@@ -363,4 +378,191 @@ async def get_user_by_auth_token(auth_token: str) -> Optional[dict]:
         ) as cursor:
             row = await cursor.fetchone()
             return dict(row) if row else None
+
+async def register_or_update_device_user(
+    device_id: str,
+    platform: str = "android",
+    group_id: Optional[int] = None,
+    group_name: Optional[str] = None,
+    subgroup: Optional[int] = 0,
+    notifications_enabled: Optional[int] = 1,
+    notify_before_mins: Optional[int] = 10,
+    notify_breaks: Optional[int] = 1,
+    notify_lesson_start: Optional[int] = 1,
+    notify_changes: Optional[int] = 1,
+    app_version: Optional[str] = None,
+    auth_token: Optional[str] = None
+) -> dict:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        target_user_id = None
+
+        # 1. Если передан действующий auth_token, связываем с существующим пользователем
+        if auth_token:
+            async with db.execute(
+                "SELECT user_id FROM app_users WHERE auth_token = ?", (auth_token,)
+            ) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    target_user_id = row["user_id"]
+
+        # 2. Если пользователь найден по auth_token
+        if target_user_id is not None:
+            updates = [
+                "device_id = ?",
+                "platform = ?",
+                "has_mobile_app = 1",
+                "last_active = CURRENT_TIMESTAMP",
+                "updated_at = CURRENT_TIMESTAMP"
+            ]
+            params = [device_id, platform]
+
+            if group_id is not None:
+                updates.append("group_id = ?")
+                params.append(group_id)
+            if group_name is not None:
+                updates.append("group_name = ?")
+                params.append(group_name)
+            if subgroup is not None:
+                updates.append("subgroup = ?")
+                params.append(subgroup)
+            if notifications_enabled is not None:
+                updates.append("notifications_enabled = ?")
+                params.append(notifications_enabled)
+            if notify_before_mins is not None:
+                updates.append("notify_before_mins = ?")
+                params.append(notify_before_mins)
+            if notify_breaks is not None:
+                updates.append("notify_breaks = ?")
+                params.append(notify_breaks)
+            if notify_lesson_start is not None:
+                updates.append("notify_lesson_start = ?")
+                params.append(notify_lesson_start)
+            if notify_changes is not None:
+                updates.append("notify_changes = ?")
+                params.append(notify_changes)
+            if app_version is not None:
+                updates.append("app_version = ?")
+                params.append(app_version)
+
+            params.append(target_user_id)
+            await db.execute(f"UPDATE users SET {', '.join(updates)} WHERE user_id = ?", tuple(params))
+
+            # Удаляем временную гостевую запись с этим же device_id (если была создана до авторизации)
+            await db.execute("DELETE FROM users WHERE device_id = ? AND user_id < 0", (device_id,))
+            await db.execute("DELETE FROM app_users WHERE auth_token = ?", (f"dev_{device_id}",))
+            await db.commit()
+
+            async with db.execute("SELECT * FROM users WHERE user_id = ?", (target_user_id,)) as cur:
+                r = await cur.fetchone()
+                return dict(r) if r else {}
+
+        # 3. Пользователь без Telegram авторизации (гость устройства)
+        # Проверяем, существует ли уже запись с таким device_id
+        async with db.execute("SELECT * FROM users WHERE device_id = ?", (device_id,)) as cursor:
+            existing = await cursor.fetchone()
+
+        if existing:
+            user_id = existing["user_id"]
+            updates = [
+                "platform = ?",
+                "has_mobile_app = 1",
+                "last_active = CURRENT_TIMESTAMP",
+                "updated_at = CURRENT_TIMESTAMP"
+            ]
+            params = [platform]
+
+            if group_id is not None:
+                updates.append("group_id = ?")
+                params.append(group_id)
+            if group_name is not None:
+                updates.append("group_name = ?")
+                params.append(group_name)
+            if subgroup is not None:
+                updates.append("subgroup = ?")
+                params.append(subgroup)
+            if notifications_enabled is not None:
+                updates.append("notifications_enabled = ?")
+                params.append(notifications_enabled)
+            if notify_before_mins is not None:
+                updates.append("notify_before_mins = ?")
+                params.append(notify_before_mins)
+            if notify_breaks is not None:
+                updates.append("notify_breaks = ?")
+                params.append(notify_breaks)
+            if notify_lesson_start is not None:
+                updates.append("notify_lesson_start = ?")
+                params.append(notify_lesson_start)
+            if notify_changes is not None:
+                updates.append("notify_changes = ?")
+                params.append(notify_changes)
+            if app_version is not None:
+                updates.append("app_version = ?")
+                params.append(app_version)
+
+            params.append(user_id)
+            await db.execute(f"UPDATE users SET {', '.join(updates)} WHERE user_id = ?", tuple(params))
+
+            synthetic_token = f"dev_{device_id}"
+            await db.execute(
+                """
+                INSERT INTO app_users (auth_token, user_id, last_active)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(auth_token) DO UPDATE SET last_active = CURRENT_TIMESTAMP
+                """,
+                (synthetic_token, user_id)
+            )
+            await db.commit()
+
+            async with db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)) as cur:
+                r = await cur.fetchone()
+                return dict(r) if r else {}
+
+        # 4. Новое устройство: генерируем уникальный отрицательный user_id
+        async with db.execute("SELECT MIN(user_id) FROM users WHERE user_id < 0") as cur:
+            row = await cur.fetchone()
+            min_val = row[0] if (row and row[0] is not None) else 0
+            new_user_id = min(min_val - 1, -1)
+
+        guest_name = f"Пользователь ({platform.capitalize()})"
+        await db.execute(
+            """
+            INSERT INTO users (
+                user_id, device_id, platform, group_id, group_name, subgroup,
+                notifications_enabled, notify_before_mins, notify_breaks,
+                notify_lesson_start, notify_changes, app_version, has_mobile_app,
+                first_name, mobile_app_installed_at, created_at, updated_at, last_active
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?,
+                ?, ?, ?, 1,
+                ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            """,
+            (
+                new_user_id, device_id, platform, group_id, group_name, subgroup or 0,
+                notifications_enabled if notifications_enabled is not None else 1,
+                notify_before_mins if notify_before_mins is not None else 10,
+                notify_breaks if notify_breaks is not None else 1,
+                notify_lesson_start if notify_lesson_start is not None else 1,
+                notify_changes if notify_changes is not None else 1,
+                app_version or "", guest_name
+            )
+        )
+
+        synthetic_token = f"dev_{device_id}"
+        await db.execute(
+            """
+            INSERT INTO app_users (auth_token, user_id, last_active)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(auth_token) DO UPDATE SET last_active = CURRENT_TIMESTAMP
+            """,
+            (synthetic_token, new_user_id)
+        )
+        await db.commit()
+
+        async with db.execute("SELECT * FROM users WHERE user_id = ?", (new_user_id,)) as cur:
+            r = await cur.fetchone()
+            return dict(r) if r else {}
+
 

@@ -184,10 +184,34 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.16',
+        title: 'Релиз v1.0.16 (сборка 17)',
+        publishedAt: '2026-09-08T07:15:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.16',
+        rawBody: '''* Время в виджете рабочего стола обновляется в реальном времени каждую минуту (WidgetKit поминутный таймлайн на iOS и точный AlarmManager в Android).
+* Устранена задержка отправки уведомлений: прямое системное планирование напоминаний о парах и переменах через точные системные будильники ОС.
+* Динамический расчет оставшихся минут в тексте уведомлений без нестыковок и ложных таймингов.
+* Расширен выбор времени напоминания до начала пары (5, 10, 15, 20, 30, 45, 60 минут).
+* Автоматический учет и синхронизация пользователей мобильного приложения в базе данных SQLite без обязательной авторизации в Telegram.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56350000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8360000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.15',
         title: 'Релиз v1.0.15 (сборка 16)',
         publishedAt: '2026-09-07T09:20:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.15',
         rawBody: '''* Модульная организация экрана настроек: параметры разделены по 6 удобным категориям.
 * Интерактивные карточки-кнопки категорий (Оформление, Уведомления, Обновления, Учебный профиль, Сеть, Справка).

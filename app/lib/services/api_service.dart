@@ -103,6 +103,50 @@ class ApiService {
     return null;
   }
 
+  // Регистрация и синхронизация пользователя приложения в БД без необходимости входа в Telegram
+  Future<Map<String, dynamic>?> syncDeviceUser({
+    required String deviceId,
+    String? platform,
+    int? groupId,
+    String? groupName,
+    int? subgroup,
+    bool? notificationsEnabled,
+    int? notifyBeforeMins,
+    bool? notifyLessonStart,
+    bool? notifyBreaks,
+    bool? notifyChanges,
+    String? appVersion,
+    String? authToken,
+  }) async {
+    final body = <String, dynamic>{
+      'device_id': deviceId,
+      'platform': platform ?? (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android'),
+    };
+    if (groupId != null) body['group_id'] = groupId;
+    if (groupName != null) body['group_name'] = groupName;
+    if (subgroup != null) body['subgroup'] = subgroup;
+    if (notificationsEnabled != null) body['notifications_enabled'] = notificationsEnabled ? 1 : 0;
+    if (notifyBeforeMins != null) body['notify_before_mins'] = notifyBeforeMins;
+    if (notifyLessonStart != null) body['notify_lesson_start'] = notifyLessonStart ? 1 : 0;
+    if (notifyBreaks != null) body['notify_breaks'] = notifyBreaks ? 1 : 0;
+    if (notifyChanges != null) body['notify_changes'] = notifyChanges ? 1 : 0;
+    if (appVersion != null) body['app_version'] = appVersion;
+    if (authToken != null && authToken.isNotEmpty) body['auth_token'] = authToken;
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/app/device/sync'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 6));
+
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   // Проверка доступности сервера и подключения к сети
   Future<bool> checkConnection() async {
     try {

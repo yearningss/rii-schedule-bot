@@ -112,13 +112,28 @@ async def cb_app_auth(callback: CallbackQuery):
             group_text = f" Группа: {user['group_name']}." if user and user.get("group_name") else ""
             await callback.message.edit_text(
                 f"Вход в мобильное приложение успешно подтвержден.{group_text}\n"
-                "Теперь вернитесь в приложение — вход выполнится автоматически."
+                "Теперь вернитесь в приложение: вход выполнится автоматически."
             )
         else:
             await callback.message.edit_text("Не удалось подтвердить вход. Возможно, время ожидания истекло.")
     else:
         await callback.message.edit_text("Вход в мобильное приложение отклонен.")
     await callback.answer()
+
+@router.message(Command("stats", "статистика", ignore_case=True))
+async def cmd_stats(message: Message):
+    from database import get_stats
+    stats = await get_stats()
+    text = (
+        "Статистика сервиса РИИ Расписание:\n\n"
+        f"- Всего пользователей в базе: {stats['total_users']}\n"
+        f"- Пользователей Telegram: {stats['telegram_users']}\n"
+        f"- Пользователей мобильного приложения без входа: {stats['guest_app_users']}\n"
+        f"- Всего мобильных пользователей: {stats['mobile_users']}\n"
+        f"- С выбранной группой: {stats['active_users']}\n"
+        f"- Включили уведомления: {stats['notif_users']}"
+    )
+    await message.answer(text)
 
 @router.message(Command("help", "помощь", "справка", ignore_case=True))
 @router.message(F.text.casefold().in_({"помощь", "справка", "команды", "что умеет бот"}))
@@ -139,6 +154,7 @@ async def cmd_help(message: Message):
         "/bells - Расписание звонков\n"
         "/exams - Расписание сессии/экзаменов\n"
         "/settings - Настройки и уведомления\n"
+        "/stats - Статистика использования сервиса\n"
         "/about - О проекте и разработчике\n"
         "/download - Скачать мобильное приложение (Android / iOS)\n"
         "/help - Справка по командам\n\n"

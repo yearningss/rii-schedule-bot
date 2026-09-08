@@ -1,11 +1,13 @@
 package com.yearnings.rii
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.widget.RemoteViews
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -19,17 +21,67 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             updateWidget(context, appWidgetManager, appWidgetId)
         }
+        scheduleNextTick(context)
+    }
+
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        when (intent.action) {
+            AppWidgetManager.ACTION_APPWIDGET_UPDATE,
+            ACTION_SCHEDULE_TICK,
+            Intent.ACTION_TIME_TICK,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED -> {
+                updateAllWidgets(context)
+            }
+        }
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        updateAllWidgets(context)
     }
 
     companion object {
+        const val ACTION_SCHEDULE_TICK = "com.yearnings.rii.ACTION_SCHEDULE_TICK"
+
         fun updateAllWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val widgetComponent = ComponentName(context, ScheduleWidgetProvider::class.java)
             val widgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
+            if (widgetIds == null || widgetIds.isEmpty()) return
+
             val provider = ScheduleWidgetProvider()
             for (widgetId in widgetIds) {
                 provider.updateWidget(context, appWidgetManager, widgetId)
             }
+            scheduleNextTick(context)
+        }
+
+        fun scheduleNextTick(context: Context) {
+            try {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+                val intent = Intent(context, ScheduleWidgetProvider::class.java).apply {
+                    action = ACTION_SCHEDULE_TICK
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    2026,
+                    intent,
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    } else {
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                    }
+                )
+                // Следующая минута ровно в :00 секунд (+100 мс для уверенного перехода минут)
+                val nextMinuteMillis = ((System.currentTimeMillis() / 60000) + 1) * 60000 + 100
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC, nextMinuteMillis, pendingIntent)
+                } else {
+                    alarmManager.setExact(AlarmManager.RTC, nextMinuteMillis, pendingIntent)
+                }
+            } catch (_: Exception) {}
         }
     }
 

@@ -78,6 +78,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
       _checkPeriodicUpdate(isStartup: true);
       NotificationService.requestPermission();
       _checkScheduleNotifications();
+      _syncDeviceProfile();
     });
   }
 
@@ -85,6 +86,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkScheduleNotifications();
+      _syncDeviceProfile();
       final lastCheck = widget.storage.prefs.getInt('last_bg_update_check_time') ?? 0;
       final now = DateTime.now().millisecondsSinceEpoch;
       // Если прошло 15 минут или более с последней проверки
@@ -197,22 +199,110 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
         }
       }
 
-      // 1. Напоминание перед началом пары (за 5, 10, 15, 30 минут)
+      // 1. Точное системное планирование напоминаний на текущий день
+      try {
+        final startMinUtc = DateTime.utc(
+          rTime.year,
+          rTime.month,
+          rTime.day,
+          pTime.startMinutes ~/ 60,
+          pTime.startMinutes % 60,
+        ).subtract(const Duration(hours: 7));
+
+        final endMinUtc = DateTime.utc(
+          rTime.year,
+          rTime.month,
+          rTime.day,
+          pTime.endMinutes ~/ 60,
+          pTime.endMinutes % 60,
+        ).subtract(const Duration(hours: 7));
+
+        final nowUtc = DateTime.now().toUtc();
+
+        // А. Системное напоминание до начала пары
+        if (notifSettings.beforeMins > 0) {
+          final targetBeforeUtc = startMinUtc.subtract(Duration(minutes: notifSettings.beforeMins));
+          if (targetBeforeUtc.isAfter(nowUtc)) {
+            final schedKey = 'sched_${todayStr}_p${pNum}_before_${notifSettings.beforeMins}';
+            if (widget.storage.prefs.getBool(schedKey) != true) {
+              await widget.storage.prefs.setBool(schedKey, true);
+              await NotificationService.scheduleNotification(
+                id: pNum * 10 + 1,
+                title: 'Скоро пара: $subjText',
+                message: 'Через ${notifSettings.beforeMins} мин (${pTime.startStr}) начнется $pNum пара$audText.',
+                scheduledDate: targetBeforeUtc.toLocal(),
+              );
+            }
+          }
+        }
+
+        // Б. Системный звонок на пару
+        if (notifSettings.lessonStart && startMinUtc.isAfter(nowUtc)) {
+          final schedKey = 'sched_${todayStr}_p${pNum}_start';
+          if (widget.storage.prefs.getBool(schedKey) != true) {
+            await widget.storage.prefs.setBool(schedKey, true);
+            await NotificationService.scheduleNotification(
+              id: pNum * 10 + 2,
+              title: 'Началась $pNum пара',
+              message: '$subjText$audText (${pTime.startStr} - ${pTime.endStr}).',
+              scheduledDate: startMinUtc.toLocal(),
+            );
+          }
+        }
+
+        // В. Системное оповещение о перемене / окончании занятий
+        if (notifSettings.breaks && endMinUtc.isAfter(nowUtc)) {
+          final schedKey = 'sched_${todayStr}_p${pNum}_break';
+          if (widget.storage.prefs.getBool(schedKey) != true) {
+            await widget.storage.prefs.setBool(schedKey, true);
+            String breakTitle = 'Занятия завершены';
+            String breakMsg = 'Закончилась $pNum пара. На сегодня занятий больше нет.';
+
+            if (i + 1 < sortedParaNums.length) {
+              final nextPNum = sortedParaNums[i + 1];
+              final nextPData = dayData[nextPNum.toString()];
+              final nextTimeStr = paraTimesMap[nextPNum.toString()]?.toString();
+              final nextPTime = ParaTime.parse(nextTimeStr, nextPNum);
+              final breakLen = (nextPTime.startMinutes - pTime.endMinutes).clamp(0, 180);
+
+              String nextSubj = 'следующая пара';
+              if (nextPData is Map) {
+                if (nextPData['isDouble'] == true && userSubgroup == 2 && nextPData['subj2'] != null) {
+                  nextSubj = nextPData['subj2'].toString();
+                } else if (nextPData['subj1'] != null) {
+                  nextSubj = nextPData['subj1'].toString();
+                }
+              }
+              breakTitle = 'Перемена $breakLen мин';
+              breakMsg = 'Закончилась $pNum пара. Следующая: $nextPNum пара в ${nextPTime.startStr} ($nextSubj).';
+            }
+
+            await NotificationService.scheduleNotification(
+              id: pNum * 10 + 3,
+              title: breakTitle,
+              message: breakMsg,
+              scheduledDate: endMinUtc.toLocal(),
+            );
+          }
+        }
+      } catch (_) {}
+
+      // 2. Оперативное уведомление прямо сейчас (динамический расчет точных минут без задержки)
       if (notifSettings.beforeMins > 0) {
-        final targetBefore = pTime.startMinutes - notifSettings.beforeMins;
-        if (curMins >= targetBefore && curMins < pTime.startMinutes) {
-          final sentKey = 'notif_sent_${todayStr}_p${pNum}_before_${notifSettings.beforeMins}';
+        final minsLeft = pTime.startMinutes - curMins;
+        if (minsLeft > 0 && minsLeft <= notifSettings.beforeMins) {
+          final sentKey = 'notif_sent_${todayStr}_p${pNum}_before';
           if (widget.storage.prefs.getBool(sentKey) != true) {
             await widget.storage.prefs.setBool(sentKey, true);
             await NotificationService.showNotification(
               title: 'Скоро пара: $subjText',
-              message: 'Через ${notifSettings.beforeMins} мин начнется $pNum пара (${pTime.startStr} - ${pTime.endStr})$audText.',
+              message: 'Через $minsLeft мин (${pTime.startStr}) начнется $pNum пара$audText.',
             );
           }
         }
       }
 
-      // 2. Оповещение о начале пары
+      // 3. Оперативное оповещение о начале пары
       if (notifSettings.lessonStart) {
         if (curMins >= pTime.startMinutes && curMins < (pTime.startMinutes + 5)) {
           final sentKey = 'notif_sent_${todayStr}_p${pNum}_start';
@@ -226,7 +316,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
         }
       }
 
-      // 3. Оповещение об окончании пары и начале перемены
+      // 4. Оперативное оповещение об окончании пары и начале перемены
       if (notifSettings.breaks) {
         if (curMins >= pTime.endMinutes && curMins < (pTime.endMinutes + 5)) {
           final sentKey = 'notif_sent_${todayStr}_p${pNum}_break';
@@ -295,6 +385,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
     return now.add(const Duration(hours: 7));
   }
 
+  Future<void> _syncDeviceProfile() async {
+    try {
+      final deviceId = widget.storage.getDeviceId();
+      final notif = widget.storage.getNotificationSettings();
+      final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+      await widget.api.syncDeviceUser(
+        deviceId: deviceId,
+        platform: isIOS ? 'ios' : 'android',
+        groupId: _profile.groupId,
+        groupName: _profile.groupName,
+        subgroup: _profile.subgroup,
+        notificationsEnabled: notif.enabled,
+        notifyBeforeMins: notif.beforeMins,
+        notifyLessonStart: notif.lessonStart,
+        notifyBreaks: notif.breaks,
+        notifyChanges: notif.changes,
+        appVersion: AppInfo.versionName,
+        authToken: _profile.authToken,
+      );
+    } catch (_) {}
+  }
+
   Future<void> _initSchedule() async {
     if (_profile.groupId == null) return;
 
@@ -319,6 +431,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
         });
         _applyScheduleData(fresh, isFromCache: false);
       }
+      _syncDeviceProfile();
     } catch (_) {
       if (mounted) {
         setState(() {

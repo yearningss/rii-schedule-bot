@@ -196,6 +196,46 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
         "has_mobile_app": user.get("has_mobile_app", 1)
     })
 
+async def handle_api_app_device_sync(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        device_id = data.get("device_id")
+        if not device_id:
+            return web.json_response({"error": "Missing device_id"}, status=400)
+
+        platform = data.get("platform", "android")
+        group_id = data.get("group_id")
+        group_name = data.get("group_name")
+        subgroup = data.get("subgroup")
+        notifications_enabled = data.get("notifications_enabled")
+        notify_before_mins = data.get("notify_before_mins")
+        notify_breaks = data.get("notify_breaks")
+        notify_lesson_start = data.get("notify_lesson_start")
+        notify_changes = data.get("notify_changes")
+        app_version = data.get("app_version")
+        auth_token = data.get("auth_token")
+
+        from database import register_or_update_device_user
+        user = await register_or_update_device_user(
+            device_id=str(device_id),
+            platform=str(platform),
+            group_id=int(group_id) if group_id is not None else None,
+            group_name=str(group_name) if group_name is not None else None,
+            subgroup=int(subgroup) if subgroup is not None else 0,
+            notifications_enabled=int(notifications_enabled) if notifications_enabled is not None else 1,
+            notify_before_mins=int(notify_before_mins) if notify_before_mins is not None else 10,
+            notify_breaks=int(notify_breaks) if notify_breaks is not None else 1,
+            notify_lesson_start=int(notify_lesson_start) if notify_lesson_start is not None else 1,
+            notify_changes=int(notify_changes) if notify_changes is not None else 1,
+            app_version=str(app_version) if app_version is not None else None,
+            auth_token=str(auth_token) if auth_token else None
+        )
+
+        return web.json_response({"status": "ok", "user": user})
+    except Exception as e:
+        logger.error("Ошибка API device sync: %s", e)
+        return web.json_response({"error": "Failed to sync device user"}, status=500)
+
 _changelog_cache = {
     "timestamp": 0.0,
     "data": []
@@ -291,10 +331,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.15",
-        "latest_build": 16,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.15/{target_ext}",
-        "release_notes": "Обновление настроек приложения (v1.0.15, сборка 16):\n- Модульная структура настроек: все параметры сгруппированы по 6 аккуратным категориям\n- Раскрывающиеся карточки-кнопки (Оформление, Уведомления, Обновления, Учебный профиль, Сеть, Справка)\n- Быстрый доступ к подкнопкам без нагромождения экрана\n- Информативные бейджи статуса для каждой категории\n- Кнопка быстрого сворачивания и разворачивания всех категорий",
+        "latest_version": "1.0.16",
+        "latest_build": 17,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/{target_ext}",
+        "release_notes": "Обновление виджета, уведомлений и базы данных (v1.0.16, сборка 17):\n- Виджет рабочего стола обновляет время в реальном времени каждую минуту (iOS WidgetKit поминутный таймлайн и точный AlarmManager в Android)\n- Устранена задержка отправки уведомлений: системное планирование через точные будильники ОС\n- Динамический расчет оставшихся минут в тексте уведомлений\n- Расширен выбор времени напоминания до начала пары (5, 10, 15, 20, 30, 45, 60 минут)\n- Автоматический учет и синхронизация пользователей мобильного приложения в базе данных SQLite без обязательной авторизации в Telegram",
         "is_required": False
     }
 
@@ -320,6 +360,7 @@ def create_web_app() -> web.Application:
     app.router.add_get("/api/app/auth/check", handle_api_app_auth_check)
     app.router.add_get("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/profile", handle_api_app_profile)
+    app.router.add_post("/api/app/device/sync", handle_api_app_device_sync)
     app.router.add_get("/api/app/version", handle_api_app_version)
     app.router.add_get("/api/app/changelog", handle_api_app_changelog)
     app.router.add_static("/", WEBAPP_DIR)
