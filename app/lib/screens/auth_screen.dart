@@ -86,6 +86,26 @@ class _AuthScreenState extends State<AuthScreen> {
 
             await widget.storage.saveUserProfile(profile);
 
+            try {
+              final deviceId = widget.storage.getDeviceId();
+              final clientUserId = widget.storage.getClientUserId();
+              final notif = widget.storage.getNotificationSettings();
+              await widget.api.syncDeviceUser(
+                deviceId: deviceId,
+                clientUserId: clientUserId,
+                authToken: authToken,
+                groupId: profile.groupId,
+                groupName: profile.groupName,
+                subgroup: profile.subgroup,
+                notificationsEnabled: notif.enabled,
+                notifyBeforeMins: notif.beforeMins,
+                notifyLessonStart: notif.lessonStart,
+                notifyBreaks: notif.breaks,
+                notifyChanges: notif.changes,
+                appVersion: AppInfo.versionName,
+              );
+            } catch (_) {}
+
             if (mounted) {
               Navigator.pushReplacement(
                 context,
@@ -129,6 +149,25 @@ class _AuthScreenState extends State<AuthScreen> {
             groupName: selected.name,
           );
       await widget.storage.saveUserProfile(profile);
+
+      try {
+        final deviceId = widget.storage.getDeviceId();
+        final clientUserId = widget.storage.getClientUserId();
+        final notif = widget.storage.getNotificationSettings();
+        await widget.api.syncDeviceUser(
+          deviceId: deviceId,
+          clientUserId: clientUserId,
+          groupId: selected.id,
+          groupName: selected.name,
+          subgroup: profile.subgroup,
+          notificationsEnabled: notif.enabled,
+          notifyBeforeMins: notif.beforeMins,
+          notifyLessonStart: notif.lessonStart,
+          notifyBreaks: notif.breaks,
+          notifyChanges: notif.changes,
+          appVersion: AppInfo.versionName,
+        );
+      } catch (_) {}
 
       if (mounted) {
         Navigator.pushReplacement(

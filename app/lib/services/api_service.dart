@@ -106,6 +106,7 @@ class ApiService {
   // Регистрация и синхронизация пользователя приложения в БД без необходимости входа в Telegram
   Future<Map<String, dynamic>?> syncDeviceUser({
     required String deviceId,
+    String? clientUserId,
     String? platform,
     int? groupId,
     String? groupName,
@@ -122,6 +123,7 @@ class ApiService {
       'device_id': deviceId,
       'platform': platform ?? (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android'),
     };
+    if (clientUserId != null && clientUserId.isNotEmpty) body['client_user_id'] = clientUserId;
     if (groupId != null) body['group_id'] = groupId;
     if (groupName != null) body['group_name'] = groupName;
     if (subgroup != null) body['subgroup'] = subgroup;
@@ -145,6 +147,29 @@ class ApiService {
       }
     } catch (_) {}
     return null;
+  }
+
+  // Отвязка устройства и завершение сессии на сервере
+  Future<bool> unlinkDevice({
+    required String deviceId,
+    String? clientUserId,
+    String? authToken,
+  }) async {
+    final body = <String, dynamic>{
+      'device_id': deviceId,
+      if (clientUserId != null && clientUserId.isNotEmpty) 'client_user_id': clientUserId,
+      if (authToken != null && authToken.isNotEmpty) 'auth_token': authToken,
+    };
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/app/device/unlink'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 5));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   // Проверка доступности сервера и подключения к сети

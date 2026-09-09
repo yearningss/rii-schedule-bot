@@ -203,6 +203,7 @@ async def handle_api_app_device_sync(request: web.Request) -> web.Response:
         if not device_id:
             return web.json_response({"error": "Missing device_id"}, status=400)
 
+        client_user_id = data.get("client_user_id")
         platform = data.get("platform", "android")
         group_id = data.get("group_id")
         group_name = data.get("group_name")
@@ -218,6 +219,7 @@ async def handle_api_app_device_sync(request: web.Request) -> web.Response:
         from database import register_or_update_device_user
         user = await register_or_update_device_user(
             device_id=str(device_id),
+            client_user_id=str(client_user_id) if client_user_id else None,
             platform=str(platform),
             group_id=int(group_id) if group_id is not None else None,
             group_name=str(group_name) if group_name is not None else None,
@@ -235,6 +237,24 @@ async def handle_api_app_device_sync(request: web.Request) -> web.Response:
     except Exception as e:
         logger.error("Ошибка API device sync: %s", e)
         return web.json_response({"error": "Failed to sync device user"}, status=500)
+
+async def handle_api_app_device_unlink(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        device_id = data.get("device_id")
+        client_user_id = data.get("client_user_id")
+        auth_token = data.get("auth_token")
+
+        from database import unlink_device_user
+        await unlink_device_user(
+            device_id=str(device_id) if device_id else None,
+            client_user_id=str(client_user_id) if client_user_id else None,
+            auth_token=str(auth_token) if auth_token else None
+        )
+        return web.json_response({"status": "ok", "message": "Device unlinked successfully"})
+    except Exception as e:
+        logger.error("Ошибка API device unlink: %s", e)
+        return web.json_response({"error": "Failed to unlink device"}, status=500)
 
 _changelog_cache = {
     "timestamp": 0.0,
@@ -367,6 +387,7 @@ def create_web_app() -> web.Application:
     app.router.add_get("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/device/sync", handle_api_app_device_sync)
+    app.router.add_post("/api/app/device/unlink", handle_api_app_device_unlink)
     app.router.add_get("/api/app/version", handle_api_app_version)
     app.router.add_get("/api/app/changelog", handle_api_app_changelog)
     app.router.add_get("/api/season/theme", handle_api_season_theme)

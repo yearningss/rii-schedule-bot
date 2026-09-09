@@ -391,10 +391,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
   Future<void> _syncDeviceProfile() async {
     try {
       final deviceId = widget.storage.getDeviceId();
+      final clientUserId = widget.storage.getClientUserId();
       final notif = widget.storage.getNotificationSettings();
       final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
       await widget.api.syncDeviceUser(
         deviceId: deviceId,
+        clientUserId: clientUserId,
         platform: isIOS ? 'ios' : 'android',
         groupId: _profile.groupId,
         groupName: _profile.groupName,
@@ -508,6 +510,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
           groupName: selected.name,
         );
       }
+      _syncDeviceProfile();
 
       WidgetService.updateWidgetData(profile: _profile);
       await _fetchFreshSchedule();
@@ -526,6 +529,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
         subgroup: sg,
       );
     }
+    _syncDeviceProfile();
 
     WidgetService.updateWidgetData(profile: _profile, scheduleJson: _scheduleJson);
   }

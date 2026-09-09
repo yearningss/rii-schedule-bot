@@ -122,10 +122,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final n = notif ?? _notifSettings;
       final deviceId = widget.storage.getDeviceId();
+      final clientUserId = widget.storage.getClientUserId();
       final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
 
       await widget.api.syncDeviceUser(
         deviceId: deviceId,
+        clientUserId: clientUserId,
         platform: isIOS ? 'ios' : 'android',
         groupId: _profile.groupId,
         groupName: _profile.groupName,
@@ -752,10 +754,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true && mounted) {
+      final oldToken = _profile.authToken;
+      final deviceId = widget.storage.getDeviceId();
+      final clientUserId = widget.storage.getClientUserId();
+
       await widget.storage.clearAuth();
       setState(() {
         _profile = widget.storage.getUserProfile();
       });
+
+      // Отвязываем устройство на сервере и регистрируем чистый гостевой профиль
+      try {
+        await widget.api.unlinkDevice(
+          deviceId: deviceId,
+          clientUserId: clientUserId,
+          authToken: oldToken,
+        );
+        await _syncProfileToServer();
+      } catch (_) {}
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Вы вышли из профиля Telegram')),
       );

@@ -20,6 +20,7 @@ class StorageService {
   static const String _keyScheduleCache = 'schedule_cache_';
   static const String _keyGroupsCache = 'groups_cache';
   static const String _keyDeviceId = 'device_id';
+  static const String _keyClientUserId = 'client_user_id';
 
   final SharedPreferences prefs;
   late final ValueNotifier<ThemeMode> themeModeNotifier;
@@ -41,6 +42,18 @@ class StorageService {
       final salt = (100000 + (DateTime.now().millisecond * 899)).toString();
       id = 'dev_${ts}_$salt';
       prefs.setString(_keyDeviceId, id);
+    }
+    return id;
+  }
+
+  // Получение или создание постоянного анонимного идентификатора пользователя приложения
+  String getClientUserId() {
+    String? id = prefs.getString(_keyClientUserId);
+    if (id == null || id.isEmpty) {
+      final ts = DateTime.now().microsecondsSinceEpoch.toString();
+      final salt = (100000 + (DateTime.now().millisecond * 899)).toString();
+      id = 'usr_${ts}_$salt';
+      prefs.setString(_keyClientUserId, id);
     }
     return id;
   }
