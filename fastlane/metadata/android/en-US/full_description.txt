@@ -1,0 +1,11 @@
+Mobile application providing schedule of classes and bell timetable for students and lecturers of Rubtsovsk Industrial Institute (RII AltSTU).
+
+Features:
+* View schedule for all academic groups online and offline.
+* Automatic offline caching for instant access without internet.
+* Week parity detection (Week I / Week II).
+* Subgroup selection for laboratory work.
+* Native desktop widgets for quick access to upcoming lectures.
+* 12 dynamic seasonal themes and launcher icon customization.
+* Exam timetable and bell schedule.
+* Privacy-focused: zero ads, zero trackers, open source MIT license.

@@ -1,0 +1,40 @@
+Categories:
+  - Science & Education
+License: MIT
+AuthorName: yearningss, MRYROKGG, TheKalina
+SourceCode: https://github.com/yearningss/rii-schedule-bot
+IssueTracker: https://github.com/yearningss/rii-schedule-bot/issues
+Changelog: https://github.com/yearningss/rii-schedule-bot/releases
+
+AutoName: РИИ Расписание
+Summary: Расписание занятий и звонков РИИ АлтГТУ
+Description: |-
+  Мобильное приложение с расписанием учебных занятий и звонков для студентов и преподавателей Рубцовского индустриального института (РИИ АлтГТУ).
+
+  Основные возможности:
+  * Просмотр расписания для любой учебной группы очной и заочной формы обучения
+  * Офлайн-доступ: расписание автоматически кэшируется для просмотра без доступа к сети
+  * Определение четности недели (I и II недели)
+  * Поддержка подгрупп для лабораторных занятий
+  * Нативные системные виджеты рабочего стола Android
+  * 12 динамических сезонных и праздничных тем оформления
+  * Расписание звонков и экзаменационных сессий
+  * Полная конфиденциальность: отсутствие рекламы и трекеров
+
+RepoType: git
+Repo: https://github.com/yearningss/rii-schedule-bot.git
+
+Builds:
+  - versionName: 1.0.19
+    versionCode: 20
+    commit: v1.0.19
+    subdir: app
+    output: build/app/outputs/flutter-apk/app-release.apk
+    build:
+      - flutter pub get
+      - flutter build apk --release
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.19
+CurrentVersionCode: 20
