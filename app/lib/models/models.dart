@@ -196,6 +196,8 @@ class AppUpdateInfo {
     this.hasUpdate = false,
   });
 
+  String? get changelog => releaseNotes;
+
   factory AppUpdateInfo.fromJson(Map<String, dynamic> json, {int currentBuild = 1, String currentVersion = '1.0.0'}) {
     final lVersion = json['latest_version']?.toString() ?? '1.0.0';
     final lBuild = int.tryParse(json['latest_build']?.toString() ?? '1') ?? 1;

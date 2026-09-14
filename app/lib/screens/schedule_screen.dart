@@ -142,7 +142,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
                     'Вышла новая версия приложения: ${update.latestVersion} (сборка ${update.latestBuild}).',
                     style: AppTypography.bodyMedium,
                   ),
-                  if (update.changelog != null && update.changelog!.isNotEmpty) ...[
+                  if (update.releaseNotes != null && update.releaseNotes!.isNotEmpty) ...[
                     AppSpacing.gapH12,
                     Text(
                       'Что нового:',
@@ -150,7 +150,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
                     ),
                     AppSpacing.gapH4,
                     Text(
-                      update.changelog!,
+                      update.releaseNotes!,
                       style: AppTypography.bodySmall,
                     ),
                   ],

@@ -59,7 +59,7 @@ class AppTheme {
                 systemNavigationBarIconBrightness: Brightness.dark,
               ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: colors.surface,
         surfaceTintColor: Colors.transparent,
@@ -228,7 +228,7 @@ class AppTheme {
           color: colors.onSurfaceVariant.withOpacity(0.7),
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         elevation: 0,
         backgroundColor: colors.surfaceContainerHigh,
         shape: AppShape.dialogShape,

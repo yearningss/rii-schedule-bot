@@ -107,6 +107,9 @@ jobs:
       - name: Сборка приложения iOS без подписи
         run: |
           cd app
+          export CODE_SIGNING_ALLOWED=NO
+          export CODE_SIGNING_REQUIRED=NO
+          export CODE_SIGN_IDENTITY=""
           flutter build ios --release --no-codesign
 
       - name: Упаковка приложения в формат IPA
