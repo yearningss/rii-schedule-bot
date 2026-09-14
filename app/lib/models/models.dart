@@ -287,6 +287,7 @@ class TeacherInfo {
   final String photoUrl;
   final String email;
   final String phone;
+  final List<Map<String, String>> phones;
   final String room;
   final String profileUrl;
 
@@ -302,9 +303,31 @@ class TeacherInfo {
     this.photoUrl = '',
     this.email = '',
     this.phone = '',
+    this.phones = const [],
     this.room = '',
     this.profileUrl = '',
   });
+
+  String get dialPhone {
+    if (phones.isNotEmpty && (phones.first['dial']?.isNotEmpty ?? false)) {
+      return phones.first['dial']!;
+    }
+    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length == 5) return '+738557$digits';
+    if (digits.startsWith('738557') || digits.startsWith('838557')) {
+      return '+738557${digits.substring(digits.length - 5)}';
+    }
+    if (digits.length == 10 && digits.startsWith('38557')) {
+      return '+738557${digits.substring(5)}';
+    }
+    if (digits.length == 11 && digits.startsWith('8')) {
+      return '+7${digits.substring(1)}';
+    }
+    if (digits.length == 11 && digits.startsWith('7')) {
+      return '+$digits';
+    }
+    return digits.isNotEmpty ? '+$digits' : '';
+  }
 
   factory TeacherInfo.fromJson(Map<String, dynamic> json) {
     return TeacherInfo(
@@ -319,6 +342,13 @@ class TeacherInfo {
       photoUrl: json['photo_url']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
+      phones: (json['phones'] as List<dynamic>?)
+              ?.map((p) => {
+                    'display': p['display']?.toString() ?? '',
+                    'dial': p['dial']?.toString() ?? '',
+                  })
+              .toList() ??
+          const [],
       room: json['room']?.toString() ?? '',
       profileUrl: json['profile_url']?.toString() ?? '',
     );

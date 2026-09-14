@@ -1173,13 +1173,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
                         [info.degree, info.title].where((s) => s.isNotEmpty).join(', '),
                         isDark,
                       ),
-                    if (info.phone.isNotEmpty)
+                    if (info.phones.isNotEmpty)
+                      ...info.phones.map((p) => _buildTeacherDetailRow(
+                            Icons.phone_outlined,
+                            'Телефон',
+                            p['display'] ?? '',
+                            isDark,
+                            onTap: (p['dial']?.isNotEmpty ?? false)
+                                ? () => launchUrl(Uri.parse('tel:${p['dial']}'))
+                                : null,
+                          ))
+                    else if (info.phone.isNotEmpty)
                       _buildTeacherDetailRow(
                         Icons.phone_outlined,
                         'Телефон',
                         info.phone,
                         isDark,
-                        onTap: () => launchUrl(Uri.parse('tel:${info.phone.replaceAll(RegExp(r'[^0-9+]'), '')}')),
+                        onTap: () => launchUrl(Uri.parse('tel:${info.dialPhone}')),
                       ),
                     if (info.email.isNotEmpty)
                       _buildTeacherDetailRow(

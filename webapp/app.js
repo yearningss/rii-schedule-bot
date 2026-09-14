@@ -629,9 +629,26 @@ function populateTeacherModal(t) {
   }
 
   // Телефон
-  if (t.phone) {
-    el.teacherPhone.textContent = t.phone;
-    el.teacherPhone.href = `tel:${t.phone.replace(/[^0-9+]/g, '')}`;
+  if (t.phones && t.phones.length > 0) {
+    el.teacherPhone.innerHTML = t.phones
+      .map(p => `<a class="info-link" href="tel:${p.dial}">${escapeHtml(p.display)}</a>`)
+      .join(', ');
+    el.teacherPhoneRow.classList.remove('hidden');
+  } else if (t.phone) {
+    const rawDigits = t.phone.replace(/[^0-9]/g, '');
+    let dial = '';
+    if (rawDigits.length === 5) {
+      dial = `+738557${rawDigits}`;
+    } else if (rawDigits.startsWith('738557') || rawDigits.startsWith('838557')) {
+      dial = `+738557${rawDigits.slice(-5)}`;
+    } else if (rawDigits.length === 10 && rawDigits.startsWith('38557')) {
+      dial = `+738557${rawDigits.slice(5)}`;
+    } else if (rawDigits.startsWith('8')) {
+      dial = `+7${rawDigits.slice(1)}`;
+    } else {
+      dial = rawDigits ? `+${rawDigits}` : '';
+    }
+    el.teacherPhone.innerHTML = `<a class="info-link" href="tel:${dial}">${escapeHtml(t.phone)}</a>`;
     el.teacherPhoneRow.classList.remove('hidden');
   } else {
     el.teacherPhoneRow.classList.add('hidden');

@@ -9,7 +9,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from services.teacher_service import get_short_name, save_teachers_cache
+from services.teacher_service import get_short_name, save_teachers_cache, normalize_phone_display
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -120,7 +120,8 @@ def main():
 
                 emails = [clean_text(e.get_text()) for e in email_elems if clean_text(e.get_text())]
                 email_str = ", ".join(emails) if emails else ""
-                phone_str = clean_text(phone_elem.get_text()) if phone_elem else ""
+                phone_raw = clean_text(phone_elem.get_text()) if phone_elem else ""
+                phone_str = normalize_phone_display(phone_raw)
                 room_str = clean_text(room_elem.get_text()) if room_elem else ""
                 post_str = clean_text(dolzhnost_elem.get_text()) if dolzhnost_elem else ""
                 step_str = clean_text(step_elem.get_text()) if step_elem else ""
@@ -217,7 +218,7 @@ def main():
             "full_name": "Швыдкова Анна Васильевна",
             "post": "Преподаватель, зам. ответственного секретаря приемной комиссии",
             "department": "Технический факультет",
-            "phone": "5-98-53",
+            "phone": "+7 (38557) 5-98-53",
             "profile_url": "https://www.rubinst.ru/structure"
         },
         {

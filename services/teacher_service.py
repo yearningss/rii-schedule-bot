@@ -29,6 +29,69 @@ def parse_initials(name_str: str):
     last, i1, i2 = match.groups()
     return (last or "").lower(), (i1 or "").lower(), (i2 or "").lower()
 
+def normalize_phone_display(raw_phone: str) -> str:
+    # Приводит городские рубцовские 5-значные номера к полному федеральному формату +7 (38557) X-XX-XX
+    if not raw_phone:
+        return ""
+    parts = re.split(r"[,;]+", raw_phone)
+    formatted = []
+    for p in parts:
+        clean = p.strip()
+        if not clean:
+            continue
+        digits = re.sub(r"\D", "", clean)
+        if len(digits) == 5:
+            formatted.append(f"+7 (38557) {digits[0]}-{digits[1:3]}-{digits[3:5]}")
+        elif (len(digits) == 11 and (digits.startswith("738557") or digits.startswith("838557"))) or (len(digits) == 10 and digits.startswith("38557")):
+            local = digits[-5:]
+            formatted.append(f"+7 (38557) {local[0]}-{local[1:3]}-{local[3:5]}")
+        elif len(digits) == 6:
+            formatted.append(f"+7 (38557) {digits[0:2]}-{digits[2:4]}-{digits[4:6]}")
+        elif len(digits) == 10:
+            formatted.append(f"+7 ({digits[0:3]}) {digits[3:6]}-{digits[6:8]}-{digits[8:10]}")
+        elif len(digits) == 11 and (digits.startswith("8") or digits.startswith("7")):
+            formatted.append(f"+7 ({digits[1:4]}) {digits[4:7]}-{digits[7:9]}-{digits[9:11]}")
+        else:
+            formatted.append(clean)
+    return ", ".join(formatted)
+
+def parse_phone_items(raw_phone: str) -> List[Dict[str, str]]:
+    # Возвращает структурированный список номеров с форматированием для показа и ссылкой для звонка
+    if not raw_phone:
+        return []
+    parts = re.split(r"[,;]+", raw_phone)
+    result = []
+    for p in parts:
+        clean = p.strip()
+        if not clean:
+            continue
+        digits = re.sub(r"\D", "", clean)
+        display = clean
+        dial = ""
+        if len(digits) == 5:
+            display = f"+7 (38557) {digits[0]}-{digits[1:3]}-{digits[3:5]}"
+            dial = f"+738557{digits}"
+        elif (len(digits) == 11 and (digits.startswith("738557") or digits.startswith("838557"))) or (len(digits) == 10 and digits.startswith("38557")):
+            local = digits[-5:]
+            display = f"+7 (38557) {local[0]}-{local[1:3]}-{local[3:5]}"
+            dial = f"+738557{local}"
+        elif len(digits) == 6:
+            display = f"+7 (38557) {digits[0:2]}-{digits[2:4]}-{digits[4:6]}"
+            dial = f"+738557{digits}"
+        elif len(digits) == 10:
+            display = f"+7 ({digits[0:3]}) {digits[3:6]}-{digits[6:8]}-{digits[8:10]}"
+            dial = f"+7{digits}"
+        elif len(digits) == 11 and digits.startswith("8"):
+            display = f"+7 ({digits[1:4]}) {digits[4:7]}-{digits[7:9]}-{digits[9:11]}"
+            dial = f"+7{digits[1:]}"
+        elif len(digits) == 11 and digits.startswith("7"):
+            display = f"+7 ({digits[1:4]}) {digits[4:7]}-{digits[7:9]}-{digits[9:11]}"
+            dial = f"+{digits}"
+        elif digits:
+            dial = f"+{digits}"
+        result.append({"display": display, "dial": dial or clean})
+    return result
+
 def load_teachers_cache() -> Dict[str, Dict[str, Any]]:
     global _teachers_cache
     if _teachers_cache:
@@ -84,6 +147,9 @@ def find_teacher_info(name_query: str, post_hint: Optional[str] = None) -> Dict[
     if best_match and best_score >= 10:
         res = dict(best_match)
         res["found"] = True
+        raw_p = res.get("phone", "")
+        res["phone"] = normalize_phone_display(raw_p)
+        res["phones"] = parse_phone_items(raw_p)
         return res
 
     # Fallback, если не найден в подробной базе сайта
@@ -100,6 +166,7 @@ def find_teacher_info(name_query: str, post_hint: Optional[str] = None) -> Dict[
         "photo_url": "",
         "email": "",
         "phone": "",
+        "phones": [],
         "room": "",
         "profile_url": "https://www.rubinst.ru/structure"
     }
