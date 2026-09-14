@@ -274,3 +274,55 @@ class AppInfo {
   static const String fullVersionText = 'v$versionName (сборка $versionCode)';
 }
 
+// Модель сведений о преподавателе
+class TeacherInfo {
+  final bool found;
+  final String fullName;
+  final String shortName;
+  final String post;
+  final String degree;
+  final String title;
+  final String department;
+  final String disciplines;
+  final String photoUrl;
+  final String email;
+  final String phone;
+  final String room;
+  final String profileUrl;
+
+  TeacherInfo({
+    this.found = false,
+    required this.fullName,
+    this.shortName = '',
+    this.post = '',
+    this.degree = '',
+    this.title = '',
+    this.department = '',
+    this.disciplines = '',
+    this.photoUrl = '',
+    this.email = '',
+    this.phone = '',
+    this.room = '',
+    this.profileUrl = '',
+  });
+
+  factory TeacherInfo.fromJson(Map<String, dynamic> json) {
+    return TeacherInfo(
+      found: json['found'] == true,
+      fullName: json['full_name']?.toString() ?? '',
+      shortName: json['short_name']?.toString() ?? '',
+      post: json['post']?.toString() ?? '',
+      degree: json['degree']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      department: json['department']?.toString() ?? '',
+      disciplines: json['disciplines']?.toString() ?? '',
+      photoUrl: json['photo_url']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      room: json['room']?.toString() ?? '',
+      profileUrl: json['profile_url']?.toString() ?? '',
+    );
+  }
+}
+
+

@@ -9,6 +9,7 @@ class ParaCard extends StatelessWidget {
   final bool isNext;
   final bool isCompleted;
   final int activeSubgroup;
+  final void Function(String teacher, String? post)? onTeacherTap;
 
   const ParaCard({
     super.key,
@@ -18,6 +19,7 @@ class ParaCard extends StatelessWidget {
     this.isNext = false,
     this.isCompleted = false,
     this.activeSubgroup = 0,
+    this.onTeacherTap,
   });
 
   @override
@@ -233,13 +235,35 @@ class ParaCard extends StatelessWidget {
             ],
             if (teacher != null && teacher.isNotEmpty)
               Expanded(
-                child: Text(
-                  '$teacher ${post != null && post.isNotEmpty ? '($post)' : ''}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                child: InkWell(
+                  onTap: onTeacherTap != null ? () => onTeacherTap!(teacher, post) : null,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          size: 14,
+                          color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '$teacher ${post != null && post.isNotEmpty ? '($post)' : ''}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                              decoration: TextDecoration.underline,
+                              decorationStyle: TextDecorationStyle.dotted,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
           ],

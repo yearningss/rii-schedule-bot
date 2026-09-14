@@ -10,6 +10,7 @@ from pathlib import Path
 import aiohttp
 from aiohttp import web
 from services.api import api_client
+from services.teacher_service import find_teacher_info, get_all_teachers_list
 from database import get_user, set_user_group, set_user_subgroup, update_user_notifications
 
 logger = logging.getLogger("rii_schedule_bot.web")
@@ -375,11 +376,44 @@ async def handle_api_season_theme(request: web.Request) -> web.Response:
         "all_themes": list(ALL_THEMES.values())
     })
 
+async def handle_api_teacher(request: web.Request) -> web.Response:
+    # Возвращает подробную информацию о преподавателе по имени
+    name = request.query.get("name", "").strip()
+    if not name:
+        return web.json_response({"error": "Missing name parameter"}, status=400)
+    post_hint = request.query.get("post", "").strip() or None
+    try:
+        info = find_teacher_info(name, post_hint=post_hint)
+        return web.json_response(info)
+    except Exception as e:
+        logger.error("Ошибка API teacher для %s: %s", name, e)
+        return web.json_response({"error": "Failed to get teacher info"}, status=500)
+
+async def handle_api_teachers(request: web.Request) -> web.Response:
+    # Возвращает список всех преподавателей института
+    q = request.query.get("q", "").strip().lower()
+    try:
+        teachers = get_all_teachers_list()
+        if q:
+            teachers = [
+                t for t in teachers
+                if q in t.get("full_name", "").lower()
+                or q in t.get("short_name", "").lower()
+                or q in t.get("department", "").lower()
+                or q in t.get("disciplines", "").lower()
+            ]
+        return web.json_response(teachers)
+    except Exception as e:
+        logger.error("Ошибка API teachers: %s", e)
+        return web.json_response({"error": "Failed to list teachers"}, status=500)
+
 def create_web_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/", handle_index)
     app.router.add_get("/api/groups", handle_api_groups)
     app.router.add_get("/api/schedule", handle_api_schedule)
+    app.router.add_get("/api/teacher", handle_api_teacher)
+    app.router.add_get("/api/teachers", handle_api_teachers)
     app.router.add_get("/api/user", handle_api_get_user)
     app.router.add_post("/api/user/sync", handle_api_sync_user)
     app.router.add_post("/api/app/auth/session", handle_api_app_auth_session)

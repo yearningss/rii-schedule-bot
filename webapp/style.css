@@ -538,6 +538,187 @@ body {
   color: var(--btn-text-color);
 }
 
+/* Стили ссылки на преподавателя в карточке пары */
+.teacher-clickable {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-color);
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 1px 5px;
+  margin: -1px -5px;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+}
+
+.teacher-clickable:hover {
+  background: var(--accent-light);
+  text-decoration-style: solid;
+}
+
+.teacher-clickable:active {
+  opacity: 0.7;
+}
+
+.teacher-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* Карточка и модальное окно преподавателя */
+.teacher-modal-sheet {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.teacher-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.teacher-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.teacher-avatar-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+}
+
+.teacher-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.teacher-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hint-color);
+}
+
+.teacher-main-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.teacher-fullname {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.25;
+  color: var(--text-color);
+}
+
+.teacher-post {
+  font-size: 13px;
+  color: var(--hint-color);
+  line-height: 1.35;
+}
+
+.teacher-dept-badge {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 8px;
+  background: var(--accent-light);
+  color: var(--accent-color);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.teacher-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--secondary-bg);
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.teacher-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hint-color);
+  text-transform: uppercase;
+}
+
+.info-value {
+  color: var(--text-color);
+  line-height: 1.4;
+}
+
+.info-link {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.info-link:hover {
+  text-decoration: underline;
+}
+
+.info-disciplines {
+  font-size: 12px;
+  color: var(--text-color);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.teacher-actions {
+  display: flex;
+  margin-top: 4px;
+}
+
+.teacher-site-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--btn-color);
+  color: var(--btn-text-color);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: opacity 0.15s ease;
+}
+
+.teacher-site-btn:active {
+  opacity: 0.8;
+}
+
 .hidden {
   display: none !important;
 }

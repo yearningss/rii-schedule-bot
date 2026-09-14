@@ -116,6 +116,65 @@
     </div>
   </div>
 
+  <!-- Модальное окно преподавателя -->
+  <div id="teacherModal" class="modal-backdrop hidden">
+    <div class="modal-sheet teacher-modal-sheet">
+      <div class="modal-header">
+        <h3>Информация о преподавателе</h3>
+        <button id="closeTeacherModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div id="teacherLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Загрузка данных...</p>
+      </div>
+      <div id="teacherContent" class="teacher-details hidden">
+        <div class="teacher-profile-header">
+          <div class="teacher-avatar-wrap">
+            <img id="teacherPhoto" class="teacher-photo hidden" src="" alt="Фото">
+            <div id="teacherAvatarFallback" class="teacher-avatar-fallback">
+              <svg viewBox="0 0 24 24" width="36" height="36"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+          </div>
+          <div class="teacher-main-meta">
+            <h2 id="teacherFullName" class="teacher-fullname">ФИО</h2>
+            <div id="teacherPost" class="teacher-post">Должность</div>
+            <div id="teacherDeptBadge" class="teacher-dept-badge hidden">Кафедра</div>
+          </div>
+        </div>
+
+        <div class="teacher-info-list">
+          <div id="teacherRoomRow" class="teacher-info-row hidden">
+            <span class="info-label">Аудитория:</span>
+            <span id="teacherRoom" class="info-value"></span>
+          </div>
+          <div id="teacherDegreeRow" class="teacher-info-row hidden">
+            <span class="info-label">Степень / Звание:</span>
+            <span id="teacherDegree" class="info-value"></span>
+          </div>
+          <div id="teacherPhoneRow" class="teacher-info-row hidden">
+            <span class="info-label">Телефон:</span>
+            <a id="teacherPhone" class="info-value info-link" href=""></a>
+          </div>
+          <div id="teacherEmailRow" class="teacher-info-row hidden">
+            <span class="info-label">Email:</span>
+            <span id="teacherEmail" class="info-value"></span>
+          </div>
+          <div id="teacherDisciplinesRow" class="teacher-info-row hidden">
+            <span class="info-label">Дисциплины:</span>
+            <div id="teacherDisciplines" class="info-value info-disciplines"></div>
+          </div>
+        </div>
+
+        <div class="teacher-actions">
+          <a id="teacherSiteLink" class="teacher-site-btn" href="https://www.rubinst.ru/structure" target="_blank" rel="noopener">
+            <span>Открыть на сайте РИИ</span>
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zm5 16H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="/app.js"></script>
 </body>
 </html>

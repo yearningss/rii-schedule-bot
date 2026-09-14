@@ -26,6 +26,24 @@ class ApiService {
     throw Exception('Не удалось загрузить расписание (код ${res.statusCode})');
   }
 
+  // Получение подробной информации о преподавателе
+  Future<TeacherInfo?> getTeacherInfo(String name, {String? post}) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/teacher').replace(queryParameters: {
+        'name': name,
+        if (post != null && post.isNotEmpty) 'post': post,
+      });
+      final res = await http.get(uri).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
+        return TeacherInfo.fromJson(data);
+      }
+    } catch (e) {
+      debugPrint('Ошибка запроса информации о преподавателе: $e');
+    }
+    return null;
+  }
+
   // Инициализация сессии авторизации через Telegram
   Future<Map<String, dynamic>> createAuthSession() async {
     final res = await http.post(Uri.parse('$baseUrl/api/app/auth/session'));

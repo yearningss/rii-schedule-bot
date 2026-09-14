@@ -46,7 +46,27 @@ const el = {
   groupSearchInput: document.getElementById('groupSearchInput'),
   groupsListContainer: document.getElementById('groupsListContainer'),
   subgroupBtns: document.querySelectorAll('.sg-btn'),
-  scheduleContainer: document.getElementById('scheduleContainer')
+  scheduleContainer: document.getElementById('scheduleContainer'),
+  teacherModal: document.getElementById('teacherModal'),
+  closeTeacherModalBtn: document.getElementById('closeTeacherModalBtn'),
+  teacherLoading: document.getElementById('teacherLoading'),
+  teacherContent: document.getElementById('teacherContent'),
+  teacherPhoto: document.getElementById('teacherPhoto'),
+  teacherAvatarFallback: document.getElementById('teacherAvatarFallback'),
+  teacherFullName: document.getElementById('teacherFullName'),
+  teacherPost: document.getElementById('teacherPost'),
+  teacherDeptBadge: document.getElementById('teacherDeptBadge'),
+  teacherRoom: document.getElementById('teacherRoom'),
+  teacherRoomRow: document.getElementById('teacherRoomRow'),
+  teacherDegree: document.getElementById('teacherDegree'),
+  teacherDegreeRow: document.getElementById('teacherDegreeRow'),
+  teacherPhone: document.getElementById('teacherPhone'),
+  teacherPhoneRow: document.getElementById('teacherPhoneRow'),
+  teacherEmail: document.getElementById('teacherEmail'),
+  teacherEmailRow: document.getElementById('teacherEmailRow'),
+  teacherDisciplines: document.getElementById('teacherDisciplines'),
+  teacherDisciplinesRow: document.getElementById('teacherDisciplinesRow'),
+  teacherSiteLink: document.getElementById('teacherSiteLink')
 };
 
 // Определение текущего времени и дня в Рубцовске (UTC+7)
@@ -263,6 +283,37 @@ async function loadSchedule() {
   }
 }
 
+function escapeAttr(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/'/g, '&#39;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderTeacherHtml(teacher, post) {
+  if (!teacher) return '';
+  const cleanTeacher = teacher.trim();
+  const cleanPost = (post || '').trim();
+  const postDisplay = cleanPost ? ` (${cleanPost})` : '';
+  return `<span class="teacher-clickable" onclick="openTeacherModal('${escapeAttr(cleanTeacher)}', '${escapeAttr(cleanPost)}')">
+    <svg class="teacher-icon" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    <span>${escapeHtml(cleanTeacher)}</span>${escapeHtml(postDisplay)}
+  </span>`;
+}
+
 // Отрисовка расписания на выбранный день
 function renderSchedule() {
   el.loadingState.classList.add('hidden');
@@ -363,7 +414,7 @@ function renderSchedule() {
             <div class="para-subject">${item.subj1 || 'Предмет'} <span class="type-pill">${item.type1 ? `(${item.type1})` : ''}</span></div>
             <div class="para-meta">
               ${item.aud1 ? `<span class="aud-pill">ауд. ${item.aud1}</span>` : ''}
-              <span>${item.teacher1 || ''} ${item.teachPost1 ? `(${item.teachPost1})` : ''}</span>
+              ${renderTeacherHtml(item.teacher1, item.teachPost1)}
             </div>
           </div>`;
       }
@@ -374,7 +425,7 @@ function renderSchedule() {
             <div class="para-subject">${item.subj2 || 'Предмет'} <span class="type-pill">${item.type2 ? `(${item.type2})` : ''}</span></div>
             <div class="para-meta">
               ${item.aud2 ? `<span class="aud-pill">ауд. ${item.aud2}</span>` : ''}
-              <span>${item.teacher2 || ''} ${item.teachPost2 ? `(${item.teachPost2})` : ''}</span>
+              ${renderTeacherHtml(item.teacher2, item.teachPost2)}
             </div>
           </div>`;
       }
@@ -403,7 +454,7 @@ function renderSchedule() {
           <div class="para-subject">${item.subj1 || 'Предмет'} <span class="type-pill">${item.type1 ? `(${item.type1})` : ''}</span></div>
           <div class="para-meta">
             ${item.aud1 ? `<span class="aud-pill">ауд. ${item.aud1}</span>` : ''}
-            <span>${item.teacher1 || ''} ${item.teachPost1 ? `(${item.teachPost1})` : ''}</span>
+            ${renderTeacherHtml(item.teacher1, item.teachPost1)}
           </div>
         </div>`;
     }
@@ -509,6 +560,108 @@ function closeGroupModal() {
   el.groupModal.classList.add('hidden');
 }
 
+// Модальное окно преподавателя
+async function openTeacherModal(name, post) {
+  if (!name) return;
+  triggerHaptic();
+  el.teacherModal.classList.remove('hidden');
+  el.teacherLoading.classList.remove('hidden');
+  el.teacherContent.classList.add('hidden');
+
+  try {
+    const res = await fetch(`/api/teacher?name=${encodeURIComponent(name)}&post=${encodeURIComponent(post || '')}`);
+    if (!res.ok) throw new Error('Ошибка загрузки данных');
+    const data = await res.json();
+    populateTeacherModal(data);
+  } catch (e) {
+    console.error('Ошибка получения данных преподавателя:', e);
+    populateTeacherModal({
+      full_name: name,
+      post: post || 'Преподаватель',
+      profile_url: 'https://www.rubinst.ru/structure'
+    });
+  } finally {
+    el.teacherLoading.classList.add('hidden');
+    el.teacherContent.classList.remove('hidden');
+  }
+}
+
+function populateTeacherModal(t) {
+  el.teacherFullName.textContent = t.full_name || 'Преподаватель';
+  el.teacherPost.textContent = t.post || '';
+
+  if (t.department) {
+    el.teacherDeptBadge.textContent = t.department;
+    el.teacherDeptBadge.classList.remove('hidden');
+  } else {
+    el.teacherDeptBadge.classList.add('hidden');
+  }
+
+  // Фотография
+  if (t.photo_url) {
+    el.teacherPhoto.src = t.photo_url;
+    el.teacherPhoto.classList.remove('hidden');
+    el.teacherAvatarFallback.classList.add('hidden');
+    el.teacherPhoto.onerror = () => {
+      el.teacherPhoto.classList.add('hidden');
+      el.teacherAvatarFallback.classList.remove('hidden');
+    };
+  } else {
+    el.teacherPhoto.classList.add('hidden');
+    el.teacherAvatarFallback.classList.remove('hidden');
+  }
+
+  // Аудитория
+  if (t.room) {
+    el.teacherRoom.textContent = t.room;
+    el.teacherRoomRow.classList.remove('hidden');
+  } else {
+    el.teacherRoomRow.classList.add('hidden');
+  }
+
+  // Степень / Звание
+  const degreeParts = [t.degree, t.title].filter(Boolean);
+  if (degreeParts.length > 0) {
+    el.teacherDegree.textContent = degreeParts.join(', ');
+    el.teacherDegreeRow.classList.remove('hidden');
+  } else {
+    el.teacherDegreeRow.classList.add('hidden');
+  }
+
+  // Телефон
+  if (t.phone) {
+    el.teacherPhone.textContent = t.phone;
+    el.teacherPhone.href = `tel:${t.phone.replace(/[^0-9+]/g, '')}`;
+    el.teacherPhoneRow.classList.remove('hidden');
+  } else {
+    el.teacherPhoneRow.classList.add('hidden');
+  }
+
+  // Email
+  if (t.email) {
+    const emails = t.email.split(/\s+/).filter(Boolean);
+    el.teacherEmail.innerHTML = emails.map(m => `<a class="info-link" href="mailto:${m}">${m}</a>`).join(', ');
+    el.teacherEmailRow.classList.remove('hidden');
+  } else {
+    el.teacherEmailRow.classList.add('hidden');
+  }
+
+  // Дисциплины
+  if (t.disciplines) {
+    el.teacherDisciplines.textContent = t.disciplines;
+    el.teacherDisciplinesRow.classList.remove('hidden');
+  } else {
+    el.teacherDisciplinesRow.classList.add('hidden');
+  }
+
+  // Ссылка на сайт РИИ
+  el.teacherSiteLink.href = t.profile_url || 'https://www.rubinst.ru/structure';
+}
+
+function closeTeacherModal() {
+  el.teacherModal.classList.add('hidden');
+}
+
 // Свайпы дней недели (Touch gestures)
 let touchStartX = 0;
 let touchStartY = 0;
@@ -546,6 +699,18 @@ el.groupSelectBtn.addEventListener('click', openGroupModal);
 el.closeModalBtn.addEventListener('click', closeGroupModal);
 el.groupModal.addEventListener('click', e => {
   if (e.target === el.groupModal) closeGroupModal();
+});
+
+el.closeTeacherModalBtn.addEventListener('click', closeTeacherModal);
+el.teacherModal.addEventListener('click', e => {
+  if (e.target === el.teacherModal) closeTeacherModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeGroupModal();
+    closeTeacherModal();
+  }
 });
 
 el.groupSearchInput.addEventListener('input', e => {
