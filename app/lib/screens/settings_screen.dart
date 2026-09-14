@@ -12,6 +12,7 @@ import '../services/season_icon_service.dart';
 import '../services/widget_service.dart';
 import '../services/notification_service.dart';
 import 'changelog_screen.dart';
+import '../theme/theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   final StorageService storage;
@@ -522,8 +523,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        final theme = Theme.of(ctx);
+        final colorScheme = theme.colorScheme;
+        final isDark = theme.brightness == Brightness.dark;
+        final subColor = colorScheme.onSurfaceVariant;
         final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
         final autoTheme = SeasonIconService.resolveAutoSeason(rTime);
 
@@ -782,29 +785,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
-    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final cardBg = colorScheme.surface;
+    final subColor = colorScheme.onSurfaceVariant;
+    final borderColor = colorScheme.outlineVariant;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Настройки',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: AppTypography.titleLarge.copyWith(
+            color: colorScheme.onSurface,
+          ),
         ),
-        elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         children: [
           // Карточка профиля пользователя
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: AppSpacing.cardPadding,
             decoration: BoxDecoration(
               color: cardBg,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppShape.roundedLg,
               border: Border.all(
-                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
+                color: borderColor,
               ),
             ),
             child: Column(
@@ -1427,18 +1436,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required List<Widget> children,
   }) {
     final isExpanded = _expandedCategories.contains(id);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0);
-    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final cardBg = colorScheme.surface;
+    final borderColor = colorScheme.outlineVariant;
+    final subColor = colorScheme.onSurfaceVariant;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppShape.roundedLg,
         border: Border.all(
-          color: isExpanded ? iconColor.withOpacity(0.55) : borderColor,
+          color: isExpanded ? iconColor.withOpacity(0.65) : borderColor,
           width: isExpanded ? 1.5 : 1.0,
         ),
         boxShadow: [

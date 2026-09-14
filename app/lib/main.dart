@@ -6,6 +6,7 @@ import 'services/storage_service.dart';
 import 'services/season_icon_service.dart';
 import 'screens/auth_screen.dart';
 import 'screens/schedule_screen.dart';
+import 'theme/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,28 +52,8 @@ class RiiScheduleApp extends StatelessWidget {
           title: 'РИИ Расписание',
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.light,
-            colorSchemeSeed: const Color(0xFF2563EB),
-            scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.white,
-              foregroundColor: Color(0xFF0F172A),
-              elevation: 0,
-            ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            colorSchemeSeed: const Color(0xFF2563EB),
-            scaffoldBackgroundColor: const Color(0xFF11151C),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1E232D),
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-          ),
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
           home: hasGroup
               ? ScheduleScreen(storage: storage, api: api)
               : AuthScreen(storage: storage, api: api),

@@ -1,30 +1,87 @@
+/* Material 3 Design System для WebApp и Telegram Mini App */
 :root {
-  --bg-color: var(--tg-theme-bg-color, #ffffff);
-  --text-color: var(--tg-theme-text-color, #111827);
-  --hint-color: var(--tg-theme-hint-color, #6b7280);
-  --btn-color: var(--tg-theme-button-color, #2563eb);
-  --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
-  --secondary-bg: var(--tg-theme-secondary-bg-color, #f3f4f6);
-  --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-  --border-color: rgba(0, 0, 0, 0.08);
-  --accent-color: #2563eb;
-  --accent-light: rgba(37, 99, 235, 0.1);
-  --ongoing-color: #10b981;
-  --ongoing-bg: rgba(16, 185, 129, 0.12);
-  --next-color: #f59e0b;
-  --next-bg: rgba(245, 158, 11, 0.12);
+  /* Material 3 Design Tokens (Light Theme) */
+  --md-sys-color-primary: #1d4ed8;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #dbeafe;
+  --md-sys-color-on-primary-container: #1e3a8a;
+  --md-sys-color-secondary: #475569;
+  --md-sys-color-secondary-container: #e2e8f0;
+  --md-sys-color-on-secondary-container: #0f172a;
+  --md-sys-color-surface: #ffffff;
+  --md-sys-color-surface-container-low: #f8fafc;
+  --md-sys-color-surface-container: #f1f5f9;
+  --md-sys-color-surface-container-high: #e2e8f0;
+  --md-sys-color-outline: #cbd5e1;
+  --md-sys-color-outline-variant: #e2e8f0;
+
+  /* Семантические цвета расписания */
+  --schedule-color-ongoing: #059669;
+  --schedule-color-ongoing-bg: rgba(5, 150, 105, 0.12);
+  --schedule-color-next: #2563eb;
+  --schedule-color-next-bg: rgba(37, 99, 235, 0.12);
+  --schedule-color-lecture: #2563eb;
+  --schedule-color-practice: #059669;
+  --schedule-color-lab: #d97706;
+
+  /* Переменные темы Telegram с Material 3 fallback */
+  --bg-color: var(--tg-theme-bg-color, var(--md-sys-color-surface-container-low));
+  --text-color: var(--tg-theme-text-color, #0f172a);
+  --hint-color: var(--tg-theme-hint-color, #64748b);
+  --btn-color: var(--tg-theme-button-color, var(--md-sys-color-primary));
+  --btn-text-color: var(--tg-theme-button-text-color, var(--md-sys-color-on-primary));
+  --secondary-bg: var(--tg-theme-secondary-bg-color, var(--md-sys-color-surface-container));
+  --card-bg: var(--tg-theme-secondary-bg-color, var(--md-sys-color-surface));
+  --border-color: var(--md-sys-color-outline-variant);
+  --accent-color: var(--md-sys-color-primary);
+  --accent-light: rgba(29, 78, 216, 0.1);
+  --ongoing-color: var(--schedule-color-ongoing);
+  --ongoing-bg: var(--schedule-color-ongoing-bg);
+  --next-color: var(--schedule-color-next);
+  --next-bg: var(--schedule-color-next-bg);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-color: var(--tg-theme-bg-color, #181c24);
-    --text-color: var(--tg-theme-text-color, #f9fafb);
-    --hint-color: var(--tg-theme-hint-color, #9ca3af);
-    --btn-color: var(--tg-theme-button-color, #3b82f6);
-    --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
-    --secondary-bg: var(--tg-theme-secondary-bg-color, #1f2937);
-    --card-bg: var(--tg-theme-secondary-bg-color, #242c3d);
-    --border-color: rgba(255, 255, 255, 0.08);
+    /* Material 3 Design Tokens (Dark Theme) */
+    --md-sys-color-primary: #93c5fd;
+    --md-sys-color-on-primary: #0f172a;
+    --md-sys-color-primary-container: #1e3a8a;
+    --md-sys-color-on-primary-container: #dbeafe;
+    --md-sys-color-secondary: #94a3b8;
+    --md-sys-color-secondary-container: #334155;
+    --md-sys-color-on-secondary-container: #e2e8f0;
+    --md-sys-color-surface: #0b0f19;
+    --md-sys-color-surface-container-low: #0f1420;
+    --md-sys-color-surface-container: #161d2b;
+    --md-sys-color-surface-container-high: #1e2638;
+    --md-sys-color-outline: #334155;
+    --md-sys-color-outline-variant: #1e293b;
+
+    /* Семантические цвета расписания */
+    --schedule-color-ongoing: #34d399;
+    --schedule-color-ongoing-bg: rgba(52, 211, 153, 0.16);
+    --schedule-color-next: #60a5fa;
+    --schedule-color-next-bg: rgba(96, 165, 250, 0.16);
+    --schedule-color-lecture: #60a5fa;
+    --schedule-color-practice: #34d399;
+    --schedule-color-lab: #fbbf24;
+
+    /* Переменные темы Telegram с Material 3 fallback */
+    --bg-color: var(--tg-theme-bg-color, var(--md-sys-color-surface-container-low));
+    --text-color: var(--tg-theme-text-color, #f1f5f9);
+    --hint-color: var(--tg-theme-hint-color, #94a3b8);
+    --btn-color: var(--tg-theme-button-color, var(--md-sys-color-primary));
+    --btn-text-color: var(--tg-theme-button-text-color, var(--md-sys-color-on-primary));
+    --secondary-bg: var(--tg-theme-secondary-bg-color, var(--md-sys-color-surface-container));
+    --card-bg: var(--tg-theme-secondary-bg-color, var(--md-sys-color-surface));
+    --border-color: var(--md-sys-color-outline-variant);
+    --accent-color: var(--md-sys-color-primary);
+    --accent-light: rgba(147, 197, 253, 0.14);
+    --ongoing-color: var(--schedule-color-ongoing);
+    --ongoing-bg: var(--schedule-color-ongoing-bg);
+    --next-color: var(--schedule-color-next);
+    --next-bg: var(--schedule-color-next-bg);
   }
 }
 
@@ -33,7 +90,7 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -50,12 +107,12 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  max-width: 600px;
+  max-width: 860px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* Шапка */
+/* Шапка приложения */
 .app-header {
   position: sticky;
   top: 0;
@@ -63,7 +120,7 @@ body {
   background-color: var(--bg-color);
   padding: 12px 16px 8px;
   border-bottom: 1px solid var(--border-color);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 
 .header-top {
@@ -78,7 +135,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--secondary-bg);
+  background: var(--card-bg);
   color: var(--text-color);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -86,11 +143,11 @@ body {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .group-btn:active {
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .chevron-icon {
@@ -109,7 +166,7 @@ body {
   background: transparent;
   border: none;
   color: var(--hint-color);
-  padding: 6px 12px;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
   border-radius: 9px;
@@ -120,7 +177,7 @@ body {
 .week-btn.active {
   background: var(--btn-color);
   color: var(--btn-text-color);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 /* Дни недели */
@@ -132,13 +189,13 @@ body {
 
 .day-chip {
   flex: 1;
-  background: var(--secondary-bg);
-  border: 1px solid transparent;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   color: var(--hint-color);
-  padding: 8px 0;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 10px 0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.18s ease;
   text-align: center;
@@ -148,6 +205,7 @@ body {
   background: var(--btn-color);
   color: var(--btn-text-color);
   border-color: var(--btn-color);
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.25);
 }
 
 .day-chip.today-badge {
@@ -157,11 +215,11 @@ body {
 .day-chip.today-badge::after {
   content: "";
   position: absolute;
-  bottom: 3px;
+  bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: currentColor;
 }
@@ -172,12 +230,13 @@ body {
   align-items: center;
   gap: 8px;
   margin: 10px 16px 4px;
-  padding: 9px 14px;
+  padding: 10px 14px;
   background: var(--accent-light);
   border-radius: 12px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--accent-color);
+  border: 1px solid var(--border-color);
 }
 
 /* Баннер установки PWA для браузера */
@@ -201,17 +260,19 @@ body {
 .pwa-icon {
   width: 28px;
   height: 28px;
-  border-radius: 7px;
+  border-radius: 8px;
 }
 
 .pwa-banner-text {
   display: flex;
   flex-direction: column;
   font-size: 13px;
+  font-weight: 600;
 }
 
 .pwa-banner-text span {
   font-size: 11px;
+  font-weight: 400;
   color: var(--hint-color);
 }
 
@@ -219,8 +280,8 @@ body {
   background: var(--btn-color);
   color: var(--btn-text-color);
   border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -243,7 +304,7 @@ body {
 /* Контейнер карточек */
 .schedule-container {
   flex: 1;
-  padding: 12px 16px 80px;
+  padding: 12px 16px 84px;
   position: relative;
 }
 
@@ -253,18 +314,18 @@ body {
   gap: 12px;
 }
 
-/* Карточка пары */
+/* Карточка пары Material 3 */
 .para-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .para-card.is-ongoing {
-  border: 1.5px solid var(--ongoing-color);
+  border: 1.8px solid var(--ongoing-color);
   background: var(--ongoing-bg);
 }
 
@@ -277,7 +338,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .para-num-time {
@@ -291,18 +352,18 @@ body {
 
 .para-num {
   background: var(--secondary-bg);
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
   font-size: 12px;
+  color: var(--text-color);
 }
 
 .para-badge {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
 }
 
 .badge-ongoing {
@@ -323,14 +384,18 @@ body {
 .para-subject {
   font-size: 16px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.4;
   margin-bottom: 8px;
+  color: var(--text-color);
 }
 
 .type-pill {
   font-size: 12px;
-  font-weight: 500;
-  color: var(--hint-color);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--secondary-bg);
+  color: var(--text-color);
 }
 
 .para-meta {
@@ -345,23 +410,26 @@ body {
 .aud-pill {
   background: var(--secondary-bg);
   color: var(--text-color);
-  font-weight: 600;
+  font-weight: 700;
   padding: 3px 8px;
   border-radius: 6px;
 }
 
 .subgroup-block {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border-color);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
 }
 
 .subgroup-label {
+  display: inline-block;
   font-size: 11px;
   font-weight: 700;
   color: var(--accent-color);
-  text-transform: uppercase;
-  margin-bottom: 2px;
+  background: var(--secondary-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 4px;
 }
 
 /* Пустое состояние и лоадер */
@@ -371,14 +439,14 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 60px 20px;
+  padding: 64px 20px;
   color: var(--hint-color);
 }
 
 .empty-title {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   color: var(--text-color);
 }
 
@@ -389,7 +457,7 @@ body {
 .spinner {
   width: 36px;
   height: 36px;
-  border: 3.5px solid var(--border-color);
+  border: 3px solid var(--border-color);
   border-top-color: var(--btn-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -408,8 +476,9 @@ body {
   right: 0;
   background: var(--bg-color);
   border-top: 1px solid var(--border-color);
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
   z-index: 20;
+  backdrop-filter: blur(12px);
 }
 
 .subgroup-selector {
@@ -417,8 +486,9 @@ body {
   background: var(--secondary-bg);
   padding: 3px;
   border-radius: 12px;
-  max-width: 600px;
+  max-width: 860px;
   margin: 0 auto;
+  border: 1px solid var(--border-color);
 }
 
 .sg-btn {
@@ -437,6 +507,7 @@ body {
 .sg-btn.active {
   background: var(--btn-color);
   color: var(--btn-text-color);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Модальное окно выбора группы */
@@ -451,18 +522,21 @@ body {
   z-index: 100;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   transition: opacity 0.2s ease;
 }
 
 .modal-sheet {
   background: var(--bg-color);
   width: 100%;
+  max-width: 600px;
   max-height: 85vh;
-  border-radius: 20px 20px 0 0;
-  padding: 16px;
+  border-radius: 28px 28px 0 0;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border-color);
 }
 
 @keyframes slideUp {
@@ -474,33 +548,40 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .close-btn {
   background: var(--secondary-bg);
   border: none;
   font-size: 20px;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   cursor: pointer;
   color: var(--text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-box {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .search-box input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 12px 16px;
   background: var(--secondary-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   font-size: 15px;
   color: var(--text-color);
   outline: none;
+}
+
+.search-box input:focus {
+  border-color: var(--btn-color);
 }
 
 .groups-list {
@@ -514,10 +595,10 @@ body {
 .course-section-title {
   font-size: 12px;
   font-weight: 700;
-  color: var(--hint-color);
+  color: var(--accent-color);
   text-transform: uppercase;
-  margin-top: 8px;
-  margin-bottom: 4px;
+  margin-top: 10px;
+  margin-bottom: 6px;
 }
 
 .group-item-btn {
