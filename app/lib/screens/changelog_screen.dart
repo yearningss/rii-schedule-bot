@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
-import '../theme/theme.dart';
 
 class ReleaseModel {
   final String tag;
@@ -677,39 +676,36 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0);
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'История изменений',
-          style: AppTypography.titleLarge.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
+        title: const Text('История изменений'),
+        elevation: 0,
         actions: [
           IconButton(
             tooltip: 'Открыть GitHub',
             icon: const Icon(Icons.open_in_new_rounded),
             onPressed: () => _launchUrl('https://github.com/yearningss/rii-schedule-bot/releases'),
           ),
-          const SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () => _loadReleases(isRefresh: true),
+        color: const Color(0xFF2563EB),
         child: _isLoading
-            ? Center(
+            ? const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(),
-                    AppSpacing.gapH16,
+                    CircularProgressIndicator(color: Color(0xFF2563EB)),
+                    SizedBox(height: 16),
                     Text(
-                      'Загрузка истории с GitHub...',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      'Загрузка реальной истории с GitHub...',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ],
                 ),
@@ -718,34 +714,23 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                 ? ListView(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xxl,
-                          vertical: 80,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
                         child: Column(
                           children: [
-                            Icon(
-                              Icons.cloud_off_rounded,
-                              size: 54,
-                              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            ),
-                            AppSpacing.gapH16,
-                            Text(
+                            const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            const Text(
                               'Не удалось загрузить историю изменений',
-                              style: AppTypography.titleMedium.copyWith(
-                                color: colorScheme.onSurface,
-                              ),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
-                            AppSpacing.gapH8,
-                            Text(
-                              'Проверьте подключение к сети и повторите попытку.',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Проверьте подключение к интернету и повторите попытку.',
+                              style: TextStyle(fontSize: 13, color: Colors.grey),
                               textAlign: TextAlign.center,
                             ),
-                            AppSpacing.gapH20,
+                            const SizedBox(height: 20),
                             FilledButton.icon(
                               onPressed: () => _loadReleases(),
                               icon: const Icon(Icons.refresh_rounded),
@@ -757,44 +742,31 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                     ],
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     itemCount: _releases.length + 1,
                     itemBuilder: (context, idx) {
                       if (idx == 0) {
                         return Container(
-                          margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.sm,
-                          ),
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainer,
-                            borderRadius: AppShape.roundedMd,
-                            border: Border.all(color: colorScheme.outlineVariant),
+                            color: isDark ? const Color(0xFF19202C) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                _isFromCache
-                                    ? Icons.storage_rounded
-                                    : Icons.check_circle_outline_rounded,
+                                _isFromCache ? Icons.storage_rounded : Icons.check_circle_outline_rounded,
                                 size: 18,
-                                color: _isFromCache
-                                    ? colorScheme.tertiary
-                                    : colorScheme.primary,
+                                color: _isFromCache ? Colors.amber : const Color(0xFF10B981),
                               ),
-                              AppSpacing.gapW8,
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   _isFromCache
                                       ? 'Офлайн-режим (встроенная история). Потяните вниз для обновления.'
                                       : 'Данные синхронизированы в реальном времени с GitHub Releases.',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
+                                  style: TextStyle(fontSize: 12, color: subColor),
                                 ),
                               ),
                             ],
@@ -823,12 +795,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                         }
                       }
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-                        shape: AppShape.cardShape,
-                        color: colorScheme.surface,
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: item.isCurrent ? const Color(0xFF2563EB) : borderColor,
+                            width: item.isCurrent ? 1.5 : 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
                         child: Padding(
-                          padding: AppSpacing.cardPadding,
+                          padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -836,42 +821,38 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.md,
-                                      vertical: AppSpacing.xs,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: item.isCurrent
-                                          ? colorScheme.primary
-                                          : colorScheme.secondaryContainer,
-                                      borderRadius: AppShape.roundedSm,
+                                          ? const Color(0xFF2563EB)
+                                          : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       'v${item.tag}',
-                                      style: AppTypography.labelMedium.copyWith(
-                                        color: item.isCurrent
-                                            ? colorScheme.onPrimary
-                                            : colorScheme.onSecondaryContainer,
+                                      style: TextStyle(
+                                        fontSize: 13,
                                         fontWeight: FontWeight.bold,
+                                        color: item.isCurrent
+                                            ? Colors.white
+                                            : (isDark ? Colors.white : const Color(0xFF1E293B)),
                                       ),
                                     ),
                                   ),
-                                  AppSpacing.gapW8,
+                                  const SizedBox(width: 8),
                                   if (item.isCurrent)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.sm,
-                                        vertical: AppSpacing.xs,
-                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: colorScheme.primaryContainer,
-                                        borderRadius: AppShape.roundedSm,
+                                        color: const Color(0xFF10B981).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Text(
+                                      child: const Text(
                                         'Установлена',
-                                        style: AppTypography.labelSmall.copyWith(
+                                        style: TextStyle(
+                                          fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          color: colorScheme.onPrimaryContainer,
+                                          color: Color(0xFF10B981),
                                         ),
                                       ),
                                     ),
@@ -879,60 +860,56 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                   if (item.publishedAt.isNotEmpty)
                                     Text(
                                       _formatDate(item.publishedAt),
-                                      style: AppTypography.bodySmall.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
+                                      style: TextStyle(fontSize: 12, color: subColor),
                                     ),
                                 ],
                               ),
-                              AppSpacing.gapH12,
+                              const SizedBox(height: 8),
                               Text(
                                 item.title,
-                                style: AppTypography.titleMedium.copyWith(
-                                  color: colorScheme.onSurface,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              AppSpacing.gapH12,
+                              const SizedBox(height: 12),
                               ...lines.map((line) {
                                 if (line.startsWith('__HEADING__:')) {
                                   final h = line.replaceFirst('__HEADING__:', '');
                                   return Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: AppSpacing.sm,
-                                      bottom: AppSpacing.xs,
-                                    ),
+                                    padding: const EdgeInsets.only(top: 8, bottom: 4),
                                     child: Text(
                                       h,
-                                      style: AppTypography.labelLarge.copyWith(
-                                        color: colorScheme.onSurface,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                                       ),
                                     ),
                                   );
                                 }
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                                  padding: const EdgeInsets.only(bottom: 6),
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Container(
-                                        margin: const EdgeInsets.only(
-                                          top: 7,
-                                          right: AppSpacing.sm,
-                                        ),
-                                        width: 5,
-                                        height: 5,
+                                        margin: const EdgeInsets.only(top: 6, right: 8),
+                                        width: 6,
+                                        height: 6,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: item.isCurrent
-                                              ? colorScheme.primary
-                                              : colorScheme.onSurfaceVariant,
+                                              ? const Color(0xFF2563EB)
+                                              : subColor,
                                         ),
                                       ),
                                       Expanded(
                                         child: Text(
                                           line,
-                                          style: AppTypography.bodyMedium.copyWith(
-                                            color: colorScheme.onSurface,
+                                          style: const TextStyle(
+                                            fontSize: 13.5,
+                                            height: 1.35,
                                           ),
                                         ),
                                       ),
@@ -941,12 +918,9 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                 );
                               }),
                               if (releaseAsset != null) ...[
-                                AppSpacing.gapH12,
-                                Divider(
-                                  height: 1,
-                                  color: colorScheme.outlineVariant,
-                                ),
-                                AppSpacing.gapH12,
+                                const SizedBox(height: 12),
+                                const Divider(height: 1),
+                                const SizedBox(height: 10),
                                 Row(
                                   children: [
                                     Expanded(
@@ -957,13 +931,20 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                           releaseAsset!.formattedSize.isNotEmpty
                                               ? 'Скачать $targetLabel (${releaseAsset!.formattedSize})'
                                               : 'Скачать $targetLabel',
+                                          style: const TextStyle(fontSize: 12.5),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    AppSpacing.gapW8,
+                                    const SizedBox(width: 8),
                                     IconButton(
                                       tooltip: 'Смотреть релиз на GitHub',
-                                      icon: const Icon(Icons.launch_rounded, size: 20),
+                                      icon: const Icon(Icons.launch_rounded, size: 18),
                                       onPressed: () => _launchUrl(item.htmlUrl),
                                     ),
                                   ],

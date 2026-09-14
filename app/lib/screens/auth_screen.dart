@@ -8,7 +8,6 @@ import '../services/storage_service.dart';
 import 'group_picker_screen.dart';
 import 'schedule_screen.dart';
 import '../services/season_icon_service.dart';
-import '../theme/theme.dart';
 
 class AuthScreen extends StatefulWidget {
   final StorageService storage;
@@ -184,14 +183,14 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
     final effectiveTheme = SeasonIconService.getEffectiveTheme(widget.storage.getSeasonIconPreference(), rTime);
 
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -199,7 +198,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
               // Логотип приложения
               ClipRRect(
-                borderRadius: AppShape.roundedXl,
+                borderRadius: BorderRadius.circular(28),
                 child: Image.asset(
                   effectiveTheme.assetPath,
                   width: 110,
@@ -207,19 +206,18 @@ class _AuthScreenState extends State<AuthScreen> {
                   fit: BoxFit.cover,
                 ),
               ),
-              AppSpacing.gapH24,
+              const SizedBox(height: 24),
 
-              Text(
+              const Text(
                 'РИИ Расписание',
-                style: AppTypography.headlineMedium.copyWith(
-                  color: colorScheme.onSurface,
-                ),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
-              AppSpacing.gapH4,
+              const SizedBox(height: 6),
               Text(
                 'Рубцовский индустриальный институт',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
                 ),
               ),
 
@@ -228,22 +226,18 @@ class _AuthScreenState extends State<AuthScreen> {
               // Состояние ожидания подтверждения в Telegram
               if (_isWaitingConfirmation) ...[
                 const CircularProgressIndicator(),
-                AppSpacing.gapH16,
-                Text(
+                const SizedBox(height: 16),
+                const Text(
                   'Ожидание подтверждения в Telegram...',
-                  style: AppTypography.titleMedium.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
-                AppSpacing.gapH8,
+                const SizedBox(height: 6),
                 Text(
                   'Нажмите «Подтвердить вход» в диалоге с ботом @rubinst_bot',
                   textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: TextStyle(fontSize: 13, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                 ),
-                AppSpacing.gapH20,
+                const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
                     _pollTimer?.cancel();
@@ -256,26 +250,41 @@ class _AuthScreenState extends State<AuthScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 52,
-                  child: FilledButton.icon(
+                  child: ElevatedButton.icon(
                     onPressed: _startTelegramAuth,
-                    icon: const Icon(Icons.send_rounded),
-                    label: const Text('Войти через Telegram'),
+                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    label: const Text(
+                      'Войти через Telegram',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
                   ),
                 ),
-                AppSpacing.gapH12,
+                const SizedBox(height: 12),
 
                 // Кнопка продолжить без авторизации
                 SizedBox(
                   width: double.infinity,
                   height: 48,
-                  child: OutlinedButton(
+                  child: TextButton(
                     onPressed: _selectGroupManually,
-                    child: const Text('Выбрать группу без привязки'),
+                    child: Text(
+                      'Выбрать группу без привязки',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDark ? Colors.grey[300] : Colors.grey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
 
-              AppSpacing.gapH24,
+              const SizedBox(height: 24),
             ],
           ),
         ),

@@ -1,14 +1,12 @@
-// Экран расписания звонков института по стандарту Material 3
+// Экран расписания звонков института
 import 'package:flutter/material.dart';
-import '../theme/theme.dart';
 
 class BellsScreen extends StatelessWidget {
   const BellsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bells = [
       {'num': '1', 'time': '08:30 - 10:00', 'break': 'Перемена 10 минут'},
@@ -21,74 +19,71 @@ class BellsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Расписание звонков',
-          style: AppTypography.titleLarge.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
+        title: const Text('Расписание звонков', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
       ),
       body: ListView.builder(
-        padding: AppSpacing.screenPadding,
+        padding: const EdgeInsets.all(16),
         itemCount: bells.length,
         itemBuilder: (context, idx) {
           final b = bells[idx];
-          final isLunch = idx == 1;
-
-          return Card(
-            margin: const EdgeInsets.only(bottom: AppSpacing.md),
-            shape: AppShape.cardShape,
-            color: colorScheme.surface,
-            child: Padding(
-              padding: AppSpacing.cardPadding,
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isLunch
-                          ? colorScheme.tertiaryContainer
-                          : colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      b['num']!,
-                      style: AppTypography.titleMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isLunch
-                            ? colorScheme.onTertiaryContainer
-                            : colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                  AppSpacing.gapW16,
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          b['time']!,
-                          style: AppTypography.titleMedium.copyWith(
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        AppSpacing.gapH4,
-                        Text(
-                          b['break']!,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: isLunch
-                                ? colorScheme.tertiary
-                                : colorScheme.onSurfaceVariant,
-                            fontWeight: isLunch ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E232D) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2C3340) : const Color(0xFFE2E8F0),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    b['num']!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        b['time']!,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        b['break']!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           );
         },

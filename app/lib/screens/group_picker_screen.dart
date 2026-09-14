@@ -1,9 +1,8 @@
-// Экран выбора учебной группы с поиском по стандарту Material 3
+// Экран выбора учебной группы с поиском
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
-import '../theme/theme.dart';
 
 class GroupPickerScreen extends StatefulWidget {
   final StorageService storage;
@@ -74,6 +73,7 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
     });
   }
 
+  // Освобождение ресурсов текстового контроллера поиска при закрытии экрана
   @override
   void dispose() {
     _searchController.dispose();
@@ -83,7 +83,7 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     // Группируем по курсам
     final Map<int, List<GroupItem>> byCourse = {};
@@ -94,39 +94,36 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Выбор группы',
-          style: AppTypography.titleLarge.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
+        title: const Text('Выбор группы', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
       ),
       body: Column(
         children: [
-          // Поле поиска группы
+          // Поле поиска
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.sm,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
               controller: _searchController,
               onChanged: _filterGroups,
               decoration: InputDecoration(
                 hintText: 'Поиск группы (например: ИВТ-61)...',
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
+                        icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
                           _filterGroups('');
                         },
                       )
                     : null,
+                filled: true,
+                fillColor: isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
@@ -137,27 +134,14 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredGroups.isEmpty
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off_rounded,
-                              size: 48,
-                              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            ),
-                            AppSpacing.gapH12,
-                            Text(
-                              'Группы не найдены',
-                              style: AppTypography.bodyLarge.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'Группы не найдены',
+                          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                         ),
                       )
                     : ListView.builder(
                         itemCount: sortedCourses.length,
-                        padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+                        padding: const EdgeInsets.only(bottom: 24),
                         itemBuilder: (context, idx) {
                           final course = sortedCourses[idx];
                           final groups = byCourse[course]!;
@@ -165,54 +149,31 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  AppSpacing.lg,
-                                  AppSpacing.lg,
-                                  AppSpacing.lg,
-                                  AppSpacing.sm,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 4,
-                                      height: 16,
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary,
-                                        borderRadius: AppShape.roundedXs,
-                                      ),
-                                    ),
-                                    AppSpacing.gapW8,
-                                    Text(
-                                      '$course КУРС',
-                                      style: AppTypography.labelMedium.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.1,
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                                  ],
+                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                                child: Text(
+                                  '$course КУРС',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.1,
+                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  ),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
                                 child: Wrap(
-                                  spacing: AppSpacing.sm,
-                                  runSpacing: AppSpacing.sm,
+                                  spacing: 8,
+                                  runSpacing: 8,
                                   children: groups.map((g) {
                                     return ActionChip(
                                       label: Text(g.name),
-                                      labelStyle: AppTypography.labelLarge.copyWith(
-                                        color: colorScheme.onSurface,
-                                      ),
-                                      backgroundColor: colorScheme.surface,
+                                      labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+                                      backgroundColor: isDark ? const Color(0xFF1E232D) : Colors.white,
                                       side: BorderSide(
-                                        color: colorScheme.outlineVariant,
+                                        color: isDark ? const Color(0xFF2C3340) : const Color(0xFFE2E8F0),
                                       ),
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: AppShape.roundedSm,
-                                      ),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                       onPressed: () => Navigator.pop(context, g),
                                     );
                                   }).toList(),
