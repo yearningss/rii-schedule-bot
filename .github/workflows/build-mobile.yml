@@ -128,7 +128,7 @@ jobs:
     name: Публикация релиза в GitHub Releases
     needs: [build-android, build-ios]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() && needs.build-android.result == 'success' }}
+    if: ${{ !cancelled() && needs.build-android.result == 'success' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Клонирование репозитория
         uses: actions/checkout@v4
