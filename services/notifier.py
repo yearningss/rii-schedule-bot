@@ -1,4 +1,6 @@
 # Фоновый процесс отправки уведомлений о парах, переменах и срочных правках на завтра
+from __future__ import annotations
+
 import asyncio
 import logging
 import time

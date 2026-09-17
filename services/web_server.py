@@ -1,4 +1,6 @@
 # Встроенный легковесный HTTP-сервер на aiohttp.web для обслуживания Telegram Mini App
+from __future__ import annotations
+
 import os
 import logging
 import json

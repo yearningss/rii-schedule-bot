@@ -1,5 +1,9 @@
 # Обработчики просмотра расписания (сегодня, завтра, недели, текущий статус, звонки, экзамены, Web App)
+from __future__ import annotations
+
 import logging
+from typing import Optional, Dict, Any, Tuple
+
 from aiogram import Router, F
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, FSInputFile

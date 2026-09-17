@@ -1,9 +1,16 @@
 # Обработчики команды /start, справки, выбора и поиска группы
+from __future__ import annotations
+
 import os
 import logging
+from typing import Optional, List, Dict, Any
+
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command, CommandObject
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import (
+    Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
+    WebAppInfo, ReplyKeyboardMarkup
+)
 from aiogram.exceptions import TelegramBadRequest
 
 from database import get_user, set_user_group, get_auth_session, confirm_auth_session

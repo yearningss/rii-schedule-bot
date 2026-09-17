@@ -1,5 +1,9 @@
 # Обработчики настроек пользователя, фильтрации подгрупп и управления уведомлениями
+from __future__ import annotations
+
 import logging
+from typing import Optional, Dict, Any
+
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery

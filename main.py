@@ -1,4 +1,6 @@
 # Точка входа для запуска бота, фоновых сервисов и Web App сервера
+from __future__ import annotations
+
 import asyncio
 import logging
 import sys

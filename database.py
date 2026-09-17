@@ -1,7 +1,10 @@
 # Модуль работы с базой данных через SQLAlchemy ORM (asyncio)
 # Архитектура базы данных и переход на SQLAlchemy ORM выполнены по рекомендациям: https://github.com/whatqt
+from __future__ import annotations
 
 import json
+import logging
+import os
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
@@ -19,8 +22,11 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from config import DB_PATH
 
+logger = logging.getLogger("rii_schedule_bot.database")
+
 # 1. Настройка асинхронного движка SQLite через aiosqlite
-DB_URL = f"sqlite+aiosqlite:///{DB_PATH.as_posix()}"
+raw_db_path = DB_PATH.resolve().as_posix()
+DB_URL = f"sqlite+aiosqlite:///{raw_db_path}"
 engine = create_async_engine(DB_URL, echo=False, future=True)
 
 # Включение WAL-режима и нормальной синхронизации для максимальной скорости SQLite
@@ -171,49 +177,52 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
         # Проверка и динамическое добавление колонок для обратной совместимости
-        cursor = await conn.execute(text("PRAGMA table_info(users)"))
-        columns = {row[1] for row in cursor.fetchall()}
+        try:
+            cursor = await conn.execute(text("PRAGMA table_info(users)"))
+            columns = {row[1] for row in cursor.fetchall()}
+        except Exception as e:
+            logger.warning("Не удалось прочитать PRAGMA table_info(users): %s", e)
+            columns = set()
 
-        if "notifications_enabled" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN notifications_enabled INTEGER DEFAULT 1"))
-        if "notify_before_mins" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN notify_before_mins INTEGER DEFAULT 10"))
-        if "notify_breaks" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN notify_breaks INTEGER DEFAULT 1"))
-        if "notify_lesson_start" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN notify_lesson_start INTEGER DEFAULT 1"))
-        if "notify_changes" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN notify_changes INTEGER DEFAULT 1"))
-        if "has_mobile_app" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN has_mobile_app INTEGER DEFAULT 0"))
-        if "first_name" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN first_name TEXT"))
-        if "last_name" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN last_name TEXT"))
-        if "username" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN username TEXT"))
-        if "avatar_url" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url TEXT"))
-        if "mobile_app_installed_at" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN mobile_app_installed_at TIMESTAMP"))
-        if "device_id" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN device_id TEXT"))
-        if "client_user_id" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN client_user_id TEXT"))
-        if "platform" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN platform TEXT"))
-        if "last_active" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN last_active TIMESTAMP"))
-        if "app_version" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN app_version TEXT"))
-        if "yandex_id" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN yandex_id TEXT"))
-        if "group_kb_mode" not in columns:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN group_kb_mode TEXT DEFAULT 'selective'"))
+        columns_to_ensure = [
+            ("notifications_enabled", "INTEGER DEFAULT 1"),
+            ("notify_before_mins", "INTEGER DEFAULT 10"),
+            ("notify_breaks", "INTEGER DEFAULT 1"),
+            ("notify_lesson_start", "INTEGER DEFAULT 1"),
+            ("notify_changes", "INTEGER DEFAULT 1"),
+            ("has_mobile_app", "INTEGER DEFAULT 0"),
+            ("first_name", "TEXT"),
+            ("last_name", "TEXT"),
+            ("username", "TEXT"),
+            ("avatar_url", "TEXT"),
+            ("mobile_app_installed_at", "TIMESTAMP"),
+            ("device_id", "TEXT"),
+            ("client_user_id", "TEXT"),
+            ("platform", "TEXT"),
+            ("last_active", "TIMESTAMP"),
+            ("app_version", "TEXT"),
+            ("yandex_id", "TEXT"),
+            ("group_kb_mode", "TEXT DEFAULT 'selective'"),
+        ]
 
-        await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id)"))
-        await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_client_user_id ON users(client_user_id)"))
-        await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id)"))
+        for col_name, col_def in columns_to_ensure:
+            if col_name not in columns:
+                try:
+                    await conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}"))
+                except Exception as e:
+                    logger.debug("Колонка %s уже существует или пропущена: %s", col_name, e)
+
+        indexes_to_ensure = [
+            "CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id)",
+            "CREATE INDEX IF NOT EXISTS idx_users_client_user_id ON users(client_user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id)"
+        ]
+
+        for idx_sql in indexes_to_ensure:
+            try:
+                await conn.execute(text(idx_sql))
+            except Exception as e:
+                logger.debug("Индекс пропущен: %s (%s)", idx_sql, e)
 
 
 # 4. Методы управления пользователями
