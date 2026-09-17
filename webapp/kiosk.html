@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="shortcut icon" href="/favicon.ico">
 
-  <link rel="stylesheet" href="/kiosk.css?v=2.1">
+  <link rel="stylesheet" href="/kiosk.css?v=2.2">
   <script>
     // Терминал работает в онлайн-режиме: отключаем старый кэш и Service Worker
     if ('serviceWorker' in navigator) {
@@ -94,7 +94,7 @@
             </span>
             <div class="start-btn-text-wrap">
               <span class="start-btn-main-text">НАЧАТЬ РАБОТУ</span>
-              <span class="start-btn-sub-text">Коснитесь экрана для выбора группы и расписания</span>
+              <span class="start-btn-sub-text">Коснитесь экрана для выбора учебной группы</span>
             </div>
             <span class="start-btn-arrow">
               <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
@@ -103,7 +103,7 @@
         </div>
 
         <div class="welcome-quick-note">
-          Расписание всех учебных групп института в актуальном виде с кабинетами и преподавателями
+          Расписание всех 34 учебных групп института в актуальном виде с кабинетами и преподавателями
         </div>
       </div>
     </main>
@@ -173,40 +173,44 @@
     <div class="kiosk-filter-bar">
       <!-- Вкладки курсов -->
       <div class="kiosk-course-tabs" id="kioskCourseTabs">
-        <button class="course-tab active" data-course="all">Все группы</button>
-        <button class="course-tab" data-course="1">1 курс</button>
-        <button class="course-tab" data-course="2">2 курс</button>
-        <button class="course-tab" data-course="3">3 курс</button>
-        <button class="course-tab" data-course="4">4 курс</button>
-        <button class="course-tab" data-course="spo">СПО / Колледж</button>
+        <button class="course-tab active" data-course="all">Все группы (34)</button>
+        <button class="course-tab" data-course="1">1 курс (9)</button>
+        <button class="course-tab" data-course="2">2 курс (11)</button>
+        <button class="course-tab" data-course="3">3 курс (8)</button>
+        <button class="course-tab" data-course="4">4 курс (6)</button>
+        <button class="course-tab" data-course="spo">Колледж (СПО)</button>
+        <button class="course-tab" data-course="vo">Высшее (ВО)</button>
       </div>
 
-      <!-- Поле поиска и быстрые теги специальностей -->
+      <!-- Поле поиска и быстрые теги всех специальностей РИИ -->
       <div class="kiosk-search-row">
         <div class="kiosk-search-input-wrap">
           <svg class="search-ico" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          <input type="text" id="kioskGroupSearch" class="kiosk-search-input" placeholder="Введите название группы (например: ИВТ-61)..." autocomplete="off">
+          <input type="text" id="kioskGroupSearch" class="kiosk-search-input" placeholder="Поиск группы (например: ИВТ-61, ИСП9-51, ЭБУ)..." autocomplete="off">
           <button id="btnClearSearch" class="btn-clear-search hidden" type="button">&times;</button>
         </div>
 
-        <div class="kiosk-quick-tags">
+        <div class="kiosk-quick-tags" id="kioskQuickTags">
+          <button class="quick-tag active" data-tag="all">Все</button>
           <button class="quick-tag" data-tag="ИВТ">ИВТ</button>
           <button class="quick-tag" data-tag="ИСП">ИСП</button>
-          <button class="quick-tag" data-tag="ПИ">ПИ</button>
-          <button class="quick-tag" data-tag="СТЭ">СТЭ</button>
-          <button class="quick-tag" data-tag="ЭР">ЭР</button>
-          <button class="quick-tag" data-tag="КЭС">КЭС</button>
+          <button class="quick-tag" data-tag="ЭиЭ">ЭиЭ</button>
+          <button class="quick-tag" data-tag="ЭС">ЭС</button>
+          <button class="quick-tag" data-tag="ЭБУ">ЭБУ</button>
+          <button class="quick-tag" data-tag="КТМ">КТМ</button>
+          <button class="quick-tag" data-tag="С">С</button>
+          <button class="quick-tag" data-tag="РУП">РУП</button>
         </div>
       </div>
     </div>
 
-    <!-- Сетка карточек групп для сенсорного нажатия -->
+    <!-- Сетка карточек всех групп для сенсорного нажатия -->
     <main class="kiosk-groups-container">
       <div id="kioskGroupsGrid" class="kiosk-groups-grid">
         <!-- Генерируется из kiosk.js -->
         <div class="kiosk-loading-box">
           <div class="kiosk-spinner"></div>
-          <div>Загрузка списка учебных групп...</div>
+          <div>Загрузка учебных групп института...</div>
         </div>
       </div>
       <div id="kioskNoGroupsFound" class="kiosk-no-data hidden">
@@ -302,7 +306,7 @@
       </div>
     </div>
 
-    <!-- Список пар (каноничный дизайн Mini App) -->
+    <!-- Список пар (каноничный дизайн Telegram Mini App) -->
     <main class="kiosk-schedule-body">
       <!-- Статусная строка текущей пары -->
       <div id="kioskLiveStatusBar" class="kiosk-live-status-bar hidden">
@@ -388,6 +392,6 @@
     </div>
   </div>
 
-  <script src="/kiosk.js?v=2.1"></script>
+  <script src="/kiosk.js?v=2.2"></script>
 </body>
 </html>

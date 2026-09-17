@@ -1,5 +1,6 @@
 // ========================================================
 // СЕНСОРНЫЙ ТЕРМИНАЛ РАСПИСАНИЯ РИИ АЛТГТУ (KIOSK.JS)
+// Каноничный дизайн Telegram Mini App + адаптивный терминал
 // ========================================================
 
 (function () {
@@ -15,14 +16,15 @@
   const state = {
     currentScreen: 'welcome', // 'welcome' | 'groupSelect' | 'schedule'
     allGroups: [],
-    selectedCourse: 'all',
+    selectedCourse: 'all', // 'all' | '1' | '2' | '3' | '4' | 'spo' | 'vo'
+    selectedTag: 'all',    // 'all' | 'ИВТ' | 'ИСП' | 'ЭиЭ' | 'ЭС' | 'ЭБУ' | 'КТМ' | 'С' | 'РУП'
     searchQuery: '',
     selectedGroupId: null,
     selectedGroupName: '',
     scheduleData: null,
     selectedWeek: 1,
     selectedDay: 1,
-    selectedSubgroup: 0,
+    selectedSubgroup: 0, // 0 - все, 1 - 1 п/г, 2 - 2 п/г
     bellStatus: null
   };
 
@@ -65,9 +67,9 @@
       kioskCourseTabs: document.getElementById('kioskCourseTabs'),
       kioskGroupSearch: document.getElementById('kioskGroupSearch'),
       btnClearSearch: document.getElementById('btnClearSearch'),
+      kioskQuickTags: document.getElementById('kioskQuickTags'),
       kioskGroupsGrid: document.getElementById('kioskGroupsGrid'),
       kioskNoGroupsFound: document.getElementById('kioskNoGroupsFound'),
-      quickTags: document.querySelectorAll('.quick-tag'),
 
       // Экран 3 (Расписание)
       kioskWeek1Btn: document.getElementById('kioskWeek1Btn'),
@@ -125,6 +127,46 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function escapeAttr(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/'/g, '&#39;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // Классификация групп института (34 группы)
+  function isSpoGroup(groupName) {
+    if (!groupName) return false;
+    const u = groupName.toUpperCase();
+    return u.includes('9-') || u.includes('11-') ||
+           u.startsWith('ИСП') || u.startsWith('РУП') ||
+           u.startsWith('ЭБУ') || u.startsWith('ЭС');
+  }
+
+  function getGroupFacultyName(groupName) {
+    if (isSpoGroup(groupName)) {
+      return 'Колледж (СПО)';
+    }
+    return 'Высшее образование (ВО)';
+  }
+
+  function getGroupSpecialtyTag(groupName) {
+    if (!groupName) return '';
+    const u = groupName.toUpperCase();
+    if (u.startsWith('ИВТ')) return 'ИВТ';
+    if (u.startsWith('ИСП')) return 'ИСП';
+    if (u.startsWith('ЭИЭ')) return 'ЭиЭ';
+    if (u.startsWith('ЭС')) return 'ЭС';
+    if (u.startsWith('ЭБУ')) return 'ЭБУ';
+    if (u.startsWith('КТМ')) return 'КТМ';
+    if (u.startsWith('С-')) return 'С';
+    if (u.startsWith('РУП')) return 'РУП';
+    return '';
   }
 
   // ========================================================
@@ -204,7 +246,9 @@
     if (dom.kioskGroupSearch) dom.kioskGroupSearch.value = '';
     if (dom.btnClearSearch) dom.btnClearSearch.classList.add('hidden');
     state.selectedCourse = 'all';
+    state.selectedTag = 'all';
     updateCourseTabsUI();
+    updateQuickTagsUI();
     showScreen('welcome');
   }
 
@@ -281,7 +325,7 @@
   }
 
   // ========================================================
-  // ЭКРАН 2: СПИСОК ГРУПП И ПОИСК
+  // ЭКРАН 2: СПИСОК ГРУПП И ПОИСК (ВСЕ 34 ГРУППЫ РИИ)
   // ========================================================
   async function loadAllGroups() {
     try {
@@ -306,30 +350,44 @@
     });
   }
 
+  function updateQuickTagsUI() {
+    const tags = dom.kioskQuickTags?.querySelectorAll('.quick-tag');
+    if (!tags) return;
+    tags.forEach(btn => {
+      const t = btn.dataset.tag;
+      btn.classList.toggle('active', t === state.selectedTag);
+    });
+  }
+
   function renderGroupsList() {
     if (!dom.kioskGroupsGrid) return;
 
     let filtered = state.allGroups || [];
 
-    // Фильтр по курсу
+    // 1. Фильтр по курсу / уровню образования
     if (state.selectedCourse !== 'all') {
       if (state.selectedCourse === 'spo') {
-        filtered = filtered.filter(g => {
-          const c = parseInt(g.course || 0);
-          const name = (g.name || '').toUpperCase();
-          const f = (g.faculty || '').toUpperCase();
-          return c > 4 || f.includes('СПО') || f.includes('КОЛЛЕДЖ') || name.startsWith('ИСП') || name.startsWith('КЭС') || name.startsWith('СТЭ');
-        });
+        filtered = filtered.filter(g => isSpoGroup(g.name));
+      } else if (state.selectedCourse === 'vo') {
+        filtered = filtered.filter(g => !isSpoGroup(g.name));
       } else {
         const cNum = parseInt(state.selectedCourse);
         filtered = filtered.filter(g => parseInt(g.course || 0) === cNum);
       }
     }
 
-    // Фильтр по поисковой строке
+    // 2. Фильтр по тегу специальности
+    if (state.selectedTag !== 'all') {
+      filtered = filtered.filter(g => getGroupSpecialtyTag(g.name) === state.selectedTag);
+    }
+
+    // 3. Умный поиск (без учета регистра, дефисов и пробелов)
     if (state.searchQuery.trim()) {
-      const q = state.searchQuery.trim().toLowerCase();
-      filtered = filtered.filter(g => (g.name || '').toLowerCase().includes(q));
+      const qNorm = state.searchQuery.trim().toLowerCase().replace(/[\s\-_]/g, '');
+      filtered = filtered.filter(g => {
+        const gNorm = (g.name || '').toLowerCase().replace(/[\s\-_]/g, '');
+        return gNorm.includes(qNorm);
+      });
     }
 
     if (filtered.length === 0) {
@@ -342,7 +400,7 @@
 
     dom.kioskGroupsGrid.innerHTML = filtered.map(group => {
       const courseStr = group.course ? `${group.course} курс` : 'ВПО / СПО';
-      const facStr = group.faculty ? escapeHtml(group.faculty) : 'Институт';
+      const facStr = getGroupFacultyName(group.name);
       return `
         <div class="kiosk-group-card" data-group-id="${group.id}" data-group-name="${escapeHtml(group.name)}">
           <div class="kgc-header">
@@ -359,8 +417,8 @@
       `;
     }).join('');
 
-    // Навешиваем клики
-    dom.kioskGroupsGrid?.querySelectorAll('.kiosk-group-card').forEach(card => {
+    // Обработчики сенсорного нажатия на карточку группы
+    dom.kioskGroupsGrid.querySelectorAll('.kiosk-group-card').forEach(card => {
       card.addEventListener('click', () => {
         const gid = parseInt(card.dataset.groupId);
         const gname = card.dataset.groupName;
@@ -378,8 +436,48 @@
   }
 
   // ========================================================
-  // ЭКРАН 3: РАСПИСАНИЕ И КАРТОЧКИ ПАР
+  // ЭКРАН 3: РАСПИСАНИЕ И КАРТОЧКИ ПАР (КАНОНИЧНЫЙ ДИЗАЙН)
   // ========================================================
+  function parseParaTime(timeStr, defaultParaNum = 1) {
+    const defaultTimes = {
+      1: { s: 8 * 60 + 30, e: 10 * 60 + 0, sStr: "08:30", eStr: "10:00" },
+      2: { s: 10 * 60 + 10, e: 11 * 60 + 40, sStr: "10:10", eStr: "11:40" },
+      3: { s: 12 * 60 + 10, e: 13 * 60 + 40, sStr: "12:10", eStr: "13:40" },
+      4: { s: 13 * 60 + 50, e: 15 * 60 + 20, sStr: "13:50", eStr: "15:20" },
+      5: { s: 15 * 60 + 30, e: 17 * 60 + 0, sStr: "15:30", eStr: "17:00" },
+      6: { s: 17 * 60 + 10, e: 18 * 60 + 40, sStr: "17:10", eStr: "18:40" },
+      7: { s: 18 * 60 + 50, e: 20 * 60 + 20, sStr: "18:50", eStr: "20:20" }
+    };
+
+    if (!timeStr) return defaultTimes[defaultParaNum] || { s: 0, e: 0, sStr: "", eStr: "" };
+
+    const cleaned = timeStr.replace(/<br\s*\/?>/gi, " - ").replace(/\./g, ":").trim();
+    const match = cleaned.match(/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/);
+    if (match) {
+      const sH = parseInt(match[1]), sM = parseInt(match[2]);
+      const eH = parseInt(match[3]), eM = parseInt(match[4]);
+      return {
+        s: sH * 60 + sM,
+        e: eH * 60 + eM,
+        sStr: `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
+        eStr: `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`
+      };
+    }
+    return defaultTimes[defaultParaNum] || { s: 0, e: 0, sStr: "", eStr: "" };
+  }
+
+  function renderTeacherChipHtml(teacher, post) {
+    if (!teacher) return '';
+    const cleanTeacher = teacher.trim();
+    const cleanPost = (post || '').trim();
+    const postDisplay = cleanPost ? ` (${cleanPost})` : '';
+    return `<button type="button" class="teacher-btn-chip" data-teacher="${escapeAttr(cleanTeacher)}" data-post="${escapeAttr(cleanPost)}" title="Информация о преподавателе">
+      <svg class="teacher-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span class="teacher-name">${escapeHtml(cleanTeacher)}</span>${postDisplay ? `<span class="teacher-post-hint">${escapeHtml(postDisplay)}</span>` : ''}
+      <svg class="teacher-arrow" viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+    </button>`;
+  }
+
   async function loadGroupSchedule(groupId) {
     if (!groupId) return;
 
@@ -452,65 +550,49 @@
     }
   }
 
-  function parseTimeRange(timeStr, defaultPara = 1) {
-    const times = {
-      1: { s: 8 * 60 + 30, e: 10 * 60 + 0, sStr: "08:30", eStr: "10:00" },
-      2: { s: 10 * 60 + 10, e: 11 * 60 + 40, sStr: "10:10", eStr: "11:40" },
-      3: { s: 12 * 60 + 10, e: 13 * 60 + 40, sStr: "12:10", eStr: "13:40" },
-      4: { s: 13 * 60 + 50, e: 15 * 60 + 20, sStr: "13:50", eStr: "15:20" },
-      5: { s: 15 * 60 + 30, e: 17 * 60 + 0, sStr: "15:30", eStr: "17:00" },
-      6: { s: 17 * 60 + 10, e: 18 * 60 + 40, sStr: "17:10", eStr: "18:40" }
-    };
-
-    if (!timeStr) return times[defaultPara] || { s: 0, e: 0, sStr: "", eStr: "" };
-    const cleaned = timeStr.replace(/<br\s*\/?>/gi, " - ").replace(/\./g, ":").trim();
-    const match = cleaned.match(/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/);
-    if (match) {
-      const sH = parseInt(match[1]), sM = parseInt(match[2]);
-      const eH = parseInt(match[3]), eM = parseInt(match[4]);
-      return {
-        s: sH * 60 + sM,
-        e: eH * 60 + eM,
-        sStr: `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
-        eStr: `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`
-      };
-    }
-    return times[defaultPara] || { s: 0, e: 0, sStr: "", eStr: "" };
-  }
-
   function renderScheduleCards() {
     if (!dom.kioskScheduleCards) return;
 
     if (dom.kioskScheduleLoading) dom.kioskScheduleLoading.classList.add('hidden');
 
-    if (!state.scheduleData || !state.scheduleData.days) {
-      if (dom.kioskScheduleEmpty) dom.kioskScheduleEmpty.classList.remove('hidden');
-      return;
-    }
-
-    const currentDayData = state.scheduleData.days.find(d => parseInt(d.day_number) === state.selectedDay);
-    if (!currentDayData || !currentDayData.lessons || currentDayData.lessons.length === 0) {
-      dom.kioskScheduleCards.innerHTML = '';
+    if (!state.scheduleData || !state.scheduleData.scheduleData) {
       if (dom.kioskScheduleEmpty) dom.kioskScheduleEmpty.classList.remove('hidden');
       if (dom.kioskLiveStatusBar) dom.kioskLiveStatusBar.classList.add('hidden');
       return;
     }
 
-    // Фильтрация по неделе
-    let lessons = currentDayData.lessons.filter(l => {
-      const w = parseInt(l.week_number || 0);
-      return w === 0 || w === state.selectedWeek;
-    });
+    const weekData = state.scheduleData.scheduleData[String(state.selectedWeek)] || {};
+    const dayData = weekData[String(state.selectedDay)] || {};
+    const paraTimes = state.scheduleData.paraTimes || {};
 
-    // Фильтрация по подгруппе
-    if (state.selectedSubgroup !== 0) {
-      lessons = lessons.filter(l => {
-        const sg = parseInt(l.subgroup || 0);
-        return sg === 0 || sg === state.selectedSubgroup;
-      });
+    const rDate = getRubtsovskDate();
+    let rDay = rDate.getDay();
+    if (rDay === 0) rDay = 7;
+    const siteWeek = parseInt(state.scheduleData.weekNumber || 1);
+    const isToday = (state.selectedWeek === siteWeek && state.selectedDay === rDay);
+    const curMins = rDate.getHours() * 60 + rDate.getMinutes();
+
+    const sortedParas = Object.keys(dayData).sort((a, b) => parseInt(a) - parseInt(b));
+
+    // Фильтрация пар с учетом подгрупп
+    const visibleParas = [];
+    for (const pStr of sortedParas) {
+      const item = dayData[pStr];
+      if (!item) continue;
+      if (item.isDouble) {
+        const hasSub1 = (state.selectedSubgroup === 0 || state.selectedSubgroup === 1) && (item.subj1 || item.aud1);
+        const hasSub2 = (state.selectedSubgroup === 0 || state.selectedSubgroup === 2) && (item.subj2 || item.aud2);
+        if (hasSub1 || hasSub2) {
+          visibleParas.push(pStr);
+        }
+      } else {
+        if (item.subj1 || item.aud1 || item.teacher1) {
+          visibleParas.push(pStr);
+        }
+      }
     }
 
-    if (lessons.length === 0) {
+    if (visibleParas.length === 0) {
       dom.kioskScheduleCards.innerHTML = '';
       if (dom.kioskScheduleEmpty) dom.kioskScheduleEmpty.classList.remove('hidden');
       if (dom.kioskLiveStatusBar) dom.kioskLiveStatusBar.classList.add('hidden');
@@ -519,88 +601,127 @@
 
     if (dom.kioskScheduleEmpty) dom.kioskScheduleEmpty.classList.add('hidden');
 
-    // Расчет текущей/следующей пары
-    const rDate = getRubtsovskDate();
-    const nowMinutes = rDate.getHours() * 60 + rDate.getMinutes();
-    const isToday = (rDate.getDay() === 0 ? 7 : rDate.getDay()) === state.selectedDay;
-    const isCurrentWeek = parseInt(state.scheduleData.weekNumber || 1) === state.selectedWeek;
+    // Расчет статусной строки для сегодняшнего дня
+    if (isToday) {
+      let ongoingPara = null;
+      let nextPara = null;
 
-    let liveStatusText = '';
-
-    dom.kioskScheduleCards.innerHTML = lessons.map(lesson => {
-      const paraNum = lesson.lesson_number || 1;
-      const tInfo = parseTimeRange(lesson.time, paraNum);
-      const isOngoing = isToday && isCurrentWeek && (nowMinutes >= tInfo.s && nowMinutes <= tInfo.e);
-      const isNext = isToday && isCurrentWeek && (nowMinutes < tInfo.s && (tInfo.s - nowMinutes) <= 30);
-      const isPast = isToday && isCurrentWeek && (nowMinutes > tInfo.e);
-
-      let cardClass = 'kiosk-para-card';
-      let badgeHtml = '';
-
-      if (isOngoing) {
-        cardClass += ' is-ongoing';
-        badgeHtml = '<span class="kpc-badge badge-ongoing">Идет сейчас</span>';
-        const remain = tInfo.e - nowMinutes;
-        liveStatusText = `Сейчас идет ${paraNum} пара (${tInfo.sStr} - ${tInfo.eStr}), до окончания ${remain} мин`;
-      } else if (isNext) {
-        cardClass += ' is-next';
-        badgeHtml = '<span class="kpc-badge badge-next">Следующая</span>';
-        const till = tInfo.s - nowMinutes;
-        if (!liveStatusText) {
-          liveStatusText = `Следующая пара: ${paraNum} пара в ${tInfo.sStr} (через ${till} мин)`;
+      for (const pStr of visibleParas) {
+        const pN = parseInt(pStr);
+        const tInfo = parseParaTime(paraTimes[pStr], pN);
+        if (tInfo.s <= curMins && curMins <= tInfo.e) {
+          ongoingPara = { pN, rem: tInfo.e - curMins, eStr: tInfo.eStr };
+          break;
+        } else if (curMins < tInfo.s && !nextPara) {
+          nextPara = { pN, rem: tInfo.s - curMins, sStr: tInfo.sStr };
         }
-      } else if (isPast) {
-        badgeHtml = '<span class="kpc-badge badge-completed">Завершена</span>';
       }
 
-      const typeHtml = lesson.lesson_type ? `<span class="kpc-type">${escapeHtml(lesson.lesson_type)}</span>` : '';
-      const audHtml = lesson.room ? `<span class="kpc-aud">ауд. ${escapeHtml(lesson.room)}</span>` : '';
-
-      let teacherHtml = '';
-      if (lesson.teacher && lesson.teacher.trim()) {
-        const cleanT = escapeHtml(lesson.teacher.trim());
-        teacherHtml = `
-          <button class="kpc-teacher-btn" data-teacher="${cleanT}" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            <span>${cleanT}</span>
-          </button>
-        `;
+      if (ongoingPara) {
+        dom.kioskLiveStatusText.textContent = `Идет ${ongoingPara.pN} пара (до ${ongoingPara.eStr}, осталось ${ongoingPara.rem} мин)`;
+        dom.kioskLiveStatusBar.classList.remove('hidden');
+      } else if (nextPara) {
+        const firstPN = parseInt(visibleParas[0]);
+        const firstTInfo = parseParaTime(paraTimes[String(firstPN)], firstPN);
+        if (curMins < firstTInfo.s) {
+          dom.kioskLiveStatusText.textContent = `Занятия не начались. ${firstPN} пара начнется в ${firstTInfo.sStr} (через ${firstTInfo.s - curMins} мин)`;
+        } else {
+          dom.kioskLiveStatusText.textContent = `Перемена (до ${nextPara.sStr}, осталось ${nextPara.rem} мин). Следующая: ${nextPara.pN} пара`;
+        }
+        dom.kioskLiveStatusBar.classList.remove('hidden');
+      } else {
+        dom.kioskLiveStatusText.textContent = 'Все пары на сегодня завершены';
+        dom.kioskLiveStatusBar.classList.remove('hidden');
       }
-
-      const sgHtml = lesson.subgroup && lesson.subgroup > 0 ? `<span class="kpc-type">${lesson.subgroup} п/г</span>` : '';
-
-      return `
-        <div class="${cardClass}">
-          <div class="kpc-header">
-            <div class="kpc-num-time">
-              <span class="kpc-num">${paraNum} пара</span>
-              <span>${tInfo.sStr} - ${tInfo.eStr}</span>
-            </div>
-            ${badgeHtml}
-          </div>
-
-          <div class="kpc-subject">${escapeHtml(lesson.subject || 'Занятие')}</div>
-
-          <div class="kpc-meta-row">
-            ${typeHtml}
-            ${audHtml}
-            ${sgHtml}
-            ${teacherHtml}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    // Статусная строка
-    if (isToday && isCurrentWeek && liveStatusText && dom.kioskLiveStatusBar && dom.kioskLiveStatusText) {
-      dom.kioskLiveStatusText.textContent = liveStatusText;
-      dom.kioskLiveStatusBar.classList.remove('hidden');
-    } else if (dom.kioskLiveStatusBar) {
-      dom.kioskLiveStatusBar.classList.add('hidden');
+    } else {
+      dom.kioskLiveStatusBar?.classList.add('hidden');
     }
 
-    // Клики по преподавателям
-    dom.kioskScheduleCards?.querySelectorAll('.kpc-teacher-btn').forEach(btn => {
+    // Генерация карточек пар в едином стиле Telegram Mini App
+    let html = '';
+    let foundNext = false;
+
+    for (const pStr of visibleParas) {
+      const item = dayData[pStr];
+      const pN = parseInt(pStr);
+      const tInfo = parseParaTime(paraTimes[pStr], pN);
+      const timeDisplay = tInfo.sStr ? `${tInfo.sStr} - ${tInfo.eStr}` : '';
+
+      let statusClass = '';
+      let badgeHtml = '';
+
+      if (isToday) {
+        if (curMins > tInfo.e) {
+          badgeHtml = '<span class="para-badge badge-completed">Завершена</span>';
+        } else if (tInfo.s <= curMins && curMins <= tInfo.e) {
+          statusClass = 'is-ongoing';
+          badgeHtml = '<span class="para-badge badge-ongoing">Идет сейчас</span>';
+        } else if (curMins < tInfo.s && !foundNext) {
+          statusClass = 'is-next';
+          badgeHtml = '<span class="para-badge badge-next">Следующая</span>';
+          foundNext = true;
+        }
+      }
+
+      if (item.isDouble) {
+        let partsHtml = '';
+        if ((state.selectedSubgroup === 0 || state.selectedSubgroup === 1) && (item.subj1 || item.aud1)) {
+          partsHtml += `
+            <div class="subgroup-block">
+              <div class="subgroup-label">1 подгруппа</div>
+              <div class="para-subject">${escapeHtml(item.subj1 || 'Предмет')} <span class="type-pill">${item.type1 ? `(${escapeHtml(item.type1)})` : ''}</span></div>
+              <div class="para-meta">
+                ${item.aud1 ? `<span class="aud-pill">ауд. ${escapeHtml(item.aud1)}</span>` : ''}
+                ${renderTeacherChipHtml(item.teacher1, item.teachPost1)}
+              </div>
+            </div>`;
+        }
+        if ((state.selectedSubgroup === 0 || state.selectedSubgroup === 2) && (item.subj2 || item.aud2)) {
+          partsHtml += `
+            <div class="subgroup-block">
+              <div class="subgroup-label">2 подгруппа</div>
+              <div class="para-subject">${escapeHtml(item.subj2 || 'Предмет')} <span class="type-pill">${item.type2 ? `(${escapeHtml(item.type2)})` : ''}</span></div>
+              <div class="para-meta">
+                ${item.aud2 ? `<span class="aud-pill">ауд. ${escapeHtml(item.aud2)}</span>` : ''}
+                ${renderTeacherChipHtml(item.teacher2, item.teachPost2)}
+              </div>
+            </div>`;
+        }
+
+        html += `
+          <div class="para-card ${statusClass}">
+            <div class="para-header">
+              <div class="para-num-time">
+                <span class="para-num">${pN} пара</span>
+                <span>${timeDisplay}</span>
+              </div>
+              ${badgeHtml}
+            </div>
+            ${partsHtml}
+          </div>`;
+      } else {
+        html += `
+          <div class="para-card ${statusClass}">
+            <div class="para-header">
+              <div class="para-num-time">
+                <span class="para-num">${pN} пара</span>
+                <span>${timeDisplay}</span>
+              </div>
+              ${badgeHtml}
+            </div>
+            <div class="para-subject">${escapeHtml(item.subj1 || 'Предмет')} <span class="type-pill">${item.type1 ? `(${escapeHtml(item.type1)})` : ''}</span></div>
+            <div class="para-meta">
+              ${item.aud1 ? `<span class="aud-pill">ауд. ${escapeHtml(item.aud1)}</span>` : ''}
+              ${renderTeacherChipHtml(item.teacher1, item.teachPost1)}
+            </div>
+          </div>`;
+      }
+    }
+
+    dom.kioskScheduleCards.innerHTML = html;
+
+    // Навешиваем клики на кнопки преподавателей
+    dom.kioskScheduleCards.querySelectorAll('.teacher-btn-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const tName = btn.dataset.teacher;
@@ -704,6 +825,16 @@
       });
     });
 
+    // Быстрые теги специальностей
+    dom.kioskQuickTags?.querySelectorAll('.quick-tag').forEach(tagBtn => {
+      tagBtn.addEventListener('click', () => {
+        const tag = tagBtn.dataset.tag;
+        state.selectedTag = tag;
+        updateQuickTagsUI();
+        renderGroupsList();
+      });
+    });
+
     // Поиск групп
     dom.kioskGroupSearch?.addEventListener('input', (e) => {
       state.searchQuery = e.target.value;
@@ -718,23 +849,6 @@
       if (dom.kioskGroupSearch) dom.kioskGroupSearch.value = '';
       dom.btnClearSearch.classList.add('hidden');
       renderGroupsList();
-    });
-
-    // Быстрые теги направлений
-    dom.quickTags?.forEach(tagBtn => {
-      tagBtn.addEventListener('click', () => {
-        const tag = tagBtn.dataset.tag;
-        if (state.searchQuery === tag) {
-          state.searchQuery = '';
-          if (dom.kioskGroupSearch) dom.kioskGroupSearch.value = '';
-          if (dom.btnClearSearch) dom.btnClearSearch.classList.add('hidden');
-        } else {
-          state.searchQuery = tag;
-          if (dom.kioskGroupSearch) dom.kioskGroupSearch.value = tag;
-          if (dom.btnClearSearch) dom.btnClearSearch.classList.remove('hidden');
-        }
-        renderGroupsList();
-      });
     });
 
     // Переключатель недели
