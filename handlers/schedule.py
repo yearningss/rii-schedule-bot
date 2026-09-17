@@ -29,22 +29,35 @@ logger = logging.getLogger("rii_schedule_bot.schedule")
 router = Router()
 
 async def ensure_user_group(message_or_call) -> tuple:
-    user_id = message_or_call.from_user.id
-    user = await get_user(user_id)
-    if not user or not user.get("group_id"):
-        courses_map = await api_client.get_courses_map()
-        text = "Сначала выбери свою учебную группу:"
-        kb = get_courses_keyboard(list(courses_map.keys()))
-        if isinstance(message_or_call, Message):
-            await message_or_call.answer(text, reply_markup=kb)
-        else:
-            try:
-                await message_or_call.message.answer(text, reply_markup=kb)
-            except Exception:
-                pass
-            await message_or_call.answer()
-        return None, None
-    return user, user["group_id"]
+    is_message = isinstance(message_or_call, Message)
+    chat = message_or_call.chat if is_message else message_or_call.message.chat
+    from_user = message_or_call.from_user
+
+    # 1. Если это группа, сначала проверяем настройки для группы
+    if chat.type in ("group", "supergroup"):
+        chat_user = await get_user(chat.id)
+        if chat_user and chat_user.get("group_id"):
+            return chat_user, chat_user["group_id"]
+
+    # 2. Проверяем настройки пользователя
+    user = await get_user(from_user.id)
+    if user and user.get("group_id"):
+        return user, user["group_id"]
+
+    # 3. Ни для группы, ни для пользователя группа не задана
+    courses_map = await api_client.get_courses_map()
+    target_desc = "этого чата" if chat.type in ("group", "supergroup") else "свою"
+    text = f"Сначала выбери учебную группу для {target_desc}:"
+    kb = get_courses_keyboard(list(courses_map.keys()))
+    if is_message:
+        await message_or_call.answer(text, reply_markup=kb)
+    else:
+        try:
+            await message_or_call.message.answer(text, reply_markup=kb)
+        except Exception:
+            pass
+        await message_or_call.answer()
+    return None, None
 
 @router.message(Command("today", "сегодня", ignore_case=True))
 @router.message(F.text.casefold().in_({"сегодня", "пары сегодня", "расписание на сегодня", "седня"}))
@@ -167,7 +180,11 @@ async def show_next_week(message: Message):
 @router.message(Command("bells", "звонки", ignore_case=True))
 @router.message(F.text.casefold().in_({"звонки", "расписание звонков", "время пар", "звонок"}))
 async def show_bells(message: Message):
-    user = await get_user(message.from_user.id)
+    user = None
+    if message.chat.type in ("group", "supergroup"):
+        user = await get_user(message.chat.id)
+    if not user:
+        user = await get_user(message.from_user.id)
     sched = {}
     if user and user.get("group_id"):
         sched = await api_client.get_schedule(user["group_id"])
@@ -201,9 +218,11 @@ async def show_about(message: Message):
         "Мобильное приложение: доступно для Android (APK) и iOS (IPA). Полный офлайн-режим, виджеты и уведомления (/download).\n\n"
         "Проект полностью с открытым исходным кодом. Расписание и список групп подтягиваются динамически с сервера rubinst.ru."
     )
+    me = await message.bot.get_me()
+    bot_username = me.username or "rubinst_bot"
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Скачать мобильное приложение", callback_data="btn_download_app")],
-        [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=WEBAPP_URL))],
+        [InlineKeyboardButton(text="Открыть расписание (Mini App)", url=f"https://t.me/{bot_username}/app")],
         [InlineKeyboardButton(text="Репозиторий на GitHub", url="https://github.com/yearningss/rii-schedule-bot")]
     ])
     await message.answer(text, reply_markup=kb)
@@ -228,7 +247,10 @@ async def show_download(message: Message):
         "- Быстрая авторизация и синхронизация с Telegram-ботом\n\n"
         "Выберите файл для установки на ваше устройство:"
     )
-    await message.answer(text, reply_markup=get_app_download_keyboard())
+    me = await message.bot.get_me()
+    bot_username = me.username or "rubinst_bot"
+    is_group = message.chat.type in ("group", "supergroup")
+    await message.answer(text, reply_markup=get_app_download_keyboard(bot_username, is_group=is_group))
 
 @router.callback_query(F.data == "btn_download_app")
 async def cb_btn_download_app(callback: CallbackQuery):
@@ -242,8 +264,11 @@ async def cb_btn_download_app(callback: CallbackQuery):
         "- Быстрая авторизация и синхронизация с Telegram-ботом\n\n"
         "Выберите файл для установки на ваше устройство:"
     )
+    me = await callback.bot.get_me()
+    bot_username = me.username or "rubinst_bot"
+    is_group = callback.message.chat.type in ("group", "supergroup")
     try:
-        await callback.message.answer(text, reply_markup=get_app_download_keyboard())
+        await callback.message.answer(text, reply_markup=get_app_download_keyboard(bot_username, is_group=is_group))
     except Exception:
         pass
     finally:
@@ -260,12 +285,21 @@ async def cb_btn_download_app(callback: CallbackQuery):
     "приложение"
 }))
 async def show_app(message: Message):
-    user = await get_user(message.from_user.id)
-    gid = user.get("group_id") if user else None
-    url = f"{WEBAPP_URL}?group_id={gid}" if gid else WEBAPP_URL
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=url))]
-    ])
+    user, gid = await ensure_user_group(message)
+    is_group = message.chat.type in ("group", "supergroup")
+    me = await message.bot.get_me()
+    bot_username = me.username or "rubinst_bot"
+
+    if is_group:
+        app_url = f"https://t.me/{bot_username}/app?startapp={gid}" if gid else f"https://t.me/{bot_username}/app"
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Открыть расписание (Mini App)", url=app_url)]
+        ])
+    else:
+        url = f"{WEBAPP_URL}?group_id={gid}" if gid else WEBAPP_URL
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=url))]
+        ])
     await message.answer(
         "Нажми кнопку ниже, чтобы открыть интерактивное расписание РИИ в приложении:",
         reply_markup=kb
@@ -301,8 +335,7 @@ async def show_season_pic(message: Message, command: CommandObject = None):
     )
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Все 12 вариантов оформления", callback_data="season_list")],
-        [InlineKeyboardButton(text="Открыть расписание (Mini App)", web_app=WebAppInfo(url=WEBAPP_URL))]
+        [InlineKeyboardButton(text="Все 12 вариантов оформления", callback_data="season_list")]
     ])
 
     await message.answer_photo(

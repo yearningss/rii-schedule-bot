@@ -72,6 +72,7 @@ class User(Base):
     last_active: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, server_default=func.now())
     app_version: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     yandex_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    group_kb_mode: Mapped[str] = mapped_column(String(32), default="selective", server_default=text("'selective'"))
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -98,6 +99,7 @@ class User(Base):
             "last_active": str(self.last_active) if self.last_active else None,
             "app_version": self.app_version,
             "yandex_id": self.yandex_id,
+            "group_kb_mode": self.group_kb_mode if self.group_kb_mode else "selective",
             "created_at": str(self.created_at) if self.created_at else None,
             "updated_at": str(self.updated_at) if self.updated_at else None,
         }
@@ -206,6 +208,8 @@ async def init_db() -> None:
             await conn.execute(text("ALTER TABLE users ADD COLUMN app_version TEXT"))
         if "yandex_id" not in columns:
             await conn.execute(text("ALTER TABLE users ADD COLUMN yandex_id TEXT"))
+        if "group_kb_mode" not in columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN group_kb_mode TEXT DEFAULT 'selective'"))
 
         await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id)"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_client_user_id ON users(client_user_id)"))
@@ -249,6 +253,24 @@ async def set_user_subgroup(user_id: int, subgroup: int) -> None:
             if user:
                 user.subgroup = subgroup
                 user.updated_at = datetime.utcnow()
+
+
+async def set_group_kb_mode(user_id: int, mode: str) -> None:
+    async with async_session_maker() as session:
+        async with session.begin():
+            stmt = select(User).where(User.user_id == user_id)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+            if user:
+                user.group_kb_mode = mode
+                user.updated_at = datetime.utcnow()
+            else:
+                user = User(
+                    user_id=user_id,
+                    group_kb_mode=mode
+                )
+                session.add(user)
+
 
 
 async def update_user_notifications(

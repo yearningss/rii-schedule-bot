@@ -9,19 +9,14 @@ from aiogram.types import (
 )
 from config import WEBAPP_URL
 
-def get_main_keyboard(group_id: Optional[int] = None) -> ReplyKeyboardMarkup:
-    url = f"{WEBAPP_URL}?group_id={group_id}" if group_id else WEBAPP_URL
+def get_main_keyboard(group_id: Optional[int] = None, selective: bool = False) -> ReplyKeyboardMarkup:
     kb = [
-        [KeyboardButton(text="Открыть расписание (Web App)", web_app=WebAppInfo(url=url))],
         [KeyboardButton(text="Сегодня"), KeyboardButton(text="Завтра")],
-        [KeyboardButton(text="Текущая неделя"), KeyboardButton(text="Следующая неделя")],
-        [KeyboardButton(text="Выбрать группу"), KeyboardButton(text="Звонки")],
-        [KeyboardButton(text="Экзамены"), KeyboardButton(text="Настройки")],
-        [KeyboardButton(text="О проекте"), KeyboardButton(text="Скачать приложение")]
+        [KeyboardButton(text="Неделя"), KeyboardButton(text="Настройки")]
     ]
-    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, selective=selective)
 
-def get_app_download_keyboard() -> InlineKeyboardMarkup:
+def get_app_download_keyboard(bot_username: str = "rubinst_bot", is_group: bool = False) -> InlineKeyboardMarkup:
     buttons = [
         [
             InlineKeyboardButton(
@@ -38,14 +33,22 @@ def get_app_download_keyboard() -> InlineKeyboardMarkup:
                 text="Все версии и история изменений",
                 url="https://github.com/yearningss/rii-schedule-bot/releases"
             )
-        ],
-        [
+        ]
+    ]
+    if is_group:
+        buttons.append([
+            InlineKeyboardButton(
+                text="Открыть расписание (Mini App)",
+                url=f"https://t.me/{bot_username}/app"
+            )
+        ])
+    else:
+        buttons.append([
             InlineKeyboardButton(
                 text="Открыть расписание (Mini App)",
                 web_app=WebAppInfo(url=WEBAPP_URL)
             )
-        ]
-    ]
+        ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_courses_keyboard(courses: List[int], allow_cancel: bool = False) -> InlineKeyboardMarkup:
@@ -88,44 +91,31 @@ def get_day_nav_keyboard(current_week: int, current_day: int, group_id: Optional
         ))
     
     other_week = 2 if current_week == 1 else 1
-    other_label = "Перейти на II неделю" if current_week == 1 else "Перейти на I неделю"
-    
-    url = f"{WEBAPP_URL}?group_id={group_id}" if group_id else WEBAPP_URL
+    other_label = "II неделя" if current_week == 1 else "I неделя"
 
     nav_row = [
         InlineKeyboardButton(text=other_label, callback_data=f"nav_day:{other_week}:{current_day}"),
         InlineKeyboardButton(text="Обновить", callback_data=f"refresh_day:{current_week}:{current_day}")
     ]
-    app_row = [
-        InlineKeyboardButton(text="Открыть в Mini App", web_app=WebAppInfo(url=url))
-    ]
     
-    return InlineKeyboardMarkup(inline_keyboard=[days_row, nav_row, app_row])
+    return InlineKeyboardMarkup(inline_keyboard=[days_row, nav_row])
 
 def get_week_nav_keyboard(current_week: int, group_id: Optional[int] = None) -> InlineKeyboardMarkup:
     other_week = 2 if current_week == 1 else 1
-    other_label = "Перейти на II неделю" if current_week == 1 else "Перейти на I неделю"
-    url = f"{WEBAPP_URL}?group_id={group_id}" if group_id else WEBAPP_URL
+    other_label = "II неделя" if current_week == 1 else "I неделя"
 
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text=other_label, callback_data=f"nav_week:{other_week}"),
             InlineKeyboardButton(text="Обновить", callback_data=f"refresh_week:{current_week}")
-        ],
-        [
-            InlineKeyboardButton(text="Открыть в Mini App", web_app=WebAppInfo(url=url))
         ]
     ])
 
 def get_now_nav_keyboard(group_id: Optional[int] = None) -> InlineKeyboardMarkup:
-    url = f"{WEBAPP_URL}?group_id={group_id}" if group_id else WEBAPP_URL
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="Обновить статус", callback_data="refresh_now"),
             InlineKeyboardButton(text="Расписание на день", callback_data="nav_today")
-        ],
-        [
-            InlineKeyboardButton(text="Открыть в Mini App", web_app=WebAppInfo(url=url))
         ]
     ])
 
@@ -170,3 +160,35 @@ def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Сменить учебную группу", callback_data="change_group")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def get_group_settings_keyboard(chat_user: Dict[str, Any]) -> InlineKeyboardMarkup:
+    kb_mode = chat_user.get("group_kb_mode", "selective")
+    m_sel = "[✓ Вызвавшему]" if kb_mode == "selective" else "Вызвавшему"
+    m_all = "[✓ Всем]" if kb_mode == "all" else "Всем"
+    m_none = "[✓ Выкл]" if kb_mode == "none" else "Выкл"
+
+    notif_enabled = chat_user.get("notifications_enabled", 1)
+    notif_text = "Оповещения в чат: ВКЛ" if notif_enabled == 1 else "Оповещения в чат: ВЫКЛ"
+
+    subgroup = chat_user.get("subgroup", 0)
+    sg0 = "[✓ Все]" if subgroup == 0 else "Все"
+    sg1 = "[✓ 1 п/г]" if subgroup == 1 else "1 п/г"
+    sg2 = "[✓ 2 п/г]" if subgroup == 2 else "2 п/г"
+
+    buttons = [
+        [
+            InlineKeyboardButton(text="Клавиатура:", callback_data="grp_kb_noop"),
+            InlineKeyboardButton(text=m_sel, callback_data="grp_kb:selective"),
+            InlineKeyboardButton(text=m_all, callback_data="grp_kb:all"),
+            InlineKeyboardButton(text=m_none, callback_data="grp_kb:none")
+        ],
+        [
+            InlineKeyboardButton(text=sg0, callback_data="grp_sg:0"),
+            InlineKeyboardButton(text=sg1, callback_data="grp_sg:1"),
+            InlineKeyboardButton(text=sg2, callback_data="grp_sg:2")
+        ],
+        [InlineKeyboardButton(text=notif_text, callback_data="grp_toggle_notif")],
+        [InlineKeyboardButton(text="Сменить учебную группу чата", callback_data="change_group")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+

@@ -19,6 +19,26 @@ DISCLAIMER = (
     "Исходный код полностью открыт на GitHub: https://github.com/yearningss/rii-schedule-bot"
 )
 
+async def is_chat_admin(bot, chat_id: int, user_id: int) -> bool:
+    try:
+        member = await bot.get_chat_member(chat_id, user_id)
+        return member.status in ("creator", "administrator")
+    except Exception:
+        return True
+
+async def get_reply_markup_for_chat(message: Message, group_id: Optional[int] = None) -> Optional[ReplyKeyboardMarkup]:
+    if message.chat.type == "private":
+        return get_main_keyboard(group_id, selective=False)
+
+    chat_user = await get_user(message.chat.id)
+    mode = chat_user.get("group_kb_mode", "selective") if chat_user else "selective"
+    if mode == "none":
+        return None
+    elif mode == "all":
+        return get_main_keyboard(group_id, selective=False)
+    else:
+        return get_main_keyboard(group_id, selective=True)
+
 @router.message(CommandStart())
 async def cmd_start(message: Message, command: CommandObject = None):
     # Проверка диплинка авторизации мобильного приложения (tg://resolve?domain=rubinst_bot&start=auth_TOKEN)
@@ -54,16 +74,46 @@ async def cmd_start(message: Message, command: CommandObject = None):
         )
         return
 
+    if message.chat.type in ("group", "supergroup"):
+        chat_user = await get_user(message.chat.id)
+        if chat_user and chat_user.get("group_name"):
+            gid = chat_user.get("group_id")
+            kb = await get_reply_markup_for_chat(message, gid)
+            reply_to = message.message_id if kb and kb.selective else None
+            await message.answer(
+                f"Привет!\n\n"
+                f"{DISCLAIMER}\n\n"
+                f"Текущая группа чата: {chat_user['group_name']}\n\n"
+                "Используйте команды /today, /tomorrow, /week, /now для просмотра расписания.",
+                reply_markup=kb,
+                reply_to_message_id=reply_to
+            )
+            return
+
+        courses_map = await api_client.get_courses_map()
+        if not courses_map:
+            await message.answer("Не удалось загрузить список групп с сайта РИИ. Попробуй позже.")
+            return
+
+        await message.answer(
+            f"Привет!\n\n"
+            f"{DISCLAIMER}\n\n"
+            "Выбери курс, чтобы указать учебную группу для этого чата:",
+            reply_markup=get_courses_keyboard(list(courses_map.keys()))
+        )
+        return
+
     user = await get_user(message.from_user.id)
     if user and user.get("group_name"):
         gid = user.get("group_id")
+        kb = await get_reply_markup_for_chat(message, gid)
         await message.answer(
             f"Привет, {message.from_user.first_name}!\n\n"
             f"{DISCLAIMER}\n\n"
             f"Текущая группа: {user['group_name']}\n\n"
             "Используй кнопки меню или открой расписание в приложении.\n"
             "Также доступно нативное мобильное приложение для Android и iOS: /download",
-            reply_markup=get_main_keyboard(gid)
+            reply_markup=kb
         )
         return
 
@@ -138,8 +188,11 @@ async def cmd_stats(message: Message):
 @router.message(Command("help", "помощь", "справка", ignore_case=True))
 @router.message(F.text.casefold().in_({"помощь", "справка", "команды", "что умеет бот"}))
 async def cmd_help(message: Message):
-    user = await get_user(message.from_user.id)
-    gid = user.get("group_id") if user else None
+    is_group = message.chat.type in ("group", "supergroup")
+    target_user = await get_user(message.chat.id) if is_group else await get_user(message.from_user.id)
+    gid = target_user.get("group_id") if target_user else None
+    kb = await get_reply_markup_for_chat(message, gid)
+    reply_to = message.message_id if (kb and kb.selective) else None
     text = (
         f"{DISCLAIMER}\n\n"
         "Команды бота:\n"
@@ -161,22 +214,31 @@ async def cmd_help(message: Message):
         "/help - Справка по командам\n\n"
         "Также можно написать название группы в чат (например: ИВТ-61 или 9-61), чтобы быстро найти её."
     )
-    await message.answer(text, reply_markup=get_main_keyboard(gid))
+    await message.answer(text, reply_markup=kb, reply_to_message_id=reply_to)
 
 @router.message(Command("menu", "меню", ignore_case=True))
 @router.message(F.text.casefold().in_({"меню", "главное меню", "кнопки", "старт"}))
 async def cmd_menu(message: Message):
-    user = await get_user(message.from_user.id)
-    gid = user.get("group_id") if user else None
-    g_name = user.get("group_name") if user else "не выбрана"
+    is_group = message.chat.type in ("group", "supergroup")
+    target_user = await get_user(message.chat.id) if is_group else await get_user(message.from_user.id)
+    gid = target_user.get("group_id") if target_user else None
+    g_name = target_user.get("group_name") if target_user else "не выбрана"
+    kb = await get_reply_markup_for_chat(message, gid)
+    reply_to = message.message_id if (kb and kb.selective) else None
     await message.answer(
         f"Главное меню бота.\nТекущая группа: {g_name}.\n\nИспользуй кнопки ниже:",
-        reply_markup=get_main_keyboard(gid)
+        reply_markup=kb,
+        reply_to_message_id=reply_to
     )
 
 @router.message(Command("group", "groups", "группа", "группы", ignore_case=True))
 @router.message(F.text.casefold().in_({"выбрать группу", "сменить группу", "моя группа", "группа", "группы", "выбор группы"}))
 async def cmd_choose_group(message: Message):
+    is_group = message.chat.type in ("group", "supergroup")
+    if is_group and not await is_chat_admin(message.bot, message.chat.id, message.from_user.id):
+        await message.answer("Только администратор чата может менять учебную группу.")
+        return
+
     courses_map = await api_client.get_courses_map(force_refresh=True)
     if not courses_map:
         await message.answer("Не удалось получить список групп. Попробуй позже.")
@@ -190,8 +252,14 @@ async def cmd_choose_group(message: Message):
 @router.callback_query(F.data == "back_to_courses")
 @router.callback_query(F.data == "change_group")
 async def cb_back_to_courses(callback: CallbackQuery):
+    is_group = callback.message.chat.type in ("group", "supergroup")
+    if is_group and not await is_chat_admin(callback.bot, callback.message.chat.id, callback.from_user.id):
+        await callback.answer("Только администратор чата может менять учебную группу.", show_alert=True)
+        return
+
     courses_map = await api_client.get_courses_map()
-    user = await get_user(callback.from_user.id)
+    target_id = callback.message.chat.id if is_group else callback.from_user.id
+    user = await get_user(target_id)
     has_group = bool(user and user.get("group_name"))
     try:
         await callback.message.edit_text(
@@ -236,37 +304,74 @@ async def cb_set_group(callback: CallbackQuery):
         await callback.answer("Группа не найдена.", show_alert=True)
         return
 
-    await set_user_group(callback.from_user.id, group["id"], group["name"])
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
+    is_group = callback.message.chat.type in ("group", "supergroup")
+    if is_group:
+        existing = await get_user(callback.message.chat.id)
+        if existing and existing.get("group_id"):
+            if not await is_chat_admin(callback.bot, callback.message.chat.id, callback.from_user.id):
+                await callback.answer("Только администратор чата может менять учебную группу.", show_alert=True)
+                return
 
-    await callback.message.answer(
-        f"Группа сохранена: {group['name']}\n\n"
-        "Теперь ты можешь смотреть расписание через кнопки или в Mini App.",
-        reply_markup=get_main_keyboard(group["id"])
-    )
-    await callback.answer(f"Выбрана {group['name']}")
+        await set_user_group(callback.message.chat.id, group["id"], group["name"])
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        await callback.message.answer(
+            f"Для этого чата сохранена группа: {group['name']}\n\n"
+            "Теперь участники могут смотреть расписание командами /today, /tomorrow, /week, /now и др."
+        )
+        await callback.answer(f"Выбрана {group['name']}")
+    else:
+        await set_user_group(callback.from_user.id, group["id"], group["name"])
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        await callback.message.answer(
+            f"Группа сохранена: {group['name']}\n\n"
+            "Теперь ты можешь смотреть расписание через кнопки меню или в Mini App.",
+            reply_markup=get_main_keyboard(group["id"])
+        )
+        await callback.answer(f"Выбрана {group['name']}")
 
 @router.message(F.text)
 async def handle_text_group_search(message: Message):
     if not message.text or message.text.startswith("/"):
         return
 
+    # В групповых чатах не перехватываем обычный разговор студентов,
+    # если сообщение не является ответом боту и не содержит упоминания бота.
+    if message.chat.type in ("group", "supergroup"):
+        bot_user = await message.bot.get_me()
+        is_reply_to_bot = bool(
+            message.reply_to_message
+            and message.reply_to_message.from_user
+            and message.reply_to_message.from_user.id == bot_user.id
+        )
+        has_mention = bool(bot_user.username and f"@{bot_user.username.lower()}" in message.text.lower())
+        if not (is_reply_to_bot or has_mention):
+            return
+
     query = message.text.strip()
     lower = query.casefold()
 
     # Простые приветствия и вежливые фразы
     if lower in {"привет", "здравствуйте", "добрый день", "добрый вечер", "доброе утро", "хай", "ку", "салам"}:
-        user = await get_user(message.from_user.id)
+        target_id = message.chat.id if message.chat.type in ("group", "supergroup") else message.from_user.id
+        user = await get_user(target_id)
         gid = user.get("group_id") if user else None
         g_name = user.get("group_name") if user else "не выбрана"
+        kb = await get_reply_markup_for_chat(message, gid)
+        reply_to = message.message_id if (kb and kb.selective) else None
         await message.answer(
             f"Привет, {message.from_user.first_name}!\n"
-            f"Твоя текущая группа: {g_name}.\n"
+            f"Текущая группа: {g_name}.\n"
             "Используй кнопки меню для просмотра расписания:",
-            reply_markup=get_main_keyboard(gid)
+            reply_markup=kb,
+            reply_to_message_id=reply_to
         )
         return
 
@@ -280,8 +385,6 @@ async def handle_text_group_search(message: Message):
     results = await api_client.search_groups(query)
 
     if not results:
-        user = await get_user(message.from_user.id)
-        gid = user.get("group_id") if user else None
         await message.answer(
             f"По запросу '{query}' группа не найдена.\n"
             "Нажми кнопку ниже, чтобы выбрать группу из списка курсов:",
