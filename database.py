@@ -657,4 +657,85 @@ async def unlink_device_user(
         await db.commit()
         return True
 
+async def register_or_login_yandex_user(
+    yandex_id: str,
+    first_name: Optional[str] = None,
+    last_name: Optional[str] = None,
+    display_name: Optional[str] = None,
+    email: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+    group_id: Optional[int] = None,
+    group_name: Optional[str] = None,
+    subgroup: Optional[int] = None,
+) -> dict:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+
+        cursor = await db.execute("PRAGMA table_info(users)")
+        cols = [r[1] for r in await cursor.fetchall()]
+        if "yandex_id" not in cols:
+            await db.execute("ALTER TABLE users ADD COLUMN yandex_id TEXT")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id)")
+            await db.commit()
+
+        async with db.execute("SELECT * FROM users WHERE yandex_id = ?", (yandex_id,)) as cur:
+            user_row = await cur.fetchone()
+
+        effective_name = first_name or display_name or "Пользователь Яндекс"
+        effective_login = email or display_name or ""
+
+        if user_row:
+            uid = user_row["user_id"]
+            await db.execute(
+                """
+                UPDATE users
+                SET first_name = COALESCE(?, first_name),
+                    last_name = COALESCE(?, last_name),
+                    username = COALESCE(?, username),
+                    avatar_url = COALESCE(?, avatar_url),
+                    updated_at = CURRENT_TIMESTAMP,
+                    last_active = CURRENT_TIMESTAMP
+                WHERE user_id = ?
+                """,
+                (effective_name, last_name, effective_login, avatar_url, uid)
+            )
+        else:
+            base_uid = (abs(hash(f"yandex_{yandex_id}")) % 1000000000) + 7000000000
+            uid = base_uid
+            await db.execute(
+                """
+                INSERT INTO users (
+                    user_id, yandex_id, first_name, last_name, username, avatar_url,
+                    group_id, group_name, subgroup, has_mobile_app,
+                    created_at, updated_at, last_active
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, 1,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """,
+                (
+                    uid, yandex_id, effective_name, last_name, effective_login, avatar_url,
+                    group_id, group_name, subgroup or 0
+                )
+            )
+
+        token = f"ya_{secrets.token_hex(24)}"
+        await db.execute(
+            """
+            INSERT INTO app_users (auth_token, user_id, last_active)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(auth_token) DO UPDATE SET last_active = CURRENT_TIMESTAMP
+            """,
+            (token, uid)
+        )
+        await db.commit()
+
+        async with db.execute("SELECT * FROM users WHERE user_id = ?", (uid,)) as cur:
+            u = await cur.fetchone()
+            res = dict(u) if u else {}
+            res["auth_token"] = token
+            return res
+
+
 

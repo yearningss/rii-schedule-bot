@@ -2,6 +2,23 @@ import Flutter
 import UIKit
 import WidgetKit
 import UserNotifications
+#if canImport(ActivityKit)
+import ActivityKit
+
+@available(iOS 16.1, *)
+public struct ScheduleActivityAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        public var statusTitle: String
+        public var subject: String
+        public var room: String
+        public var teacher: String
+        public var endTimeEpoch: Double
+        public var isBreak: Bool
+        public var nextPara: String
+    }
+    public var groupName: String
+}
+#endif
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -98,6 +115,61 @@ import UserNotifications
           result(true)
         } else {
           result(FlutterMethodNotImplemented)
+        }
+      }
+
+      let liveChannel = FlutterMethodChannel(name: "com.yearnings.rii/live_activity", binaryMessenger: messenger)
+      liveChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
+        if #available(iOS 16.1, *) {
+          #if canImport(ActivityKit)
+          if call.method == "startOrUpdateLive" {
+            if let args = call.arguments as? [String: Any] {
+              let title = args["title"] as? String ?? ""
+              let subject = args["subject"] as? String ?? ""
+              let room = args["room"] as? String ?? ""
+              let teacher = args["teacher"] as? String ?? ""
+              let endTimeEpoch = args["endTimeEpoch"] as? Double ?? 0.0
+              let isBreak = args["isBreak"] as? Bool ?? false
+              let nextPara = args["nextPara"] as? String ?? ""
+              let groupName = args["groupName"] as? String ?? "РИИ"
+
+              let state = ScheduleActivityAttributes.ContentState(
+                statusTitle: title,
+                subject: subject,
+                room: room,
+                teacher: teacher,
+                endTimeEpoch: endTimeEpoch,
+                isBreak: isBreak,
+                nextPara: nextPara
+              )
+
+              if ActivityAuthorizationInfo().areActivitiesEnabled {
+                Task {
+                  if let existing = Activity<ScheduleActivityAttributes>.activities.first {
+                    await existing.update(using: state)
+                  } else {
+                    let attrs = ScheduleActivityAttributes(groupName: groupName)
+                    _ = try? Activity<ScheduleActivityAttributes>.request(attributes: attrs, contentState: state)
+                  }
+                }
+              }
+            }
+            result(true)
+          } else if call.method == "stopLive" {
+            Task {
+              for activity in Activity<ScheduleActivityAttributes>.activities {
+                await activity.end(dismissalPolicy: .immediate)
+              }
+            }
+            result(true)
+          } else {
+            result(FlutterMethodNotImplemented)
+          }
+          #else
+          result(false)
+          #endif
+        } else {
+          result(false)
         }
       }
     }

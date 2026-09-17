@@ -742,7 +742,6 @@ struct ScheduleWidgetEntryView: View {
     }
 }
 
-@main
 struct ScheduleWidget: Widget {
     let kind: String = "ScheduleWidget"
 
@@ -753,5 +752,149 @@ struct ScheduleWidget: Widget {
         .configurationDisplayName("Расписание РИИ")
         .description("Текущие и следующие пары, аудитории и перемены института.")
         .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+#if canImport(ActivityKit)
+import ActivityKit
+
+@available(iOSApplicationExtension 16.1, *)
+public struct ScheduleActivityAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        public var statusTitle: String
+        public var subject: String
+        public var room: String
+        public var teacher: String
+        public var endTimeEpoch: Double
+        public var isBreak: Bool
+        public var nextPara: String
+    }
+    public var groupName: String
+}
+
+@available(iOSApplicationExtension 16.1, *)
+struct ScheduleLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: ScheduleActivityAttributes.self) { context in
+            // Экран блокировки (Lock Screen)
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(context.state.statusTitle)
+                            .font(.caption.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(context.state.isBreak ? Color.orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                            .cornerRadius(6)
+
+                        if !context.state.room.isEmpty {
+                            Text(context.state.room)
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    Text(context.state.subject)
+                        .font(.subheadline.bold())
+                        .lineLimit(1)
+
+                    if !context.state.teacher.isEmpty {
+                        Text(context.state.teacher)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    if !context.state.nextPara.isEmpty {
+                        Text(context.state.nextPara)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .padding(.top, 2)
+                    }
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(context.state.isBreak ? "До звонка" : "Осталось")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
+                    Text(timerInterval: Date()...endDate, countsDown: true)
+                        .font(.title2.bold().monospacedDigit())
+                        .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                }
+            }
+            .padding(14)
+            .activityBackgroundTint(Color(UIColor.secondarySystemBackground))
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(context.state.statusTitle)
+                            .font(.caption.bold())
+                            .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                        if !context.state.room.isEmpty {
+                            Text(context.state.room)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.leading, 4)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
+                    Text(timerInterval: Date()...endDate, countsDown: true)
+                        .font(.title3.bold().monospacedDigit())
+                        .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                        .padding(.trailing, 4)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(context.state.subject)
+                            .font(.subheadline.bold())
+                            .lineLimit(1)
+                        if !context.state.nextPara.isEmpty {
+                            Text(context.state.nextPara)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
+                }
+            } compactLeading: {
+                Text(context.state.statusTitle.prefix(4))
+                    .font(.caption2.bold())
+                    .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+            } compactTrailing: {
+                let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
+                Text(timerInterval: Date()...endDate, countsDown: true)
+                    .font(.caption2.bold().monospacedDigit())
+                    .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+            } minimal: {
+                let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
+                Text(timerInterval: Date()...endDate, countsDown: true)
+                    .font(.caption2.bold().monospacedDigit())
+                    .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+            }
+        }
+    }
+}
+#endif
+
+@main
+struct ScheduleWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        ScheduleWidget()
+        #if canImport(ActivityKit)
+        if #available(iOSApplicationExtension 16.1, *) {
+            ScheduleLiveActivity()
+        }
+        #endif
     }
 }

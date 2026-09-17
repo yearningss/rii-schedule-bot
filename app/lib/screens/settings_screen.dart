@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/season_icon_service.dart';
 import '../services/widget_service.dart';
 import '../services/notification_service.dart';
+import '../services/live_schedule_service.dart';
 import 'changelog_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -1132,6 +1133,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   secondary: const Icon(Icons.sync_problem_rounded, color: Color(0xFF8B5CF6)),
                   title: const Text('Изменения и замены'),
                   subtitle: const Text('Оповещение при публикации нового расписания'),
+                ),
+                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                SwitchListTile(
+                  value: LiveScheduleService.isLiveEnabled(widget.storage),
+                  onChanged: (val) async {
+                    await LiveScheduleService.setLiveEnabled(widget.storage, val);
+                    setState(() {});
+                  },
+                  secondary: const Icon(Icons.timer_outlined, color: Color(0xFF2563EB)),
+                  title: const Text('Текущая пара на экране блокировки'),
+                  subtitle: const Text('Live-уведомление с живым обратным отсчетом до конца пары'),
                 ),
                 Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
                 ListTile(

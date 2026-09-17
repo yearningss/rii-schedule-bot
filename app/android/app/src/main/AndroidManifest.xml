@@ -16,6 +16,14 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="tg" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="yx4cae7d5a54a142c2906bf93a43203467" />
+        </intent>
+        <package android:name="ru.yandex.searchplugin" />
+        <package android:name="ru.yandex.browser" />
+        <package android:name="com.yandex.browser" />
+        <package android:name="com.yandex.auth" />
     </queries>
 
     <application

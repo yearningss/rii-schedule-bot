@@ -62,6 +62,35 @@ class ApiService {
     throw Exception('Ошибка проверки статуса авторизации');
   }
 
+  // Авторизация / регистрация через Яндекс ID
+  Future<Map<String, dynamic>> authWithYandex({
+    required String token,
+    required String yandexId,
+    String? firstName,
+    String? lastName,
+    String? displayName,
+    String? email,
+    String? avatarUrl,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/app/auth/yandex'),
+      headers: {'Content-Type': 'application/json; charset=utf-8'},
+      body: jsonEncode({
+        'access_token': token,
+        'yandex_id': yandexId,
+        'first_name': firstName,
+        'last_name': lastName,
+        'display_name': displayName,
+        'email': email,
+        'avatar_url': avatarUrl,
+      }),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    }
+    throw Exception('Ошибка авторизации через Яндекс ID');
+  }
+
   // Получение актуального профиля с сервера
   Future<Map<String, dynamic>?> getProfile(String authToken) async {
     try {

@@ -257,6 +257,39 @@ async def handle_api_app_device_unlink(request: web.Request) -> web.Response:
         logger.error("Ошибка API device unlink: %s", e)
         return web.json_response({"error": "Failed to unlink device"}, status=500)
 
+async def handle_api_app_auth_yandex(request: web.Request) -> web.Response:
+    try:
+        data = await request.json()
+        yandex_id = data.get("yandex_id")
+        access_token = data.get("access_token")
+        if not yandex_id and not access_token:
+            return web.json_response({"error": "Missing yandex_id or access_token"}, status=400)
+
+        first_name = data.get("first_name")
+        last_name = data.get("last_name")
+        display_name = data.get("display_name")
+        email = data.get("email")
+        avatar_url = data.get("avatar_url")
+
+        from database import register_or_login_yandex_user
+        user = await register_or_login_yandex_user(
+            yandex_id=str(yandex_id or access_token[:16]),
+            first_name=str(first_name) if first_name else None,
+            last_name=str(last_name) if last_name else None,
+            display_name=str(display_name) if display_name else None,
+            email=str(email) if email else None,
+            avatar_url=str(avatar_url) if avatar_url else None,
+        )
+
+        return web.json_response({
+            "status": "confirmed",
+            "auth_token": user.get("auth_token"),
+            "user": user
+        })
+    except Exception as e:
+        logger.error("Ошибка API yandex auth: %s", e)
+        return web.json_response({"error": "Failed to auth with Yandex"}, status=500)
+
 _changelog_cache = {
     "timestamp": 0.0,
     "data": []
@@ -418,6 +451,7 @@ def create_web_app() -> web.Application:
     app.router.add_post("/api/user/sync", handle_api_sync_user)
     app.router.add_post("/api/app/auth/session", handle_api_app_auth_session)
     app.router.add_get("/api/app/auth/check", handle_api_app_auth_check)
+    app.router.add_post("/api/app/auth/yandex", handle_api_app_auth_yandex)
     app.router.add_get("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/device/sync", handle_api_app_device_sync)

@@ -44,6 +44,9 @@ android {
         targetSdk = 34
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
+        manifestPlaceholders += [
+            YANDEX_CLIENT_ID: "4cae7d5a54a142c2906bf93a43203467"
+        ]
     }
 
     signingConfigs {
@@ -86,7 +89,16 @@ android {
             minifyEnabled false
             shrinkResources false
         }
+        debug {
+            if (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
+}
+
+dependencies {
+    implementation "com.yandex.android:authsdk:2.5.1"
 }
 
 flutter {

@@ -8,6 +8,7 @@ import '../services/storage_service.dart';
 import 'group_picker_screen.dart';
 import 'schedule_screen.dart';
 import '../services/season_icon_service.dart';
+import '../services/yandex_auth_service.dart';
 
 class AuthScreen extends StatefulWidget {
   final StorageService storage;
@@ -25,6 +26,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool _isWaitingConfirmation = false;
+  bool _isYandexLoading = false;
   Timer? _pollTimer;
   String? _sessionToken;
 
@@ -130,6 +132,73 @@ class _AuthScreenState extends State<AuthScreen> {
         setState(() => _isWaitingConfirmation = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ошибка подключения к серверу. Попробуйте позже.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _startYandexAuth() async {
+    setState(() => _isYandexLoading = true);
+    try {
+      final profile = await YandexAuthService.signIn(
+        storage: widget.storage,
+        api: widget.api,
+      );
+
+      if (profile != null && mounted) {
+        if (profile.groupId == null) {
+          final selected = await Navigator.push<GroupItem>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => GroupPickerScreen(storage: widget.storage, api: widget.api),
+            ),
+          );
+          if (selected != null && mounted) {
+            final updated = profile.copyWith(
+              groupId: selected.id,
+              groupName: selected.name,
+            );
+            await widget.storage.saveUserProfile(updated);
+          }
+        }
+
+        try {
+          final currentProfile = widget.storage.getUserProfile();
+          final deviceId = widget.storage.getDeviceId();
+          final clientUserId = widget.storage.getClientUserId();
+          final notif = widget.storage.getNotificationSettings();
+          await widget.api.syncDeviceUser(
+            deviceId: deviceId,
+            clientUserId: clientUserId,
+            authToken: currentProfile.authToken,
+            groupId: currentProfile.groupId,
+            groupName: currentProfile.groupName,
+            subgroup: currentProfile.subgroup,
+            notificationsEnabled: notif.enabled,
+            notifyBeforeMins: notif.beforeMins,
+            notifyLessonStart: notif.lessonStart,
+            notifyBreaks: notif.breaks,
+            notifyChanges: notif.changes,
+            appVersion: AppInfo.versionName,
+          );
+        } catch (_) {}
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ScheduleScreen(storage: widget.storage, api: widget.api),
+            ),
+          );
+        }
+      } else if (mounted) {
+        setState(() => _isYandexLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isYandexLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось войти через Яндекс ID. Попробуйте снова.')),
         );
       }
     }
@@ -265,6 +334,58 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
+
+                // Кнопка входа через Яндекс ID
+                if (YandexAuthService.isSupported) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isYandexLoading ? null : _startYandexAuth,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? const Color(0xFF262626) : Colors.black,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
+                      ),
+                      child: _isYandexLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFC3F1D),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    'Я',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'Войти с Яндекс ID',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // Кнопка продолжить без авторизации
                 SizedBox(

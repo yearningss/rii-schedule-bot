@@ -12,6 +12,7 @@ import 'group_picker_screen.dart';
 import 'settings_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/notification_service.dart';
+import '../services/live_schedule_service.dart';
 
 class ScheduleScreen extends StatefulWidget {
   final StorageService storage;
@@ -164,6 +165,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
 
     final paraTimes = _scheduleJson!['paraTimes'];
     final paraTimesMap = paraTimes is Map ? paraTimes : {};
+
+    // Синхронизация Live Activity (iOS) и закрепленного Live-уведомления (Android)
+    LiveScheduleService.syncSchedule(
+      storage: widget.storage,
+      dayData: Map<String, dynamic>.from(dayData),
+      paraTimesMap: Map<String, dynamic>.from(paraTimesMap),
+      userSubgroup: _profile.subgroup,
+      groupName: _profile.groupName ?? 'РИИ',
+    );
 
     final curMins = rTime.hour * 60 + rTime.minute;
     final todayStr = '${rTime.year}_${rTime.month}_${rTime.day}';
