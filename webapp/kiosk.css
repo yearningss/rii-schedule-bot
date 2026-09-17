@@ -1,214 +1,25 @@
-/* Стили для сенсорного терминала РИИ АлтГТУ на базе официального дизайна Mini App */
+/* Дополнительные стили для сенсорного режима киоска (накладываются поверх официального style.css) */
 
-/* По умолчанию для киоска включаем приятную темную тему Mini App */
-:root {
-  --bg-color: #181c24;
-  --text-color: #f9fafb;
-  --hint-color: #9ca3af;
-  --btn-color: #3b82f6;
-  --btn-text-color: #ffffff;
-  --secondary-bg: #1f2937;
-  --card-bg: #242c3d;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --accent-color: #3b82f6;
-  --accent-light: rgba(59, 130, 246, 0.15);
-  --ongoing-color: #10b981;
-  --ongoing-bg: rgba(16, 185, 129, 0.12);
-  --next-color: #f59e0b;
-  --next-bg: rgba(245, 158, 11, 0.12);
-}
-
-.kiosk-app-body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+.kiosk-mode-body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
 }
 
-/* Верхняя строка статуса терминала */
-.kiosk-status-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #11151c;
-  border-bottom: 1px solid var(--border-color);
-  padding: 10px 24px;
-  z-index: 30;
-}
-
-.kiosk-status-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.kiosk-strip-logo {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-}
-
-.kiosk-strip-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.kiosk-strip-title {
-  font-size: 14px;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: 0.3px;
-}
-
-.kiosk-strip-sub {
-  font-size: 11px;
-  color: var(--btn-color);
-  font-weight: 600;
-}
-
-.kiosk-live-bell-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--secondary-bg);
-  border: 1px solid var(--border-color);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.kiosk-bell-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--ongoing-color);
-  box-shadow: 0 0 8px var(--ongoing-color);
-}
-
-.kiosk-status-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.kiosk-clock-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.kiosk-clock-time {
-  font-size: 18px;
-  font-weight: 800;
-  color: #ffffff;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.kiosk-clock-date {
-  font-size: 11px;
-  color: var(--hint-color);
-  font-weight: 500;
-}
-
-.kiosk-reset-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--secondary-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-color);
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.kiosk-reset-btn:active {
-  opacity: 0.7;
-}
-
-/* Расширение контейнера под сенсорный экран */
-.kiosk-scaled-container {
-  max-width: 820px !important;
-  width: 100%;
-  margin: 0 auto;
-  flex: 1;
-}
-
-/* Кнопки действий в шапке */
-.header-action-btns {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-action-btns .teachers-nav-btn {
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-/* Поиск с кнопкой клавиатуры */
-.kiosk-search-box-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.kiosk-search-box-row input {
-  flex: 1;
-}
-
-.kiosk-kb-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--btn-color);
-  color: var(--btn-text-color);
-  border: none;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.kiosk-kb-btn:active {
-  opacity: 0.8;
-}
-
-/* Модальные окна на киоске */
-.kiosk-modal-sheet {
-  max-width: 720px;
-  margin: 0 auto;
-  border-radius: 20px 20px 0 0;
-}
-
-/* Таблица звонков */
-.kiosk-bells-content {
+/* Таблица звонков в модальном окне */
+.bells-modal-body {
   overflow-y: auto;
-  max-height: 60vh;
+  padding: 4px 0;
 }
 
-.kiosk-app-bells-table {
+.bells-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.kiosk-app-bells-table th {
+.bells-table th {
   background: var(--secondary-bg);
-  padding: 12px 14px;
+  padding: 10px 12px;
   text-align: left;
   font-size: 13px;
   font-weight: 700;
@@ -216,142 +27,102 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.kiosk-app-bells-table td {
-  padding: 14px;
+.bells-table td {
+  padding: 12px;
   border-bottom: 1px solid var(--border-color);
   font-size: 14px;
-  font-weight: 500;
 }
 
-.kiosk-app-bells-table tr.active-bell td {
-  background: var(--ongoing-bg);
-  color: var(--ongoing-color);
-  font-weight: 700;
+.bells-table tr:last-child td {
+  border-bottom: none;
 }
 
-/* Модалка промо приложения */
-.kiosk-promo-body {
+/* Модальное окно QR-кода */
+.qr-modal-body {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 16px;
-  padding: 20px 10px;
+  padding: 16px 8px;
 }
 
-.kiosk-promo-qr {
-  width: 200px;
-  height: 200px;
+.qr-modal-image {
+  width: 220px;
+  height: 220px;
   background: #ffffff;
   border-radius: 16px;
   padding: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
-.kiosk-promo-body h4 {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.kiosk-promo-body p {
+.qr-modal-desc {
   font-size: 14px;
   color: var(--hint-color);
-  max-width: 440px;
   line-height: 1.4;
+  max-width: 380px;
 }
 
-/* Расписание преподавателя в модалке */
-.teacher-schedule-section {
-  margin-top: 16px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 14px;
-}
-
-.teacher-sched-heading {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-color);
-  margin-bottom: 10px;
-}
-
-.teacher-sched-day-block {
-  margin-bottom: 12px;
-}
-
-.teacher-sched-day-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--btn-color);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.teacher-sched-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--secondary-bg);
-  padding: 8px 12px;
-  border-radius: 10px;
-  margin-bottom: 4px;
-  font-size: 13px;
-}
-
-/* Экранная виртуальная клавиатура */
-.kiosk-keyboard-drawer {
+/* Экранная сенсорная клавиатура */
+.touch-keyboard-drawer {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: #111827;
+  background: var(--secondary-bg);
   border-top: 2px solid var(--btn-color);
-  padding: 10px 16px 24px;
-  z-index: 200;
+  padding: 8px 12px 20px;
+  z-index: 250;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.kiosk-keyboard-drawer.hidden {
+.touch-keyboard-drawer.hidden {
   display: none !important;
 }
 
-.kiosk-kb-header {
+.kb-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 4px;
+}
+
+.kb-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--btn-color);
-  margin-bottom: 4px;
 }
 
-.kiosk-kb-hide-btn {
-  background: var(--secondary-bg);
-  border: 1px solid var(--border-color);
+.kb-hide-btn {
+  background: var(--border-color);
+  border: none;
   color: var(--text-color);
-  padding: 4px 12px;
+  padding: 5px 12px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.kiosk-kb-row {
+.kb-row {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
 }
 
-.kb-key {
-  background: #1f2937;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+.k-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
   font-size: 17px;
   font-weight: 600;
   height: 48px;
-  min-width: 44px;
-  padding: 0 10px;
+  min-width: 42px;
+  padding: 0 8px;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
@@ -360,70 +131,24 @@
   transition: all 0.1s ease;
 }
 
-.kb-key:active {
+.k-btn:active {
   background: var(--btn-color);
-  transform: scale(0.94);
-}
-
-.kb-key-bs {
-  min-width: 60px;
-  background: #374151;
-}
-
-.kb-key-space {
-  min-width: 240px;
-  background: #374151;
-}
-
-.kb-key-clear {
-  min-width: 100px;
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #f87171;
-}
-
-/* Модальное окно бездействия */
-.kiosk-idle-modal {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 28px 32px;
-  max-width: 440px;
-  margin: auto;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
-}
-
-.kiosk-idle-modal h3 {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.kiosk-idle-modal p {
-  font-size: 14px;
-  color: var(--hint-color);
-  line-height: 1.4;
-}
-
-.kiosk-idle-modal strong {
-  color: var(--btn-color);
-  font-size: 18px;
-}
-
-.kiosk-continue-btn {
-  background: var(--btn-color);
-  border: none;
   color: var(--btn-text-color);
-  font-size: 15px;
-  font-weight: 700;
-  padding: 12px 20px;
-  border-radius: 12px;
-  cursor: pointer;
+  transform: scale(0.95);
 }
 
-.kiosk-continue-btn:active {
-  opacity: 0.8;
+.k-btn-action {
+  min-width: 54px;
+  background: var(--border-color);
+}
+
+.k-btn-space {
+  min-width: 220px;
+  background: var(--border-color);
+}
+
+.k-btn-clear {
+  min-width: 90px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 }
