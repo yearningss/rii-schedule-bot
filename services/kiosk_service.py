@@ -39,6 +39,80 @@ MONTH_NAMES_RU = {
     9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
 }
 
+WMO_WEATHER_RU = {
+    0: ("Ясно", "sun"),
+    1: ("Преимущественно ясно", "sun"),
+    2: ("Переменная облачность", "cloud-sun"),
+    3: ("Пасмурно", "cloud"),
+    45: ("Туман", "fog"),
+    48: ("Туман, изморозь", "fog"),
+    51: ("Легкая морось", "rain"),
+    53: ("Морось", "rain"),
+    55: ("Плотная морось", "rain"),
+    61: ("Небольшой дождь", "rain"),
+    63: ("Умеренный дождь", "rain"),
+    65: ("Сильный дождь", "rain"),
+    71: ("Небольшой снег", "snow"),
+    73: ("Снегопад", "snow"),
+    75: ("Сильный снегопад", "snow"),
+    77: ("Снежные зерна", "snow"),
+    80: ("Кратковременный дождь", "rain"),
+    81: ("Ливень", "rain"),
+    82: ("Шквальный ливень", "rain"),
+    85: ("Снегопад", "snow"),
+    86: ("Метель", "snow"),
+    95: ("Гроза", "thunder"),
+    96: ("Гроза с градом", "thunder"),
+    99: ("Сильная гроза с градом", "thunder")
+}
+
+_weather_cache: Dict[str, Any] = {
+    "timestamp": 0.0,
+    "data": {
+        "temp": "+12°C",
+        "description": "Ясно",
+        "wind": "8 км/ч",
+        "icon": "sun"
+    }
+}
+
+async def get_rubtsovsk_weather() -> Dict[str, Any]:
+    global _weather_cache
+    now = time.time()
+    if now - _weather_cache["timestamp"] < 900 and _weather_cache["data"]:
+        return _weather_cache["data"]
+
+    try:
+        url = "https://api.open-meteo.com/v1/forecast?latitude=51.52&longitude=81.21&current_weather=true"
+        headers = {"User-Agent": "RiiBotKiosk/1.0"}
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=4)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    cw = data.get("current_weather", {})
+                    temp_val = cw.get("temperature", 10.0)
+                    temp_sign = "+" if temp_val > 0 else ""
+                    temp_str = f"{temp_sign}{round(temp_val)}°C"
+                    w_code = cw.get("weathercode", 0)
+                    wind_speed = round(cw.get("windspeed", 0))
+
+                    desc, icon = WMO_WEATHER_RU.get(w_code, ("Ясно", "sun"))
+                    result = {
+                        "temp": temp_str,
+                        "temp_num": temp_val,
+                        "description": desc,
+                        "wind": f"{wind_speed} км/ч",
+                        "icon": icon
+                    }
+                    _weather_cache["timestamp"] = now
+                    _weather_cache["data"] = result
+                    return result
+    except Exception as e:
+        logger.warning("Не удалось получить погоду в Рубцовске: %s", e)
+
+    return _weather_cache["data"]
+
 _live_board_cache: Dict[str, Any] = {
     "timestamp": 0.0,
     "data": None
@@ -352,6 +426,8 @@ async def get_live_board_data(force_refresh: bool = False) -> Dict[str, Any]:
     }
     group_cards.sort(key=lambda x: (status_priority.get(x["status"], 99), x["course"], x["group_name"]))
 
+    weather = await get_rubtsovsk_weather()
+
     result = {
         "status": "ok",
         "date": date_str,
@@ -361,6 +437,7 @@ async def get_live_board_data(force_refresh: bool = False) -> Dict[str, Any]:
         "week_number": week_number,
         "week_name": week_name,
         "bell_status": bell_status,
+        "weather": weather,
         "total_groups": len(group_cards),
         "groups": group_cards
     }

@@ -3,195 +3,374 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>РИИ Расписание | Рубцовский индустриальный институт</title>
+  <title>Сенсорный терминал расписания РИИ АлтГТУ</title>
   
-  <!-- Manifest и PWA настройки -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#2563eb">
+  <meta name="theme-color" content="#181c24">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="РИИ Бот">
 
-  <!-- Favicon и иконки -->
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  
-  <!-- Метатеги для браузера и соцсетей (Open Graph) -->
-  <meta name="description" content="Удобное расписание занятий Рубцовского индустриального института (РИИ АлтГТУ). Статус пар в реальном времени, уведомления и свайпы дней.">
-  <meta property="og:title" content="РИИ Расписание пар">
-  <meta property="og:description" content="Актуальное расписание занятий студентов РИИ АлтГТУ прямо в Telegram и браузере.">
-  <meta property="og:image" content="/favicon.png">
-  <meta property="og:type" content="website">
 
-  <link rel="stylesheet" href="/style.css">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/kiosk.css">
 </head>
-<body>
-  <div class="app-container">
-    <!-- Шапка -->
-    <header class="app-header">
-      <div class="header-top">
-        <button id="groupSelectBtn" class="group-btn">
-          <span id="currentGroupName">Выбрать группу</span>
-          <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16">
-            <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-          </svg>
-        </button>
-        <div class="week-toggle">
-          <button id="week1Btn" class="week-btn active" data-week="1">I нед</button>
-          <button id="week2Btn" class="week-btn" data-week="2">II нед</button>
+<body class="kiosk-body">
+
+  <!-- ======================================================== -->
+  <!-- ЭКРАН 1: ЗАСТАВКА / РЕЖИМ ОЖИДАНИЯ ТЕРМИНАЛА (СТАРТ)     -->
+  <!-- ======================================================== -->
+  <section id="screenWelcome" class="kiosk-screen screen-welcome active">
+    <!-- Верхняя информационная панель заставки -->
+    <header class="welcome-header">
+      <div class="welcome-header-left">
+        <img src="/icons/logo_app.png" alt="Логотип РИИ" class="welcome-logo">
+        <div class="welcome-inst-info">
+          <h1 class="welcome-inst-title">РУБЦОВСКИЙ ИНДУСТРИАЛЬНЫЙ ИНСТИТУТ</h1>
+          <div class="welcome-inst-sub">Сенсорный терминал информации и расписания</div>
         </div>
       </div>
 
-      <!-- Полоса дней недели -->
-      <nav class="days-nav" id="daysNav">
-        <button class="day-chip" data-day="1">Пн</button>
-        <button class="day-chip" data-day="2">Вт</button>
-        <button class="day-chip" data-day="3">Ср</button>
-        <button class="day-chip" data-day="4">Чт</button>
-        <button class="day-chip" data-day="5">Пт</button>
-        <button class="day-chip" data-day="6">Сб</button>
-      </nav>
+      <div class="welcome-header-right">
+        <div class="welcome-weather-card" id="welcomeWeatherCard">
+          <span class="welcome-weather-icon" id="welcomeWeatherIcon">
+            <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 000 1.41l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+          </span>
+          <div class="welcome-weather-info">
+            <span class="welcome-weather-temp" id="welcomeWeatherTemp">+12°C</span>
+            <span class="welcome-weather-desc" id="welcomeWeatherDesc">Рубцовск: Ясно</span>
+          </div>
+        </div>
+
+        <div class="welcome-clock-box">
+          <div class="welcome-clock" id="welcomeClock">--:--:--</div>
+          <div class="welcome-date" id="welcomeDate">--.--.----</div>
+        </div>
+      </div>
     </header>
 
-    <!-- Информационная плашка статуса -->
-    <div id="liveStatusBar" class="live-status-bar hidden">
-      <span class="status-indicator"></span>
-      <span id="liveStatusText" class="status-text">Загрузка...</span>
-    </div>
-
-    <!-- Подсказка для установки PWA в браузере -->
-    <div id="pwaInstallBanner" class="pwa-install-banner hidden">
-      <div class="pwa-banner-content">
-        <img src="/favicon-32x32.png" alt="Иконка" class="pwa-icon">
-        <div class="pwa-banner-text">
-          <strong>Установить приложение</strong>
-          <span>Быстрый доступ с экрана «Домой»</span>
+    <!-- Центр заставки: статус звонка института и главная кнопка СТАРТ -->
+    <main class="welcome-main">
+      <div class="welcome-hero-card">
+        <div class="welcome-bell-status" id="welcomeBellStatus">
+          <div class="welcome-bell-label-row">
+            <span class="welcome-bell-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            </span>
+            <span class="welcome-bell-title" id="welcomeBellTitle">Загрузка статуса звонков...</span>
+            <span class="welcome-week-pill" id="welcomeWeekPill">-- неделя</span>
+          </div>
+          <div class="welcome-bell-countdown" id="welcomeBellCountdown">--:--</div>
+          <div class="welcome-bell-progress-track">
+            <div class="welcome-bell-progress-bar" id="welcomeBellProgressBar" style="width: 0%"></div>
+          </div>
         </div>
-      </div>
-      <button id="pwaInstallBtn" class="pwa-action-btn">Установить</button>
-    </div>
 
-    <!-- Основной контент расписания -->
-    <main class="schedule-container" id="scheduleContainer">
-      <div id="scheduleCards" class="cards-list">
-        <!-- Карточки пар генерируются динамически через JS -->
-      </div>
-      <div id="emptyState" class="empty-state hidden">
-        <p class="empty-title">Занятий нет</p>
-        <p class="empty-subtitle">В этот день пар в расписании не найдено</p>
-      </div>
-      <div id="loadingState" class="loading-state">
-        <div class="spinner"></div>
-        <p>Загрузка расписания...</p>
+        <!-- Огромная интерактивная кнопка НАЧАТЬ РАБОТУ / СТАРТ -->
+        <div class="welcome-cta-container">
+          <button id="startKioskBtn" class="kiosk-start-btn" type="button">
+            <span class="start-btn-halo"></span>
+            <span class="start-btn-icon-wrap">
+              <svg viewBox="0 0 24 24" width="36" height="36"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+            </span>
+            <div class="start-btn-text-wrap">
+              <span class="start-btn-main-text">НАЧАТЬ РАБОТУ</span>
+              <span class="start-btn-sub-text">Коснитесь экрана для выбора группы и расписания</span>
+            </div>
+            <span class="start-btn-arrow">
+              <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <div class="welcome-quick-note">
+          Расписание всех учебных групп института в актуальном виде с кабинетами и преподавателями
+        </div>
       </div>
     </main>
 
-    <!-- Фильтр подгруппы -->
-    <footer class="app-footer">
-      <div class="subgroup-selector">
-        <button class="sg-btn active" data-sg="0">Все подгруппы</button>
-        <button class="sg-btn" data-sg="1">1 п/г</button>
-        <button class="sg-btn" data-sg="2">2 п/г</button>
+    <!-- Подвал заставки: полоса звонков и QR код бота -->
+    <footer class="welcome-footer">
+      <div class="welcome-bells-strip">
+        <span class="welcome-bells-title">ЗВОНКИ:</span>
+        <span class="wb-item">1: 08:30-10:00</span>
+        <span class="wb-sep">/</span>
+        <span class="wb-item">2: 10:10-11:40</span>
+        <span class="wb-sep">/</span>
+        <span class="wb-item">3: 12:10-13:40</span>
+        <span class="wb-sep">/</span>
+        <span class="wb-item">4: 13:50-15:20</span>
+        <span class="wb-sep">/</span>
+        <span class="wb-item">5: 15:30-17:00</span>
+        <span class="wb-sep">/</span>
+        <span class="wb-item">6: 17:10-18:40</span>
+        <span class="wb-sep">/</span>
+        <span class="wb-item">7: 18:50-20:20</span>
+      </div>
+
+      <div class="welcome-qr-box">
+        <img src="/qr_bot.png" alt="QR-код" class="welcome-qr-img">
+        <div class="welcome-qr-meta">
+          <span class="welcome-qr-h">Расписание в телефоне</span>
+          <span class="welcome-qr-s">Telegram-бот и мобильное приложение</span>
+        </div>
       </div>
     </footer>
-  </div>
+  </section>
 
-  <!-- Модальное окно выбора группы -->
-  <div id="groupModal" class="modal-backdrop hidden">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <h3>Выбор учебной группы</h3>
-        <button id="closeModalBtn" class="close-btn">&times;</button>
+
+  <!-- ======================================================== -->
+  <!-- ЭКРАН 2: ВЫБОР УЧЕБНОЙ ГРУППЫ                           -->
+  <!-- ======================================================== -->
+  <section id="screenGroupSelect" class="kiosk-screen screen-group-select hidden">
+    <!-- Шапка активной сессии (сверху таймер и кнопка завершить) -->
+    <header class="kiosk-session-header">
+      <div class="ksh-left">
+        <button id="btnBackToWelcome" class="ksh-btn ksh-btn-back" type="button">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          <span>На главную</span>
+        </button>
+        <h2 class="ksh-title">ВЫБОР УЧЕБНОЙ ГРУППЫ</h2>
       </div>
-      <div class="search-box">
-        <input type="text" id="groupSearchInput" placeholder="Поиск группы (например: ИВТ-61)..." autocomplete="off">
+
+      <!-- Сверху сбоку: таймер сессии 2 минуты и кнопка завершить -->
+      <div class="ksh-right">
+        <div class="kiosk-session-timer-badge" id="kioskSessionTimerBadge">
+          <span class="kst-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          </span>
+          <span class="kst-label">Сессия:</span>
+          <span class="kst-value" id="kioskSessionTimeVal">02:00</span>
+        </div>
+
+        <button id="btnFinishSession1" class="ksh-btn ksh-btn-finish" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          <span>Завершить</span>
+        </button>
       </div>
-      <div id="groupsListContainer" class="groups-list">
-        <!-- Список курсов и групп -->
+    </header>
+
+    <!-- Фильтры курсов и быстрый тач-поиск -->
+    <div class="kiosk-filter-bar">
+      <!-- Вкладки курсов -->
+      <div class="kiosk-course-tabs" id="kioskCourseTabs">
+        <button class="course-tab active" data-course="all">Все группы</button>
+        <button class="course-tab" data-course="1">1 курс</button>
+        <button class="course-tab" data-course="2">2 курс</button>
+        <button class="course-tab" data-course="3">3 курс</button>
+        <button class="course-tab" data-course="4">4 курс</button>
+        <button class="course-tab" data-course="spo">СПО / Колледж</button>
+      </div>
+
+      <!-- Поле поиска и быстрые теги специальностей -->
+      <div class="kiosk-search-row">
+        <div class="kiosk-search-input-wrap">
+          <svg class="search-ico" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input type="text" id="kioskGroupSearch" class="kiosk-search-input" placeholder="Введите название группы (например: ИВТ-61)..." autocomplete="off">
+          <button id="btnClearSearch" class="btn-clear-search hidden" type="button">&times;</button>
+        </div>
+
+        <div class="kiosk-quick-tags">
+          <button class="quick-tag" data-tag="ИВТ">ИВТ</button>
+          <button class="quick-tag" data-tag="ИСП">ИСП</button>
+          <button class="quick-tag" data-tag="ПИ">ПИ</button>
+          <button class="quick-tag" data-tag="СТЭ">СТЭ</button>
+          <button class="quick-tag" data-tag="ЭР">ЭР</button>
+          <button class="quick-tag" data-tag="КЭС">КЭС</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Модальное окно преподавателя -->
-  <div id="teacherModal" class="modal-backdrop hidden">
-    <div class="modal-sheet teacher-modal-sheet">
-      <div class="modal-header">
+    <!-- Сетка карточек групп для сенсорного нажатия -->
+    <main class="kiosk-groups-container">
+      <div id="kioskGroupsGrid" class="kiosk-groups-grid">
+        <!-- Генерируется из kiosk.js -->
+        <div class="kiosk-loading-box">
+          <div class="kiosk-spinner"></div>
+          <div>Загрузка списка учебных групп...</div>
+        </div>
+      </div>
+      <div id="kioskNoGroupsFound" class="kiosk-no-data hidden">
+        <p class="no-data-title">Группы не найдены</p>
+        <p class="no-data-sub">Попробуйте изменить запрос или выбрать другой курс</p>
+      </div>
+    </main>
+  </section>
+
+
+  <!-- ======================================================== -->
+  <!-- ЭКРАН 3: РАСПИСАНИЕ ВЫБРАННОЙ ГРУППЫ                     -->
+  <!-- ======================================================== -->
+  <section id="screenSchedule" class="kiosk-screen screen-schedule hidden">
+    <!-- Шапка активного расписания -->
+    <header class="kiosk-session-header">
+      <div class="ksh-left">
+        <button id="btnBackToGroups" class="ksh-btn ksh-btn-back" type="button">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          <span>Сменить группу</span>
+        </button>
+
+        <div class="ksh-current-group-badge">
+          <span class="group-badge-label">ГРУППА:</span>
+          <span class="group-badge-name" id="kioskSelectedGroupName">---</span>
+        </div>
+      </div>
+
+      <!-- Сверху сбоку: таймер сессии 2 минуты и кнопка завершить -->
+      <div class="ksh-right">
+        <div class="kiosk-session-timer-badge" id="kioskSessionTimerBadge2">
+          <span class="kst-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          </span>
+          <span class="kst-label">Сессия:</span>
+          <span class="kst-value" id="kioskSessionTimeVal2">02:00</span>
+        </div>
+
+        <button id="btnFinishSession2" class="ksh-btn ksh-btn-finish" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          <span>Завершить</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Панель управления днями, неделей и подгруппой -->
+    <div class="kiosk-schedule-controls">
+      <!-- Неделя I / II -->
+      <div class="kiosk-week-toggle">
+        <button id="kioskWeek1Btn" class="kiosk-pill-btn active" data-week="1">I неделя (числитель)</button>
+        <button id="kioskWeek2Btn" class="kiosk-pill-btn" data-week="2">II неделя (знаменатель)</button>
+      </div>
+
+      <!-- Выбор дня недели -->
+      <nav class="kiosk-days-nav" id="kioskDaysNav">
+        <button class="kiosk-day-chip" data-day="1">
+          <span class="kdc-name">Понедельник</span>
+          <span class="kdc-short">Пн</span>
+          <span class="kdc-date" id="kdcDate1">--.--</span>
+        </button>
+        <button class="kiosk-day-chip" data-day="2">
+          <span class="kdc-name">Вторник</span>
+          <span class="kdc-short">Вт</span>
+          <span class="kdc-date" id="kdcDate2">--.--</span>
+        </button>
+        <button class="kiosk-day-chip" data-day="3">
+          <span class="kdc-name">Среда</span>
+          <span class="kdc-short">Ср</span>
+          <span class="kdc-date" id="kdcDate3">--.--</span>
+        </button>
+        <button class="kiosk-day-chip" data-day="4">
+          <span class="kdc-name">Четверг</span>
+          <span class="kdc-short">Чт</span>
+          <span class="kdc-date" id="kdcDate4">--.--</span>
+        </button>
+        <button class="kiosk-day-chip" data-day="5">
+          <span class="kdc-name">Пятница</span>
+          <span class="kdc-short">Пт</span>
+          <span class="kdc-date" id="kdcDate5">--.--</span>
+        </button>
+        <button class="kiosk-day-chip" data-day="6">
+          <span class="kdc-name">Суббота</span>
+          <span class="kdc-short">Сб</span>
+          <span class="kdc-date" id="kdcDate6">--.--</span>
+        </button>
+      </nav>
+
+      <!-- Фильтр подгрупп -->
+      <div class="kiosk-subgroups-strip">
+        <button class="kiosk-sg-btn active" data-sg="0">Все подгруппы</button>
+        <button class="kiosk-sg-btn" data-sg="1">1 подгруппа</button>
+        <button class="kiosk-sg-btn" data-sg="2">2 подгруппа</button>
+      </div>
+    </div>
+
+    <!-- Список пар (каноничный дизайн Mini App) -->
+    <main class="kiosk-schedule-body">
+      <!-- Статусная строка текущей пары -->
+      <div id="kioskLiveStatusBar" class="kiosk-live-status-bar hidden">
+        <span class="kiosk-status-dot"></span>
+        <span id="kioskLiveStatusText">Загрузка информации о парах...</span>
+      </div>
+
+      <div id="kioskScheduleCards" class="kiosk-cards-list">
+        <!-- Карточки пар генерируются динамически через JS -->
+      </div>
+
+      <div id="kioskScheduleEmpty" class="kiosk-schedule-empty hidden">
+        <div class="kse-icon">
+          <svg viewBox="0 0 24 24" width="48" height="48"><path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 4H7v2h2v-2zm0-4h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
+        </div>
+        <div class="kse-title">Занятий нет</div>
+        <div class="kse-sub">В этот день пар в расписании группы не найдено</div>
+      </div>
+
+      <div id="kioskScheduleLoading" class="kiosk-schedule-loading">
+        <div class="kiosk-spinner"></div>
+        <div>Загрузка расписания занятий...</div>
+      </div>
+    </main>
+  </section>
+
+
+  <!-- ======================================================== -->
+  <!-- МОДАЛЬНОЕ ОКНО ПРЕПОДАВАТЕЛЯ                             -->
+  <!-- ======================================================== -->
+  <div id="kioskTeacherModal" class="kiosk-modal-backdrop hidden">
+    <div class="kiosk-modal-card">
+      <div class="kiosk-modal-header">
         <h3>Информация о преподавателе</h3>
-        <button id="closeTeacherModalBtn" class="close-btn">&times;</button>
+        <button id="btnCloseTeacherModal" class="kiosk-modal-close" type="button">&times;</button>
       </div>
-      <div id="teacherLoading" class="loading-state">
-        <div class="spinner"></div>
-        <p>Загрузка данных...</p>
+      <div id="kioskTeacherLoading" class="kiosk-modal-loading">
+        <div class="kiosk-spinner"></div>
+        <div>Загрузка данных преподавателя...</div>
       </div>
-      <div id="teacherContent" class="teacher-details hidden">
-        <div class="teacher-profile-header">
-          <div class="teacher-avatar-wrap">
-            <img id="teacherPhoto" class="teacher-photo hidden" src="" alt="Фото">
-            <div id="teacherAvatarFallback" class="teacher-avatar-fallback">
-              <svg viewBox="0 0 24 24" width="36" height="36"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <div id="kioskTeacherContent" class="kiosk-teacher-content hidden">
+        <div class="kt-profile">
+          <div class="kt-avatar-wrap">
+            <img id="ktPhoto" class="kt-photo hidden" src="" alt="Фото">
+            <div id="ktAvatarFallback" class="kt-avatar-fallback">
+              <svg viewBox="0 0 24 24" width="44" height="44"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             </div>
           </div>
-          <div class="teacher-main-meta">
-            <h2 id="teacherFullName" class="teacher-fullname">ФИО</h2>
-            <div id="teacherPost" class="teacher-post">Должность</div>
-            <div id="teacherDeptBadge" class="teacher-dept-badge hidden">Кафедра</div>
+          <div class="kt-meta">
+            <h2 id="ktFullName" class="kt-fullname">ФИО</h2>
+            <div id="ktPost" class="kt-post">Должность</div>
+            <div id="ktDept" class="kt-dept">Кафедра</div>
           </div>
         </div>
 
-        <div class="teacher-info-list">
-          <div id="teacherRoomRow" class="teacher-info-row hidden">
-            <span class="info-label">Аудитория:</span>
-            <span id="teacherRoom" class="info-value"></span>
+        <div class="kt-details-list">
+          <div id="ktRoomRow" class="kt-row hidden">
+            <span class="kt-label">Аудитория:</span>
+            <span id="ktRoom" class="kt-value"></span>
           </div>
-          <div id="teacherDegreeRow" class="teacher-info-row hidden">
-            <span class="info-label">Степень / Звание:</span>
-            <span id="teacherDegree" class="info-value"></span>
+          <div id="ktDegreeRow" class="kt-row hidden">
+            <span class="kt-label">Степень / Звание:</span>
+            <span id="ktDegree" class="kt-value"></span>
           </div>
-          <div id="teacherPhoneRow" class="teacher-info-row hidden">
-            <span class="info-label">Телефон:</span>
-            <span id="teacherPhone" class="info-value"></span>
+          <div id="ktPhoneRow" class="kt-row hidden">
+            <span class="kt-label">Телефон:</span>
+            <span id="ktPhone" class="kt-value"></span>
           </div>
-          <div id="teacherEmailRow" class="teacher-info-row hidden">
-            <span class="info-label">Email:</span>
-            <span id="teacherEmail" class="info-value"></span>
+          <div id="ktEmailRow" class="kt-row hidden">
+            <span class="kt-label">Email:</span>
+            <span id="ktEmail" class="kt-value"></span>
           </div>
-          <div id="teacherDisciplinesRow" class="teacher-info-row hidden">
-            <span class="info-label">Дисциплины:</span>
-            <div id="teacherDisciplines" class="info-value info-disciplines"></div>
+          <div id="ktDisciplinesRow" class="kt-row hidden">
+            <span class="kt-label">Дисциплины:</span>
+            <div id="ktDisciplines" class="kt-disciplines"></div>
           </div>
         </div>
 
-        <div class="teacher-actions">
-          <button type="button" id="closeTeacherBottomBtn" class="teacher-close-btn">Закрыть</button>
-          <a id="teacherSiteLink" class="teacher-site-btn" href="https://www.rubinst.ru/structure" target="_blank" rel="noopener">
-            <span>На сайте РИИ</span>
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zm5 16H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/></svg>
-          </a>
+        <div class="kt-footer-btns">
+          <button id="btnCloseTeacherBottom" class="kt-close-btn" type="button">Закрыть окно</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Модальное окно каталога преподавателей -->
-  <div id="teachersCatalogModal" class="modal-backdrop hidden">
-    <div class="modal-sheet teachers-catalog-sheet">
-      <div class="modal-header">
-        <h3>Преподаватели РИИ</h3>
-        <button id="closeTeachersCatalogBtn" class="close-btn">&times;</button>
-      </div>
-      <div class="search-box">
-        <input type="text" id="teacherSearchInput" placeholder="Поиск по ФИО, кафедре, предмету..." autocomplete="off">
-      </div>
-      <div id="teachersListContainer" class="teachers-catalog-list">
-        <!-- Список преподавателей -->
-      </div>
-    </div>
-  </div>
-
-  <script src="/app.js"></script>
+  <script src="/kiosk.js"></script>
 </body>
 </html>

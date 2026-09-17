@@ -8,20 +8,21 @@
 }
 
 :root {
-  --bg-main: #070a12;
-  --bg-card: rgba(18, 25, 41, 0.88);
-  --bg-card-hover: rgba(26, 36, 60, 0.95);
+  --bg-main: #181c24;
+  --bg-card: #242c3d;
+  --bg-card-hover: #2d374d;
   --border-card: rgba(255, 255, 255, 0.08);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --accent-cyan: #38bdf8;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent-cyan: #3b82f6;
   --accent-green: #10b981;
-  --accent-yellow: #eab308;
+  --accent-yellow: #f59e0b;
   --accent-amber: #f59e0b;
-  --accent-blue: #60a5fa;
-  --accent-purple: #c084fc;
-  --accent-red: #f43f5e;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-red: #ef4444;
+  --secondary-bg: #1f2937;
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -36,10 +37,11 @@ html, body {
 }
 
 .tv-body {
+  background-color: var(--bg-main);
   background-image: 
-    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 45%),
     radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.6) 0%, transparent 100%);
+    radial-gradient(circle at 50% 50%, rgba(24, 28, 36, 0.7) 0%, transparent 100%);
 }
 
 .tv-container {
@@ -47,21 +49,21 @@ html, body {
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  padding: 18px 24px;
+  padding: 16px 22px;
   gap: 12px;
 }
 
 /* ШАПКА ТАБЛО */
 .tv-header {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr 1.1fr;
   align-items: center;
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--bg-card);
   border: 1px solid var(--border-card);
   border-radius: 16px;
-  padding: 14px 24px;
+  padding: 12px 22px;
   backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .tv-header-left {
@@ -151,8 +153,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: var(--secondary-bg);
+  border: 1px solid rgba(59, 130, 246, 0.3);
   padding: 8px 20px;
   border-radius: 14px;
   min-width: 280px;
@@ -197,15 +199,58 @@ html, body {
   transition: width 1s linear;
 }
 
-/* ПРАВАЯ ЧАСТЬ: ЧАСЫ И ДАТА */
+/* ПРАВАЯ ЧАСТЬ: ЧАСЫ, ПОГОДА И ДАТА */
 .tv-header-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 4px;
+}
+
+.tv-right-top-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tv-weather-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-card);
+  padding: 5px 12px;
+  border-radius: 12px;
+}
+
+.tv-weather-icon {
+  display: flex;
+  align-items: center;
+  color: #f59e0b;
+}
+
+.tv-weather-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.tv-weather-temp {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-weather-desc {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .tv-clock {
-  font-size: 2.2rem;
+  font-size: 2.1rem;
   font-weight: 900;
   color: #ffffff;
   font-variant-numeric: tabular-nums;
@@ -219,7 +264,6 @@ html, body {
   font-size: 0.95rem;
   color: var(--text-secondary);
   font-weight: 600;
-  margin-top: 4px;
 }
 
 .tv-day-name {
@@ -227,16 +271,19 @@ html, body {
   font-weight: 700;
 }
 
+.tv-date-val {
+  color: var(--text-primary);
+}
+
 .tv-week-badge {
   display: inline-block;
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 1px 9px;
+  border-radius: 10px;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--accent-cyan);
-  margin-top: 3px;
 }
 
 /* ПОЛОСА КАРОСЕЛИ И СТРАНИЦ */
@@ -461,13 +508,13 @@ html, body {
 }
 
 .tv-aud-badge {
-  background: #0284c7;
+  background: var(--accent-blue);
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 800;
   font-size: 0.95rem;
   padding: 2px 10px;
   border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.35);
   white-space: nowrap;
 }
 
@@ -579,11 +626,12 @@ html, body {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 20px;
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--bg-card);
   border: 1px solid var(--border-card);
   border-radius: 14px;
   padding: 8px 18px;
   backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .tv-bells-strip {

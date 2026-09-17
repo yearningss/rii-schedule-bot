@@ -1,5 +1,5 @@
 // Service Worker для поддержки PWA и офлайн-режима
-const CACHE_NAME = 'rii-schedule-pwa-v2';
+const CACHE_NAME = 'rii-schedule-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
