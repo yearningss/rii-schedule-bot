@@ -9,6 +9,7 @@
 Проект объединяет Telegram-бота, встроенное веб-приложение (Telegram Mini App), кроссплатформенное мобильное приложение на Flutter (Android и iOS) с нативным виджетом рабочего стола, серверный бэкенд синхронизации и систему автоматической доставки обновлений.
 
 Разработчики: yearningss (Влад), MRYROKGG, TheKalina
+Авторство архитектуры ORM и рекомендации: whatqt (https://github.com/whatqt)
 
 Бот в Telegram: @rubinst_bot
 
@@ -81,8 +82,8 @@
 
 ## Стек технологий
 
-* Сервер и бот: Python 3.10+, aiogram 3.x, aiohttp, aiosqlite, python-dotenv.
-* База данных: SQLite с асинхронным драйвером.
+* Сервер и бот: Python 3.10+, aiogram 3.x, aiohttp, SQLAlchemy 2.0 (ORM asyncio), aiosqlite, python-dotenv.
+* База данных: SQLite с асинхронным ORM-движком SQLAlchemy.
 * Мобильное приложение: Flutter 3.x, Dart 3.x, Android SDK (Java 17 / Gradle), iOS (Xcode).
 * Веб-приложение: Vanilla JS, HTML5, CSS3, Telegram WebApp SDK.
 * CI/CD: GitHub Actions (автоматическая сборка Android APK, отладочного APK, iOS IPA и публикация в GitHub Releases).
@@ -117,7 +118,7 @@ rii-schedule-bot/
 │   │   └── main.dart           # Точка входа Flutter-приложения
 │   └── pubspec.yaml            # Зависимости и версия мобильного приложения
 ├── config.py                   # Конфигурация и переменные окружения
-├── database.py                 # Асинхронная работа с базой данных (SQLite)
+├── database.py                 # База данных: модели и сессии SQLAlchemy ORM (asyncio)
 ├── keyboards.py                # Клавиатуры и инлайн-кнопки бота
 ├── main.py                     # Точка входа: бот, веб-сервер aiohttp и воркер уведомлений
 ├── requirements.txt            # Зависимости Python

@@ -197,6 +197,7 @@ async def show_about(message: Message):
         "Разработчик: yearningss (Влад)\n"
         "GitHub: https://github.com/yearningss/rii-schedule-bot\n"
         "Связь и обратная связь: yearwist@gmail.com / doki@dotirr.ru\n\n"
+        "Архитектура ORM и рекомендации: whatqt (https://github.com/whatqt)\n\n"
         "Мобильное приложение: доступно для Android (APK) и iOS (IPA). Полный офлайн-режим, виджеты и уведомления (/download).\n\n"
         "Проект полностью с открытым исходным кодом. Расписание и список групп подтягиваются динамически с сервера rubinst.ru."
     )
