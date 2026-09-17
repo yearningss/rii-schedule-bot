@@ -1,96 +1,122 @@
-// Скрипт сенсорного киоска самообслуживания РИИ АлтГТУ (Touchscreen Kiosk)
+// Сенсорный терминал расписания РИИ АлтГТУ на базе логики и дизайна Telegram Mini App
 (function () {
   'use strict';
 
   // Состояние киоска
   const state = {
-    groups: [],
-    teachers: [],
-    selectedGroup: null,
-    groupSchedule: null,
+    currentGroupId: localStorage.getItem('kiosk_group_id') ? parseInt(localStorage.getItem('kiosk_group_id')) : null,
+    currentGroupName: localStorage.getItem('kiosk_group_name') || '',
     currentWeek: 1,
     currentDay: 1,
-    activeCourseFilter: 'all',
-    activeKeyboardTarget: null,
+    subgroup: 0,
+    scheduleData: null,
+    allGroups: [],
+    allTeachers: [],
+    activeKeyboardInput: null,
     idleTimer: null,
-    idleWarningTimer: null,
-    idleCountdownValue: 10,
-    isIdleWarningOpen: false,
-    teachersCache: {},
-    teacherScheduleCache: {}
+    idleCountdownTimer: null,
+    idleSecondsLeft: 10
   };
 
-  // Константы регламента звонков
   const BELLS = [
-    { num: 1, start: '08:30', end: '10:00', startMins: 510, endMins: 600, breakMins: 10 },
-    { num: 2, start: '10:10', end: '11:40', startMins: 610, endMins: 700, breakMins: 30 },
-    { num: 3, start: '12:10', end: '13:40', startMins: 730, endMins: 820, breakMins: 10 },
-    { num: 4, start: '13:50', end: '15:20', startMins: 830, endMins: 920, breakMins: 10 },
-    { num: 5, start: '15:30', end: '17:00', startMins: 930, endMins: 1020, breakMins: 10 },
-    { num: 6, start: '17:10', end: '18:40', startMins: 1030, endMins: 1120, breakMins: 10 },
-    { num: 7, start: '18:50', end: '20:20', startMins: 1130, endMins: 1220, breakMins: 0 }
+    { num: 1, s: 510, e: 600, sStr: '08:30', eStr: '10:00', br: '10 мин' },
+    { num: 2, s: 610, e: 700, sStr: '10:10', eStr: '11:40', br: '30 мин' },
+    { num: 3, s: 730, e: 820, sStr: '12:10', eStr: '13:40', br: '10 мин' },
+    { num: 4, s: 830, e: 920, sStr: '13:50', eStr: '15:20', br: '10 мин' },
+    { num: 5, s: 930, e: 1020, sStr: '15:30', eStr: '17:00', br: '10 мин' },
+    { num: 6, s: 1030, e: 1120, sStr: '17:10', eStr: '18:40', br: '10 мин' },
+    { num: 7, s: 1130, e: 1220, sStr: '18:50', eStr: '20:20', br: 'Конец' }
   ];
 
-  const DAYS_RU = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+  const DAYS_RU = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
-  // DOM элементы
-  const dom = {
-    clock: document.getElementById('kioskClock'),
-    date: document.getElementById('kioskDate'),
-    bellBadge: document.getElementById('kioskBellBadge'),
-    bellText: document.getElementById('kioskBellText'),
-    homeBtn: document.getElementById('kioskHomeBtn'),
-    tabBtns: document.querySelectorAll('.kiosk-tab-btn'),
-    tabContents: document.querySelectorAll('.kiosk-tab-content'),
+  // DOM
+  const el = {
+    clockTime: document.getElementById('kioskClockTime'),
+    clockDate: document.getElementById('kioskClockDate'),
+    liveBellText: document.getElementById('kioskLiveBellText'),
+    resetBtn: document.getElementById('kioskResetBtn'),
 
-    // Группы
-    groupsSelector: document.getElementById('kioskGroupsSelector'),
-    groupsGrid: document.getElementById('kioskGroupsGrid'),
-    groupSearchInput: document.getElementById('kioskGroupSearchInput'),
-    clearGroupSearchBtn: document.getElementById('clearGroupSearchBtn'),
-    openGroupKeyboardBtn: document.getElementById('openGroupKeyboardBtn'),
-    courseChips: document.querySelectorAll('.kiosk-chip'),
+    groupSelectBtn: document.getElementById('groupSelectBtn'),
+    currentGroupName: document.getElementById('currentGroupName'),
+    teachersCatalogBtn: document.getElementById('teachersCatalogBtn'),
+    bellsModalBtn: document.getElementById('bellsModalBtn'),
+    appModalBtn: document.getElementById('appModalBtn'),
+    week1Btn: document.getElementById('week1Btn'),
+    week2Btn: document.getElementById('week2Btn'),
+    daysNav: document.getElementById('daysNav'),
 
-    // Расписание выбранной группы
-    scheduleView: document.getElementById('kioskScheduleView'),
-    backToGroupsBtn: document.getElementById('kioskBackToGroupsBtn'),
-    selectedGroupName: document.getElementById('kioskSelectedGroupName'),
-    selectedGroupCourse: document.getElementById('kioskSelectedGroupCourse'),
-    weekBtn1: document.getElementById('kioskWeekBtn1'),
-    weekBtn2: document.getElementById('kioskWeekBtn2'),
-    dayBtns: document.querySelectorAll('.kiosk-day-btn'),
-    scheduleCards: document.getElementById('kioskScheduleCards'),
+    liveStatusBar: document.getElementById('liveStatusBar'),
+    liveStatusText: document.getElementById('liveStatusText'),
+    scheduleCards: document.getElementById('scheduleCards'),
+    emptyState: document.getElementById('emptyState'),
+    loadingState: document.getElementById('loadingState'),
+    subgroupBtns: document.querySelectorAll('.sg-btn'),
 
-    // Преподаватели
-    teacherSearchInput: document.getElementById('kioskTeacherSearchInput'),
-    clearTeacherSearchBtn: document.getElementById('clearTeacherSearchBtn'),
-    openTeacherKeyboardBtn: document.getElementById('openTeacherKeyboardBtn'),
-    teachersGrid: document.getElementById('kioskTeachersGrid'),
+    // Модалка групп
+    groupModal: document.getElementById('groupModal'),
+    closeModalBtn: document.getElementById('closeModalBtn'),
+    groupSearchInput: document.getElementById('groupSearchInput'),
+    groupsListContainer: document.getElementById('groupsListContainer'),
+    kbGroupBtn: document.getElementById('kbGroupBtn'),
 
-    // Звонки
-    bellsTableBody: document.getElementById('kioskBellsTableBody'),
-
-    // Экранная клавиатура
-    keyboardPanel: document.getElementById('kioskKeyboardPanel'),
-    keyboardTargetLabel: document.getElementById('kioskKeyboardTargetLabel'),
-    closeKeyboardBtn: document.getElementById('closeKeyboardBtn'),
-    keyBackspace: document.getElementById('keyBackspace'),
-    keySpace: document.getElementById('keySpace'),
-    keyClear: document.getElementById('keyClear'),
+    // Модалка каталога преподавателей
+    teachersCatalogModal: document.getElementById('teachersCatalogModal'),
+    closeTeachersCatalogBtn: document.getElementById('closeTeachersCatalogBtn'),
+    teacherSearchInput: document.getElementById('teacherSearchInput'),
+    teachersListContainer: document.getElementById('teachersListContainer'),
+    kbTeacherBtn: document.getElementById('kbTeacherBtn'),
 
     // Модалка преподавателя
-    teacherModal: document.getElementById('kioskTeacherModal'),
-    teacherModalName: document.getElementById('kioskModalTeacherName'),
-    teacherModalPost: document.getElementById('kioskModalTeacherPost'),
-    teacherModalBody: document.getElementById('kioskTeacherModalBody'),
+    teacherModal: document.getElementById('teacherModal'),
     closeTeacherModalBtn: document.getElementById('closeTeacherModalBtn'),
+    closeTeacherBottomBtn: document.getElementById('closeTeacherBottomBtn'),
+    teacherLoading: document.getElementById('teacherLoading'),
+    teacherContent: document.getElementById('teacherContent'),
+    teacherFullName: document.getElementById('teacherFullName'),
+    teacherPost: document.getElementById('teacherPost'),
+    teacherDeptBadge: document.getElementById('teacherDeptBadge'),
+    teacherRoom: document.getElementById('teacherRoom'),
+    teacherRoomRow: document.getElementById('teacherRoomRow'),
+    teacherDegree: document.getElementById('teacherDegree'),
+    teacherDegreeRow: document.getElementById('teacherDegreeRow'),
+    teacherPhone: document.getElementById('teacherPhone'),
+    teacherPhoneRow: document.getElementById('teacherPhoneRow'),
+    teacherEmail: document.getElementById('teacherEmail'),
+    teacherEmailRow: document.getElementById('teacherEmailRow'),
+    teacherDisciplines: document.getElementById('teacherDisciplines'),
+    teacherDisciplinesRow: document.getElementById('teacherDisciplinesRow'),
+    teacherSchedList: document.getElementById('teacherSchedList'),
 
-    // Таймер бездействия
-    idleOverlay: document.getElementById('kioskIdleOverlay'),
-    idleCountdown: document.getElementById('kioskIdleCountdown'),
-    idleContinueBtn: document.getElementById('kioskIdleContinueBtn')
+    // Модалка звонков
+    bellsModal: document.getElementById('bellsModal'),
+    closeBellsModalBtn: document.getElementById('closeBellsModalBtn'),
+    appBellsTableBody: document.getElementById('appBellsTableBody'),
+
+    // Модалка промо
+    appPromoModal: document.getElementById('appPromoModal'),
+    closeAppPromoModalBtn: document.getElementById('closeAppPromoModalBtn'),
+
+    // Экранная клавиатура
+    keyboardDrawer: document.getElementById('kioskKeyboardDrawer'),
+    kioskKbLabel: document.getElementById('kioskKbLabel'),
+    kioskKbHideBtn: document.getElementById('kioskKbHideBtn'),
+    kbKeyBackspace: document.getElementById('kbKeyBackspace'),
+    kbKeySpace: document.getElementById('kbKeySpace'),
+    kbKeyClear: document.getElementById('kbKeyClear'),
+
+    // Диалог бездействия
+    idleDialog: document.getElementById('kioskIdleDialog'),
+    idleSeconds: document.getElementById('kioskIdleSeconds'),
+    continueBtn: document.getElementById('kioskContinueBtn')
   };
+
+  function getRubtsovskDate() {
+    const now = new Date();
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    return new Date(utc + 7 * 3600000);
+  }
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -102,426 +128,383 @@
       .replace(/'/g, '&#039;');
   }
 
-  // Получение времени Рубцовска (UTC+7)
-  function getRubtsovskNow() {
-    const now = new Date();
-    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-    return new Date(utc + 7 * 3600000);
+  function escapeAttr(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/'/g, '&#39;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
-  // Обновление точных часов и звонка в шапке
   function tickClock() {
-    const rNow = getRubtsovskNow();
+    const rNow = getRubtsovskDate();
     const h = String(rNow.getHours()).padStart(2, '0');
     const m = String(rNow.getMinutes()).padStart(2, '0');
-    if (dom.clock) {
-      dom.clock.textContent = `${h}:${m}`;
-    }
-    if (dom.date) {
-      const day = rNow.getDate();
-      const monthStr = MONTHS_RU[rNow.getMonth()];
-      const dayName = DAYS_RU[(rNow.getDay() + 6) % 7];
-      dom.date.textContent = `${day} ${monthStr}, ${dayName}`;
+    if (el.clockTime) el.clockTime.textContent = `${h}:${m}`;
+
+    if (el.clockDate) {
+      const d = rNow.getDate();
+      const mStr = MONTHS_RU[rNow.getMonth()];
+      el.clockDate.textContent = `${d} ${mStr}`;
     }
 
-    updateBellStatus(rNow);
+    updateLiveBellBadge(rNow);
   }
 
-  function updateBellStatus(rNow) {
-    const dayOfWeek = (rNow.getDay() + 6) % 7 + 1; // 1 = Пн ... 7 = Вс
+  function updateLiveBellBadge(rNow) {
     const curMins = rNow.getHours() * 60 + rNow.getMinutes();
+    const dayOfWeek = (rNow.getDay() + 6) % 7 + 1; // 1 = Пн ... 7 = Вс
 
     if (dayOfWeek === 7) {
-      dom.bellBadge.className = 'kiosk-bell-badge';
-      dom.bellBadge.textContent = 'ВЫХОДНОЙ';
-      dom.bellText.textContent = 'Сегодня воскресенье, учебных занятий нет';
+      if (el.liveBellText) el.liveBellText.textContent = 'Воскресенье: выходной';
       return;
     }
 
-    if (curMins < BELLS[0].startMins) {
-      const rem = BELLS[0].startMins - curMins;
-      dom.bellBadge.className = 'kiosk-bell-badge';
-      dom.bellBadge.textContent = 'ДО ЗАНЯТИЙ';
-      dom.bellText.textContent = `1 пара начнется в 08:30 (через ${rem} мин)`;
+    if (curMins < BELLS[0].s) {
+      const rem = BELLS[0].s - curMins;
+      if (el.liveBellText) el.liveBellText.textContent = `1 пара в 08:30 (через ${rem} мин)`;
       return;
     }
 
     for (let i = 0; i < BELLS.length; i++) {
       const b = BELLS[i];
-      if (curMins >= b.startMins && curMins < b.endMins) {
-        const rem = b.endMins - curMins;
-        dom.bellBadge.className = 'kiosk-bell-badge green';
-        dom.bellBadge.textContent = `ИДЕТ ${b.num} ПАРА`;
-        dom.bellText.textContent = `До конца пары: ${rem} мин (окончание в ${b.end})`;
+      if (curMins >= b.s && curMins < b.e) {
+        const rem = b.e - curMins;
+        if (el.liveBellText) el.liveBellText.textContent = `Идет ${b.num} пара (до ${b.eStr}, осталось ${rem} мин)`;
         return;
       }
-
       if (i + 1 < BELLS.length) {
-        const nextB = BELLS[i + 1];
-        if (curMins >= b.endMins && curMins < nextB.startMins) {
-          const rem = nextB.startMins - curMins;
-          dom.bellBadge.className = 'kiosk-bell-badge amber';
-          dom.bellBadge.textContent = 'ПЕРЕМЕНА';
-          dom.bellText.textContent = `До ${nextB.num} пары: ${rem} мин (начало в ${nextB.start})`;
+        const nxt = BELLS[i + 1];
+        if (curMins >= b.e && curMins < nxt.s) {
+          const rem = nxt.s - curMins;
+          if (el.liveBellText) el.liveBellText.textContent = `Перемена (до ${nxt.sStr}, осталось ${rem} мин)`;
           return;
         }
       }
     }
 
-    dom.bellBadge.className = 'kiosk-bell-badge';
-    dom.bellBadge.textContent = 'ОКОНЧЕНЫ';
-    dom.bellText.textContent = 'Все учебные занятия на сегодня завершены';
+    if (el.liveBellText) el.liveBellText.textContent = 'Занятия на сегодня завершены';
   }
 
-  // ВКЛАДКИ
-  function setupTabs() {
-    dom.tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        resetIdleTimer();
-        hideKeyboard();
-        const tabId = btn.getAttribute('data-tab');
-        dom.tabBtns.forEach(b => b.classList.remove('active'));
-        dom.tabContents.forEach(c => c.classList.remove('active'));
+  // ЗАГРУЗКА ДАННЫХ
+  async function init() {
+    tickClock();
+    setInterval(tickClock, 1000);
 
-        btn.classList.add('active');
-        const target = document.getElementById(tabId);
-        if (target) target.classList.add('active');
-      });
-    });
+    setupEventListeners();
+    setupKeyboard();
+    resetIdleTimer();
 
-    if (dom.homeBtn) {
-      dom.homeBtn.addEventListener('click', () => {
-        resetToHome();
-      });
+    await loadGroups();
+    loadTeachersList();
+
+    renderBellsTable();
+
+    if (state.currentGroupId) {
+      loadSchedule();
+    } else if (state.allGroups.length > 0) {
+      selectGroup(state.allGroups[0].id, state.allGroups[0].name);
     }
   }
 
-  function resetToHome() {
-    resetIdleTimer();
-    hideKeyboard();
-    closeTeacherModal();
-    // Переход на первую вкладку
-    dom.tabBtns.forEach((b, idx) => b.classList.toggle('active', idx === 0));
-    dom.tabContents.forEach((c, idx) => c.classList.toggle('active', idx === 0));
-
-    // Сброс в группах
-    dom.groupsSelector.classList.remove('hidden');
-    dom.scheduleView.classList.add('hidden');
-    state.selectedGroup = null;
-
-    if (dom.groupSearchInput) dom.groupSearchInput.value = '';
-    if (dom.clearGroupSearchBtn) dom.clearGroupSearchBtn.classList.add('hidden');
-
-    state.activeCourseFilter = 'all';
-    dom.courseChips.forEach(chip => {
-      chip.classList.toggle('active', chip.getAttribute('data-course') === 'all');
-    });
-    renderGroups();
-
-    // Сброс в преподавателях
-    if (dom.teacherSearchInput) dom.teacherSearchInput.value = '';
-    if (dom.clearTeacherSearchBtn) dom.clearTeacherSearchBtn.classList.add('hidden');
-    renderTeachers();
-  }
-
-  // ЗАГРУЗКА И РЕНДЕР ГРУПП
   async function loadGroups() {
     try {
       const res = await fetch('/api/groups');
-      if (!res.ok) throw new Error('Ошибка загрузки групп');
-      state.groups = await res.json();
-      renderGroups();
+      if (!res.ok) throw new Error('Ошибка сети');
+      state.allGroups = await res.json();
+      renderGroupsList();
     } catch (err) {
       console.error('Ошибка групп:', err);
-      dom.groupsGrid.innerHTML = '<div class="kiosk-loading-box">Не удалось загрузить список групп</div>';
     }
   }
 
-  function renderGroups() {
-    if (!dom.groupsGrid) return;
-    const query = (dom.groupSearchInput?.value || '').trim().toLowerCase();
+  function renderGroupsList(filterText = '') {
+    if (!el.groupsListContainer) return;
+    el.groupsListContainer.innerHTML = '';
 
-    let filtered = state.groups;
+    const query = filterText.toLowerCase().trim();
+    const courses = {};
 
-    if (state.activeCourseFilter !== 'all') {
-      if (state.activeCourseFilter === 'spo') {
-        filtered = filtered.filter(g => g.name.toLowerCase().includes('с') || g.sem > 8);
-      } else {
-        const cNum = parseInt(state.activeCourseFilter);
-        filtered = filtered.filter(g => g.course === cNum);
-      }
-    }
+    state.allGroups.forEach(g => {
+      if (query && !g.name.toLowerCase().includes(query)) return;
+      if (!courses[g.course]) courses[g.course] = [];
+      courses[g.course].push(g);
+    });
 
-    if (query) {
-      filtered = filtered.filter(g => g.name.toLowerCase().includes(query));
-    }
+    const courseKeys = Object.keys(courses).sort((a, b) => parseInt(a) - parseInt(b));
 
-    if (filtered.length === 0) {
-      dom.groupsGrid.innerHTML = '<div class="kiosk-loading-box">Группы не найдены</div>';
+    if (courseKeys.length === 0) {
+      el.groupsListContainer.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--hint-color);">Группы не найдены</div>';
       return;
     }
 
-    let html = '';
-    for (const g of filtered) {
-      html += `
-        <div class="kiosk-group-tile" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" data-course="${g.course}">
-          <span class="kiosk-group-name">${escapeHtml(g.name)}</span>
-          <span class="kiosk-group-sem">${g.course} курс (${g.sem} семестр)</span>
-        </div>
-      `;
-    }
+    courseKeys.forEach(c => {
+      const header = document.createElement('div');
+      header.className = 'course-section-title';
+      header.textContent = `${c} КУРС`;
+      el.groupsListContainer.appendChild(header);
 
-    dom.groupsGrid.innerHTML = html;
-
-    // Навешиваем клик на плитки
-    dom.groupsGrid.querySelectorAll('.kiosk-group-tile').forEach(tile => {
-      tile.addEventListener('click', () => {
-        resetIdleTimer();
-        const gId = parseInt(tile.getAttribute('data-group-id'));
-        const gName = tile.getAttribute('data-group-name');
-        const gCourse = tile.getAttribute('data-course');
-        openGroupSchedule(gId, gName, gCourse);
+      courses[c].forEach(g => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'group-item-btn';
+        btn.textContent = g.name;
+        btn.addEventListener('click', () => {
+          resetIdleTimer();
+          selectGroup(g.id, g.name);
+          closeModal();
+        });
+        el.groupsListContainer.appendChild(btn);
       });
     });
   }
 
-  // ФИЛЬТРЫ КУРСОВ И ПОИСК ГРУПП
-  function setupGroupFilters() {
-    dom.courseChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        resetIdleTimer();
-        dom.courseChips.forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        state.activeCourseFilter = chip.getAttribute('data-course');
-        renderGroups();
-      });
-    });
+  function selectGroup(groupId, groupName) {
+    state.currentGroupId = groupId;
+    state.currentGroupName = groupName;
+    el.currentGroupName.textContent = groupName;
 
-    if (dom.clearGroupSearchBtn) {
-      dom.clearGroupSearchBtn.addEventListener('click', () => {
-        resetIdleTimer();
-        dom.groupSearchInput.value = '';
-        dom.clearGroupSearchBtn.classList.add('hidden');
-        renderGroups();
-      });
-    }
+    localStorage.setItem('kiosk_group_id', groupId);
+    localStorage.setItem('kiosk_group_name', groupName);
 
-    if (dom.openGroupKeyboardBtn) {
-      dom.openGroupKeyboardBtn.addEventListener('click', () => {
-        showKeyboard(dom.groupSearchInput, 'Поиск учебной группы');
-      });
-    }
-
-    if (dom.groupSearchInput) {
-      dom.groupSearchInput.addEventListener('click', () => {
-        showKeyboard(dom.groupSearchInput, 'Поиск учебной группы');
-      });
-    }
+    loadSchedule();
   }
 
-  // ПРОСМОТР РАСПИСАНИЯ ГРУППЫ
-  async function openGroupSchedule(groupId, groupName, course) {
-    state.selectedGroup = { id: groupId, name: groupName, course: course };
-    dom.selectedGroupName.textContent = groupName;
-    dom.selectedGroupCourse.textContent = `${course} курс`;
+  async function loadSchedule() {
+    if (!state.currentGroupId) return;
 
-    dom.groupsSelector.classList.add('hidden');
-    dom.scheduleView.classList.remove('hidden');
-    dom.scheduleCards.innerHTML = '<div class="kiosk-loading-box"><div class="kiosk-spinner"></div><span>Загрузка расписания...</span></div>';
+    el.loadingState.classList.remove('hidden');
+    el.emptyState.classList.add('hidden');
+    el.scheduleCards.innerHTML = '';
+    el.liveStatusBar.classList.add('hidden');
 
     try {
-      const res = await fetch(`/api/schedule?group_id=${groupId}`);
-      if (!res.ok) throw new Error('Ошибка сети');
-      state.groupSchedule = await res.json();
+      const res = await fetch(`/api/schedule?group_id=${state.currentGroupId}`);
+      if (!res.ok) throw new Error('Ошибка загрузки расписания');
+      state.scheduleData = await res.json();
 
-      const siteWeek = parseInt(state.groupSchedule.weekNumber || 1);
+      const siteWeek = parseInt(state.scheduleData.weekNumber || 1);
+      const rDate = getRubtsovskDate();
+      let rDay = (rDate.getDay() + 6) % 7 + 1;
+      if (rDay > 6) rDay = 1;
+
       state.currentWeek = siteWeek;
-
-      const rNow = getRubtsovskNow();
-      let rDay = (rNow.getDay() + 6) % 7 + 1; // 1 = Пн ... 6 = Сб
-      if (rDay > 6) rDay = 1; // Воскресенье переключаем на Понедельник
       state.currentDay = rDay;
 
-      updateWeekButtonsUI();
-      updateDaysNavUI();
-      renderGroupSchedule();
+      updateWeekUI();
+      updateDaysUI();
+      renderSchedule();
     } catch (err) {
-      console.error('Ошибка загрузки расписания:', err);
-      dom.scheduleCards.innerHTML = '<div class="kiosk-loading-box">Не удалось получить расписание группы</div>';
+      console.error('Ошибка расписания:', err);
+      el.loadingState.classList.add('hidden');
+      el.emptyState.classList.remove('hidden');
     }
   }
 
-  if (dom.backToGroupsBtn) {
-    dom.backToGroupsBtn.addEventListener('click', () => {
-      resetIdleTimer();
-      dom.scheduleView.classList.add('hidden');
-      dom.groupsSelector.classList.remove('hidden');
-      state.selectedGroup = null;
+  function updateWeekUI() {
+    el.week1Btn.classList.toggle('active', state.currentWeek === 1);
+    el.week2Btn.classList.toggle('active', state.currentWeek === 2);
+  }
+
+  function updateDaysUI() {
+    const rDate = getRubtsovskDate();
+    const todayNum = (rDate.getDay() + 6) % 7 + 1;
+
+    document.querySelectorAll('.day-chip').forEach(chip => {
+      const d = parseInt(chip.getAttribute('data-day'));
+      chip.classList.toggle('active', d === state.currentDay);
+      chip.classList.toggle('today-badge', d === todayNum);
     });
   }
 
-  function updateWeekButtonsUI() {
-    dom.weekBtn1.classList.toggle('active', state.currentWeek === 1);
-    dom.weekBtn2.classList.toggle('active', state.currentWeek === 2);
+  function renderTeacherHtml(teacher, post) {
+    if (!teacher) return '';
+    const cleanTeacher = teacher.trim();
+    const cleanPost = (post || '').trim();
+    const postDisplay = cleanPost ? ` (${cleanPost})` : '';
+    return `<button type="button" class="teacher-btn-chip" data-teacher="${escapeAttr(cleanTeacher)}" data-post="${escapeAttr(cleanPost)}" title="Профиль преподавателя">
+      <svg class="teacher-icon" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span class="teacher-name">${escapeHtml(cleanTeacher)}</span>${postDisplay ? `<span class="teacher-post-hint">${escapeHtml(postDisplay)}</span>` : ''}
+      <svg class="teacher-arrow" viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+    </button>`;
   }
 
-  dom.weekBtn1.addEventListener('click', () => {
-    resetIdleTimer();
-    state.currentWeek = 1;
-    updateWeekButtonsUI();
-    renderGroupSchedule();
-  });
+  // Отрисовка расписания (в точности как в Telegram Mini App)
+  function renderSchedule() {
+    el.loadingState.classList.add('hidden');
+    if (!state.scheduleData) return;
 
-  dom.weekBtn2.addEventListener('click', () => {
-    resetIdleTimer();
-    state.currentWeek = 2;
-    updateWeekButtonsUI();
-    renderGroupSchedule();
-  });
-
-  function updateDaysNavUI() {
-    const rNow = getRubtsovskNow();
-    const todayDay = (rNow.getDay() + 6) % 7 + 1;
-
-    dom.dayBtns.forEach(btn => {
-      const dNum = parseInt(btn.getAttribute('data-day'));
-      btn.classList.toggle('active', dNum === state.currentDay);
-      btn.classList.toggle('today', dNum === todayDay);
-    });
-  }
-
-  dom.dayBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      resetIdleTimer();
-      state.currentDay = parseInt(btn.getAttribute('data-day'));
-      updateDaysNavUI();
-      renderGroupSchedule();
-    });
-  });
-
-  function renderGroupSchedule() {
-    if (!state.groupSchedule) return;
-
-    const weekData = state.groupSchedule.scheduleData?.[String(state.currentWeek)] || {};
+    const weekData = state.scheduleData.scheduleData?.[String(state.currentWeek)] || {};
     const dayData = weekData[String(state.currentDay)] || {};
-    const paraTimes = state.groupSchedule.paraTimes || {};
 
+    const rDate = getRubtsovskDate();
+    const todayDay = (rDate.getDay() + 6) % 7 + 1;
+    const siteWeek = parseInt(state.scheduleData.weekNumber || 1);
+    const isToday = (state.currentWeek === siteWeek && state.currentDay === todayDay);
+
+    const curMins = rDate.getHours() * 60 + rDate.getMinutes();
     const sortedParas = Object.keys(dayData).sort((a, b) => parseInt(a) - parseInt(b));
 
     if (sortedParas.length === 0) {
-      dom.scheduleCards.innerHTML = '<div class="kiosk-loading-box">В этот день занятий по расписанию нет</div>';
+      el.scheduleCards.innerHTML = '';
+      el.emptyState.classList.remove('hidden');
+      el.liveStatusBar.classList.add('hidden');
       return;
     }
 
-    const rNow = getRubtsovskNow();
-    const curMins = rNow.getHours() * 60 + rNow.getMinutes();
-    const isToday = (
-      parseInt(state.groupSchedule.weekNumber || 1) === state.currentWeek &&
-      ((rNow.getDay() + 6) % 7 + 1) === state.currentDay
-    );
+    el.emptyState.classList.add('hidden');
 
+    // Расчет статуса дня
+    if (isToday) {
+      let ongoing = null;
+      let nextP = null;
+
+      for (const pStr of sortedParas) {
+        const pN = parseInt(pStr);
+        const b = BELLS.find(x => x.num === pN);
+        if (b) {
+          if (b.s <= curMins && curMins < b.e) {
+            ongoing = { pN, rem: b.e - curMins, eStr: b.eStr };
+            break;
+          } else if (curMins < b.s && !nextP) {
+            nextP = { pN, rem: b.s - curMins, sStr: b.sStr };
+          }
+        }
+      }
+
+      if (ongoing) {
+        el.liveStatusText.textContent = `Идет ${ongoing.pN} пара (до ${ongoing.eStr}, осталось ${ongoing.rem} мин)`;
+        el.liveStatusBar.classList.remove('hidden');
+      } else if (nextP) {
+        const firstB = BELLS.find(x => x.num === parseInt(sortedParas[0]));
+        if (firstB && curMins < firstB.s) {
+          el.liveStatusText.textContent = `Занятия не начались. 1 пара в ${firstB.sStr} (через ${firstB.s - curMins} мин)`;
+        } else {
+          el.liveStatusText.textContent = `Перемена (до ${nextP.sStr}, осталось ${nextP.rem} мин). Следующая: ${nextP.pN} пара`;
+        }
+        el.liveStatusBar.classList.remove('hidden');
+      } else {
+        el.liveStatusText.textContent = 'Все пары на сегодня завершены';
+        el.liveStatusBar.classList.remove('hidden');
+      }
+    } else {
+      el.liveStatusBar.classList.add('hidden');
+    }
+
+    // Генерация карточек пар
     let html = '';
+    let foundNext = false;
 
     for (const pStr of sortedParas) {
       const item = dayData[pStr];
-      const pNum = parseInt(pStr);
+      const pN = parseInt(pStr);
+      const b = BELLS.find(x => x.num === pN) || { s: 0, e: 0, sStr: '', eStr: '' };
+      const timeDisplay = b.sStr ? `${b.sStr} - ${b.eStr}` : '';
 
-      // Время пары
-      let timeDisplay = '';
-      const bDef = BELLS.find(b => b.num === pNum);
-      if (bDef) {
-        timeDisplay = `${bDef.start} - ${bDef.end}`;
+      let statusClass = '';
+      let badgeHtml = '';
+
+      if (isToday) {
+        if (curMins >= b.s && curMins < b.e) {
+          statusClass = 'is-ongoing';
+          badgeHtml = '<span class="para-badge badge-ongoing">Идет сейчас</span>';
+        } else if (curMins < b.s && !foundNext) {
+          statusClass = 'is-next';
+          badgeHtml = '<span class="para-badge badge-next">Следующая</span>';
+          foundNext = true;
+        } else if (curMins >= b.e) {
+          badgeHtml = '<span class="para-badge badge-completed">Завершена</span>';
+        }
       }
 
-      const isCurrentNow = isToday && bDef && (curMins >= bDef.startMins && curMins < bDef.endMins);
-      const activeCardClass = isCurrentNow ? 'active-now' : '';
+      const isDouble = item.isDouble;
+      let bodyHtml = '';
 
-      if (!item.isDouble) {
+      if (!isDouble) {
         const subj = item.subj || item.subj1 || '';
         const type = item.type || item.type1 || '';
         const aud = item.aud || item.aud1 || '';
         const teacher = item.teacher || item.teacher1 || '';
         const teachPost = item.teachPost || item.teachPost1 || '';
 
-        const typeBadge = type ? `<span class="kiosk-para-type">${escapeHtml(type)}</span>` : '';
-        const audBadge = aud ? `<span class="kiosk-para-aud-badge">ауд. ${escapeHtml(aud)}</span>` : '';
-        const teacherBtn = teacher ? `
-          <button type="button" class="kiosk-para-teacher-chip" data-teacher="${escapeHtml(teacher)}" data-post="${escapeHtml(teachPost)}">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            <span>${escapeHtml(teacher)}${teachPost ? ` (${escapeHtml(teachPost)})` : ''}</span>
-          </button>
-        ` : '';
-
-        html += `
-          <div class="kiosk-para-card ${activeCardClass}">
-            <div class="kiosk-para-time-col">
-              <span class="kiosk-para-num">${pNum} пара</span>
-              <span class="kiosk-para-clock">${escapeHtml(timeDisplay)}</span>
-            </div>
-            <div class="kiosk-para-info-col">
-              <div class="kiosk-para-subj-row">
-                <span class="kiosk-para-subj">${escapeHtml(subj)}</span>
-                ${typeBadge}
-              </div>
-              ${teacherBtn}
-            </div>
-            <div class="kiosk-para-aud-col">
-              ${audBadge}
-            </div>
+        bodyHtml = `
+          <div class="para-subject">${escapeHtml(subj)}</div>
+          <div class="para-meta">
+            ${aud ? `<span class="aud-pill">ауд. ${escapeHtml(aud)}</span>` : ''}
+            ${type ? `<span class="type-pill">${escapeHtml(type)}</span>` : ''}
+            ${renderTeacherHtml(teacher, teachPost)}
           </div>
         `;
       } else {
-        // Две подгруппы
-        let sgHtml = '';
-        for (let sg = 1; sg <= 2; sg++) {
-          const subj = item[`subj${sg}`];
-          if (!subj) continue;
-          const type = item[`type${sg}`] || '';
-          const aud = item[`aud${sg}`] || '';
-          const teacher = item[`teacher${sg}`] || '';
-          const teachPost = item[`teachPost${sg}`] || '';
+        // Двойная пара
+        let sub1Html = '';
+        let sub2Html = '';
 
-          const typeTag = type ? `<span class="kiosk-para-type">${escapeHtml(type)}</span>` : '';
-          const audTag = aud ? `<span class="kiosk-para-aud-badge" style="font-size: 1rem; padding: 4px 10px;">ауд. ${escapeHtml(aud)}</span>` : '';
-          const teacherTag = teacher ? `
-            <button type="button" class="kiosk-para-teacher-chip" data-teacher="${escapeHtml(teacher)}" data-post="${escapeHtml(teachPost)}">
-              <span>${escapeHtml(teacher)}</span>
-            </button>
-          ` : '';
-
-          sgHtml += `
-            <div class="kiosk-subgroup-row">
-              <div>
-                <span class="kiosk-subgroup-tag">${sg} п/г:</span>
-                <strong>${escapeHtml(subj)}</strong> ${typeTag}
-                <div style="margin-top: 4px;">${teacherTag}</div>
+        if (state.subgroup === 0 || state.subgroup === 1) {
+          const s1 = item.subj1 || '';
+          const t1 = item.type1 || '';
+          const a1 = item.aud1 || '';
+          const tch1 = item.teacher1 || '';
+          const pst1 = item.teachPost1 || '';
+          if (s1) {
+            sub1Html = `
+              <div class="subgroup-block">
+                <div class="subgroup-label">1 подгруппа:</div>
+                <div class="para-subject">${escapeHtml(s1)}</div>
+                <div class="para-meta">
+                  ${a1 ? `<span class="aud-pill">ауд. ${escapeHtml(a1)}</span>` : ''}
+                  ${t1 ? `<span class="type-pill">${escapeHtml(t1)}</span>` : ''}
+                  ${renderTeacherHtml(tch1, pst1)}
+                </div>
               </div>
-              <div>${audTag}</div>
-            </div>
-          `;
+            `;
+          }
         }
 
-        html += `
-          <div class="kiosk-para-card ${activeCardClass}">
-            <div class="kiosk-para-time-col">
-              <span class="kiosk-para-num">${pNum} пара</span>
-              <span class="kiosk-para-clock">${escapeHtml(timeDisplay)}</span>
-            </div>
-            <div class="kiosk-para-info-col">
-              <div class="kiosk-subgroups-wrapper">
-                ${sgHtml}
+        if (state.subgroup === 0 || state.subgroup === 2) {
+          const s2 = item.subj2 || '';
+          const t2 = item.type2 || '';
+          const a2 = item.aud2 || '';
+          const tch2 = item.teacher2 || '';
+          const pst2 = item.teachPost2 || '';
+          if (s2) {
+            sub2Html = `
+              <div class="subgroup-block">
+                <div class="subgroup-label">2 подгруппа:</div>
+                <div class="para-subject">${escapeHtml(s2)}</div>
+                <div class="para-meta">
+                  ${a2 ? `<span class="aud-pill">ауд. ${escapeHtml(a2)}</span>` : ''}
+                  ${t2 ? `<span class="type-pill">${escapeHtml(t2)}</span>` : ''}
+                  ${renderTeacherHtml(tch2, pst2)}
+                </div>
               </div>
-            </div>
-            <div class="kiosk-para-aud-col"></div>
-          </div>
-        `;
+            `;
+          }
+        }
+
+        bodyHtml = sub1Html + sub2Html;
       }
+
+      html += `
+        <article class="para-card ${statusClass}">
+          <div class="para-header">
+            <div class="para-num-time">
+              <span class="para-num">${pN} пара</span>
+              <span>${timeDisplay}</span>
+            </div>
+            ${badgeHtml}
+          </div>
+          ${bodyHtml}
+        </article>
+      `;
     }
 
-    dom.scheduleCards.innerHTML = html;
+    el.scheduleCards.innerHTML = html;
 
-    // Навешиваем клик на карточки преподавателей
-    dom.scheduleCards.querySelectorAll('.kiosk-para-teacher-chip').forEach(btn => {
+    // Навешиваем клики на чипы преподавателей
+    el.scheduleCards.querySelectorAll('.teacher-btn-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         resetIdleTimer();
@@ -533,374 +516,400 @@
   }
 
   // КАТАЛОГ ПРЕПОДАВАТЕЛЕЙ
-  async function loadTeachers() {
+  async function loadTeachersList() {
     try {
       const res = await fetch('/api/teachers');
-      if (!res.ok) throw new Error('Ошибка загрузки преподавателей');
-      state.teachers = await res.json();
-      renderTeachers();
-    } catch (err) {
-      console.error('Ошибка преподавателей:', err);
-      dom.teachersGrid.innerHTML = '<div class="kiosk-loading-box">Не удалось загрузить список преподавателей</div>';
+      if (res.ok) {
+        state.allTeachers = await res.json();
+        renderTeachersCatalog();
+      }
+    } catch (e) {
+      console.warn('Ошибка загрузки преподавателей:', e);
     }
   }
 
-  function renderTeachers() {
-    if (!dom.teachersGrid) return;
-    const query = (dom.teacherSearchInput?.value || '').trim().toLowerCase();
+  function renderTeachersCatalog(filterText = '') {
+    if (!el.teachersListContainer) return;
+    el.teachersListContainer.innerHTML = '';
+    const q = filterText.toLowerCase().trim();
 
-    let filtered = state.teachers;
-    if (query) {
-      filtered = filtered.filter(t => 
-        (t.full_name && t.full_name.toLowerCase().includes(query)) ||
-        (t.short_name && t.short_name.toLowerCase().includes(query)) ||
-        (t.department && t.department.toLowerCase().includes(query)) ||
-        (t.disciplines && t.disciplines.toLowerCase().includes(query))
-      );
-    }
+    const filtered = state.allTeachers.filter(t => {
+      if (!q) return true;
+      return (t.full_name && t.full_name.toLowerCase().includes(q)) ||
+             (t.short_name && t.short_name.toLowerCase().includes(q)) ||
+             (t.department && t.department.toLowerCase().includes(q)) ||
+             (t.disciplines && t.disciplines.toLowerCase().includes(q));
+    });
 
     if (filtered.length === 0) {
-      dom.teachersGrid.innerHTML = '<div class="kiosk-loading-box">Преподаватели не найдены</div>';
+      el.teachersListContainer.innerHTML = '<div style="text-align:center; padding: 24px; color: var(--hint-color);">Преподаватели не найдены</div>';
       return;
     }
 
-    let html = '';
-    for (const t of filtered) {
-      html += `
-        <div class="kiosk-teacher-tile" data-teacher-name="${escapeHtml(t.full_name || t.short_name)}" data-post="${escapeHtml(t.post || '')}">
-          <div>
-            <div class="kiosk-teacher-name">${escapeHtml(t.full_name || t.short_name)}</div>
-            <div class="kiosk-teacher-post">${escapeHtml(t.post || 'Преподаватель')}</div>
-          </div>
-          <div class="kiosk-teacher-dept">${escapeHtml(t.department || 'РИИ АлтГТУ')}</div>
+    filtered.forEach(t => {
+      const item = document.createElement('div');
+      item.className = 'teachers-catalog-item';
+      item.innerHTML = `
+        <div class="teachers-catalog-avatar">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <div class="teachers-catalog-info">
+          <div class="teachers-catalog-name">${escapeHtml(t.full_name || t.short_name)}</div>
+          <div class="teachers-catalog-meta">${escapeHtml(t.post || 'Преподаватель')} ${t.department ? `- ${escapeHtml(t.department)}` : ''}</div>
         </div>
       `;
-    }
-
-    dom.teachersGrid.innerHTML = html;
-
-    dom.teachersGrid.querySelectorAll('.kiosk-teacher-tile').forEach(tile => {
-      tile.addEventListener('click', () => {
+      item.addEventListener('click', () => {
         resetIdleTimer();
-        const tName = tile.getAttribute('data-teacher-name');
-        const tPost = tile.getAttribute('data-post');
-        openTeacherModal(tName, tPost);
+        el.teachersCatalogModal.classList.add('hidden');
+        openTeacherModal(t.full_name || t.short_name, t.post);
       });
+      el.teachersListContainer.appendChild(item);
     });
   }
 
-  function setupTeacherFilters() {
-    if (dom.clearTeacherSearchBtn) {
-      dom.clearTeacherSearchBtn.addEventListener('click', () => {
-        resetIdleTimer();
-        dom.teacherSearchInput.value = '';
-        dom.clearTeacherSearchBtn.classList.add('hidden');
-        renderTeachers();
-      });
-    }
-
-    if (dom.openTeacherKeyboardBtn) {
-      dom.openTeacherKeyboardBtn.addEventListener('click', () => {
-        showKeyboard(dom.teacherSearchInput, 'Поиск преподавателя');
-      });
-    }
-
-    if (dom.teacherSearchInput) {
-      dom.teacherSearchInput.addEventListener('click', () => {
-        showKeyboard(dom.teacherSearchInput, 'Поиск преподавателя');
-      });
-    }
-  }
-
-  // МОДАЛЬНОЕ ОКНО ПРЕПОДАВАТЕЛЯ С РАСПИСАНИЕМ
-  async function openTeacherModal(teacherName, post) {
-    if (!dom.teacherModal) return;
-    dom.teacherModalName.textContent = teacherName;
-    dom.teacherModalPost.textContent = post || 'Преподаватель';
-    dom.teacherModalBody.innerHTML = '<div class="kiosk-loading-box"><div class="kiosk-spinner"></div><span>Загрузка профиля и расписания занятий...</span></div>';
-    dom.teacherModal.classList.remove('hidden');
+  // МОДАЛКА ПРЕПОДАВАТЕЛЯ С РАСПИСАНИЕМ
+  async function openTeacherModal(name, postHint = '') {
+    el.teacherModal.classList.remove('hidden');
+    el.teacherLoading.classList.remove('hidden');
+    el.teacherContent.classList.add('hidden');
 
     try {
-      // Параллельно загружаем информацию о преподавателе и расписание
       const [infoRes, schedRes] = await Promise.all([
-        fetch(`/api/teacher?name=${encodeURIComponent(teacherName)}`),
-        fetch(`/api/kiosk/teacher-schedule?name=${encodeURIComponent(teacherName)}`)
+        fetch(`/api/teacher?name=${encodeURIComponent(name)}&post=${encodeURIComponent(postHint)}`),
+        fetch(`/api/kiosk/teacher-schedule?name=${encodeURIComponent(name)}`)
       ]);
 
-      const infoData = infoRes.ok ? await infoRes.json() : {};
-      const schedData = schedRes.ok ? await schedRes.json() : {};
+      const info = infoRes.ok ? await infoRes.json() : {};
+      const sched = schedRes.ok ? await schedRes.json() : {};
 
-      renderTeacherModalContent(infoData, schedData, teacherName, post);
-    } catch (err) {
-      console.error('Ошибка загрузки данных преподавателя:', err);
-      dom.teacherModalBody.innerHTML = '<div class="kiosk-loading-box">Не удалось загрузить данные преподавателя</div>';
+      el.teacherFullName.textContent = info.full_name || name;
+      el.teacherPost.textContent = info.post || postHint || 'Преподаватель';
+
+      if (info.department) {
+        el.teacherDeptBadge.textContent = info.department;
+        el.teacherDeptBadge.classList.remove('hidden');
+      } else {
+        el.teacherDeptBadge.classList.add('hidden');
+      }
+
+      setRow(el.teacherRoomRow, el.teacherRoom, info.room);
+      setRow(el.teacherDegreeRow, el.teacherDegree, info.degree);
+      setRow(el.teacherPhoneRow, el.teacherPhone, info.phone);
+      setRow(el.teacherEmailRow, el.teacherEmail, info.email);
+      setRow(el.teacherDisciplinesRow, el.teacherDisciplines, info.disciplines);
+
+      // Расписание преподавателя
+      renderTeacherSchedule(sched.schedule);
+
+      el.teacherLoading.classList.add('hidden');
+      el.teacherContent.classList.remove('hidden');
+    } catch (e) {
+      console.error('Ошибка преподавателя:', e);
+      el.teacherLoading.classList.add('hidden');
     }
   }
 
-  function renderTeacherModalContent(info, schedObj, teacherName, post) {
-    const fullName = info.full_name || teacherName;
-    const finalPost = info.post || post || 'Преподаватель';
-    const dept = info.department || 'Рубцовский индустриальный институт';
-    const disc = info.disciplines || '';
-    const email = info.email || '';
-    const phone = info.phone || '';
-
-    let detailsHtml = `
-      <div style="background: rgba(255,255,255,0.04); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 6px;">${escapeHtml(fullName)}</div>
-        <div style="color: var(--accent-cyan); font-weight: 600; margin-bottom: 8px;">${escapeHtml(finalPost)} - ${escapeHtml(dept)}</div>
-        ${disc ? `<div style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 6px;"><strong>Дисциплины:</strong> ${escapeHtml(disc)}</div>` : ''}
-        ${email ? `<div style="color: var(--text-secondary); font-size: 0.95rem;"><strong>Email:</strong> ${escapeHtml(email)}</div>` : ''}
-        ${phone ? `<div style="color: var(--text-secondary); font-size: 0.95rem;"><strong>Телефон:</strong> ${escapeHtml(phone)}</div>` : ''}
-      </div>
-    `;
-
-    // Расписание занятий преподавателя
-    let schedHtml = '<h4 style="font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 12px;">Расписание занятий преподавателя</h4>';
-
-    const sched = schedObj.schedule;
-    if (!sched) {
-      schedHtml += '<div style="color: var(--text-muted);">Занятия преподавателя не найдены в базе</div>';
+  function setRow(rowEl, valEl, val) {
+    if (val && String(val).trim()) {
+      valEl.textContent = val;
+      rowEl.classList.remove('hidden');
     } else {
-      schedHtml += `
-        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-          <button type="button" class="kiosk-week-btn active" id="tModalWeek1" style="background: var(--accent-cyan); color: #0b1120;">1: Числитель</button>
-          <button type="button" class="kiosk-week-btn" id="tModalWeek2" style="background: rgba(255,255,255,0.06); color: var(--text-secondary);">2: Знаменатель</button>
+      rowEl.classList.add('hidden');
+    }
+  }
+
+  function renderTeacherSchedule(sched) {
+    if (!el.teacherSchedList) return;
+    el.teacherSchedList.innerHTML = '';
+
+    if (!sched) {
+      el.teacherSchedList.innerHTML = '<div style="color: var(--hint-color); padding: 8px 0;">Занятия не найдены в общем расписании</div>';
+      return;
+    }
+
+    const wData = sched[String(state.currentWeek)] || {};
+    let blocks = '';
+
+    for (let d = 1; d <= 6; d++) {
+      const dayParas = wData[String(d)] || [];
+      if (dayParas.length === 0) continue;
+
+      let parasList = '';
+      for (const p of dayParas) {
+        parasList += `
+          <div class="teacher-sched-item">
+            <div>
+              <strong>${p.num} пара (${escapeHtml(p.time)})</strong>: ${escapeHtml(p.subject)}
+              <span style="color: var(--btn-color); font-weight: 700; margin-left: 6px;">Группа: ${escapeHtml(p.group)}</span>
+            </div>
+            ${p.aud ? `<span class="aud-pill">ауд. ${escapeHtml(p.aud)}</span>` : ''}
+          </div>
+        `;
+      }
+
+      blocks += `
+        <div class="teacher-sched-day-block">
+          <div class="teacher-sched-day-title">${DAYS_RU[d-1]}</div>
+          ${parasList}
         </div>
-        <div id="tModalSchedList"></div>
       `;
     }
 
-    dom.teacherModalBody.innerHTML = detailsHtml + schedHtml;
-
-    if (sched) {
-      let tWeek = 1;
-      const renderTeacherWeek = (w) => {
-        const listEl = document.getElementById('tModalSchedList');
-        if (!listEl) return;
-        const wData = sched[String(w)] || {};
-        let dayBlocks = '';
-
-        for (let d = 1; d <= 6; d++) {
-          const dayParas = wData[String(d)] || [];
-          if (dayParas.length === 0) continue;
-
-          let parasList = '';
-          for (const p of dayParas) {
-            parasList += `
-              <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;">
-                <div>
-                  <strong>${p.num} пара (${escapeHtml(p.time)})</strong>: ${escapeHtml(p.subject)} (${escapeHtml(p.type || '')})
-                  <span style="color: var(--accent-cyan); font-weight: 700; margin-left: 8px;">Группа: ${escapeHtml(p.group)}</span>
-                </div>
-                <div>
-                  ${p.aud ? `<span class="kiosk-para-aud-badge" style="font-size: 0.9rem; padding: 3px 8px;">ауд. ${escapeHtml(p.aud)}</span>` : ''}
-                </div>
-              </div>
-            `;
-          }
-
-          dayBlocks += `
-            <div style="margin-bottom: 14px;">
-              <div style="color: var(--accent-cyan); font-weight: 800; font-size: 1rem; margin-bottom: 6px;">${DAYS_RU[d-1]}</div>
-              ${parasList}
-            </div>
-          `;
-        }
-
-        listEl.innerHTML = dayBlocks || '<div style="color: var(--text-muted); padding: 10px;">В эту неделю занятий нет</div>';
-      };
-
-      renderTeacherWeek(1);
-
-      const w1Btn = document.getElementById('tModalWeek1');
-      const w2Btn = document.getElementById('tModalWeek2');
-      if (w1Btn && w2Btn) {
-        w1Btn.addEventListener('click', () => {
-          tWeek = 1;
-          w1Btn.style.background = 'var(--accent-cyan)';
-          w1Btn.style.color = '#0b1120';
-          w2Btn.style.background = 'rgba(255,255,255,0.06)';
-          w2Btn.style.color = 'var(--text-secondary)';
-          renderTeacherWeek(1);
-        });
-        w2Btn.addEventListener('click', () => {
-          tWeek = 2;
-          w2Btn.style.background = 'var(--accent-cyan)';
-          w2Btn.style.color = '#0b1120';
-          w1Btn.style.background = 'rgba(255,255,255,0.06)';
-          w1Btn.style.color = 'var(--text-secondary)';
-          renderTeacherWeek(2);
-        });
-      }
-    }
-  }
-
-  function closeTeacherModal() {
-    if (dom.teacherModal) {
-      dom.teacherModal.classList.add('hidden');
-    }
-  }
-
-  if (dom.closeTeacherModalBtn) {
-    dom.closeTeacherModalBtn.addEventListener('click', closeTeacherModal);
+    el.teacherSchedList.innerHTML = blocks || '<div style="color: var(--hint-color); padding: 8px 0;">На этой неделе занятий нет</div>';
   }
 
   // ТАБЛИЦА ЗВОНКОВ
   function renderBellsTable() {
-    if (!dom.bellsTableBody) return;
-    const rNow = getRubtsovskNow();
+    if (!el.appBellsTableBody) return;
+    const rNow = getRubtsovskDate();
     const curMins = rNow.getHours() * 60 + rNow.getMinutes();
 
     let rows = '';
     for (const b of BELLS) {
-      const isCurrent = (curMins >= b.startMins && curMins < b.endMins);
-      const activeClass = isCurrent ? 'active-row' : '';
-      const statusText = isCurrent ? 'ИДЕТ СЕЙЧАС' : '';
-      const breakText = b.breakMins > 0 ? `${b.breakMins} мин` : 'Окончание пар';
+      const isCur = (curMins >= b.s && curMins < b.e);
+      const rowClass = isCur ? 'active-bell' : '';
+      const statusStr = isCur ? 'Идет сейчас' : '';
 
       rows += `
-        <tr class="${activeClass}">
+        <tr class="${rowClass}">
           <td><strong>${b.num} пара</strong></td>
-          <td>${b.start} - ${b.end}</td>
-          <td>${breakText}</td>
-          <td><span style="color: var(--accent-green); font-weight: 800;">${statusText}</span></td>
+          <td>${b.sStr} - ${b.eStr}</td>
+          <td>${b.br}</td>
+          <td><strong style="color: var(--ongoing-color);">${statusStr}</strong></td>
         </tr>
       `;
     }
 
-    dom.bellsTableBody.innerHTML = rows;
+    el.appBellsTableBody.innerHTML = rows;
   }
 
-  // ЭКРАННАЯ ВИРТУАЛЬНАЯ КЛАВИАТУРА
-  function showKeyboard(targetInput, label) {
-    state.activeKeyboardTarget = targetInput;
-    if (dom.keyboardTargetLabel) dom.keyboardTargetLabel.textContent = label || 'Ввод текста';
-    if (dom.keyboardPanel) dom.keyboardPanel.classList.remove('hidden');
-  }
-
-  function hideKeyboard() {
-    state.activeKeyboardTarget = null;
-    if (dom.keyboardPanel) dom.keyboardPanel.classList.add('hidden');
-  }
-
+  // ЭКРАННАЯ КЛАВИАТУРА
   function setupKeyboard() {
-    if (dom.closeKeyboardBtn) {
-      dom.closeKeyboardBtn.addEventListener('click', hideKeyboard);
+    if (el.kioskKbHideBtn) {
+      el.kioskKbHideBtn.addEventListener('click', hideKeyboard);
     }
 
-    // Обработка клавиш букв и цифр
-    document.querySelectorAll('.kiosk-key[data-char]').forEach(key => {
-      key.addEventListener('click', () => {
+    document.querySelectorAll('.kb-key[data-k]').forEach(btn => {
+      btn.addEventListener('click', () => {
         resetIdleTimer();
-        if (!state.activeKeyboardTarget) return;
-        const char = key.getAttribute('data-char');
-        state.activeKeyboardTarget.value += char;
-        triggerInputChange(state.activeKeyboardTarget);
+        if (!state.activeKeyboardInput) return;
+        state.activeKeyboardInput.value += btn.getAttribute('data-k');
+        triggerSearchInput(state.activeKeyboardInput);
       });
     });
 
-    if (dom.keyBackspace) {
-      dom.keyBackspace.addEventListener('click', () => {
+    if (el.kbKeyBackspace) {
+      el.kbKeyBackspace.addEventListener('click', () => {
         resetIdleTimer();
-        if (!state.activeKeyboardTarget) return;
-        state.activeKeyboardTarget.value = state.activeKeyboardTarget.value.slice(0, -1);
-        triggerInputChange(state.activeKeyboardTarget);
+        if (!state.activeKeyboardInput) return;
+        state.activeKeyboardInput.value = state.activeKeyboardInput.value.slice(0, -1);
+        triggerSearchInput(state.activeKeyboardInput);
       });
     }
 
-    if (dom.keySpace) {
-      dom.keySpace.addEventListener('click', () => {
+    if (el.kbKeySpace) {
+      el.kbKeySpace.addEventListener('click', () => {
         resetIdleTimer();
-        if (!state.activeKeyboardTarget) return;
-        state.activeKeyboardTarget.value += ' ';
-        triggerInputChange(state.activeKeyboardTarget);
+        if (!state.activeKeyboardInput) return;
+        state.activeKeyboardInput.value += ' ';
+        triggerSearchInput(state.activeKeyboardInput);
       });
     }
 
-    if (dom.keyClear) {
-      dom.keyClear.addEventListener('click', () => {
+    if (el.kbKeyClear) {
+      el.kbKeyClear.addEventListener('click', () => {
         resetIdleTimer();
-        if (!state.activeKeyboardTarget) return;
-        state.activeKeyboardTarget.value = '';
-        triggerInputChange(state.activeKeyboardTarget);
+        if (!state.activeKeyboardInput) return;
+        state.activeKeyboardInput.value = '';
+        triggerSearchInput(state.activeKeyboardInput);
       });
     }
   }
 
-  function triggerInputChange(inputEl) {
-    if (inputEl === dom.groupSearchInput) {
-      if (dom.clearGroupSearchBtn) {
-        dom.clearGroupSearchBtn.classList.toggle('hidden', !inputEl.value);
-      }
-      renderGroups();
-    } else if (inputEl === dom.teacherSearchInput) {
-      if (dom.clearTeacherSearchBtn) {
-        dom.clearTeacherSearchBtn.classList.toggle('hidden', !inputEl.value);
-      }
-      renderTeachers();
+  function showKeyboard(inputEl, label) {
+    state.activeKeyboardInput = inputEl;
+    if (el.kioskKbLabel) el.kioskKbLabel.textContent = label || 'Ввод текста';
+    if (el.keyboardDrawer) el.keyboardDrawer.classList.remove('hidden');
+  }
+
+  function hideKeyboard() {
+    state.activeKeyboardInput = null;
+    if (el.keyboardDrawer) el.keyboardDrawer.classList.add('hidden');
+  }
+
+  function triggerSearchInput(inputEl) {
+    if (inputEl === el.groupSearchInput) {
+      renderGroupsList(inputEl.value);
+    } else if (inputEl === el.teacherSearchInput) {
+      renderTeachersCatalog(inputEl.value);
     }
   }
 
-  // ТАЙМЕР БЕЗДЕЙСТВИЯ (60 СЕК + 10 СЕК ПРЕДУПРЕЖДЕНИЕ)
+  // ТАЙМЕР БЕЗДЕЙСТВИЯ (60 СЕК)
   function resetIdleTimer() {
     if (state.idleTimer) clearTimeout(state.idleTimer);
-    if (state.idleWarningTimer) clearInterval(state.idleWarningTimer);
+    if (state.idleCountdownTimer) clearInterval(state.idleCountdownTimer);
 
-    if (state.isIdleWarningOpen) {
-      state.isIdleWarningOpen = false;
-      if (dom.idleOverlay) dom.idleOverlay.classList.add('hidden');
+    if (el.idleDialog && !el.idleDialog.classList.contains('hidden')) {
+      el.idleDialog.classList.add('hidden');
     }
 
     state.idleTimer = setTimeout(() => {
-      showIdleWarning();
-    }, 60000); // 60 секунд бездействия
+      startIdleWarning();
+    }, 60000);
   }
 
-  function showIdleWarning() {
-    state.isIdleWarningOpen = true;
-    state.idleCountdownValue = 10;
-    if (dom.idleCountdown) dom.idleCountdown.textContent = state.idleCountdownValue;
-    if (dom.idleOverlay) dom.idleOverlay.classList.remove('hidden');
+  function startIdleWarning() {
+    state.idleSecondsLeft = 10;
+    if (el.idleSeconds) el.idleSeconds.textContent = state.idleSecondsLeft;
+    if (el.idleDialog) el.idleDialog.classList.remove('hidden');
 
-    state.idleWarningTimer = setInterval(() => {
-      state.idleCountdownValue -= 1;
-      if (dom.idleCountdown) dom.idleCountdown.textContent = state.idleCountdownValue;
-      if (state.idleCountdownValue <= 0) {
-        clearInterval(state.idleWarningTimer);
-        resetToHome();
+    state.idleCountdownTimer = setInterval(() => {
+      state.idleSecondsLeft -= 1;
+      if (el.idleSeconds) el.idleSeconds.textContent = state.idleSecondsLeft;
+      if (state.idleSecondsLeft <= 0) {
+        clearInterval(state.idleCountdownTimer);
+        resetToDefault();
       }
     }, 1000);
   }
 
-  if (dom.idleContinueBtn) {
-    dom.idleContinueBtn.addEventListener('click', () => {
-      resetIdleTimer();
-    });
+  function resetToDefault() {
+    closeModal();
+    hideKeyboard();
+    if (el.teacherModal) el.teacherModal.classList.add('hidden');
+    if (el.teachersCatalogModal) el.teachersCatalogModal.classList.add('hidden');
+    if (el.bellsModal) el.bellsModal.classList.add('hidden');
+    if (el.appPromoModal) el.appPromoModal.classList.add('hidden');
+    if (el.idleDialog) el.idleDialog.classList.add('hidden');
+
+    if (state.allGroups.length > 0) {
+      selectGroup(state.allGroups[0].id, state.allGroups[0].name);
+    }
+    resetIdleTimer();
   }
 
-  // Сброс таймера при любом касании / клике на экран
-  ['touchstart', 'mousedown', 'pointerdown'].forEach(evtName => {
-    window.addEventListener(evtName, () => {
+  function closeModal() {
+    el.groupModal.classList.add('hidden');
+    hideKeyboard();
+  }
+
+  // НАВЕШИВАНИЕ ОБРАБОТЧИКОВ
+  function setupEventListeners() {
+    // Сброс по клику "На главную"
+    if (el.resetBtn) el.resetBtn.addEventListener('click', resetToDefault);
+
+    // Выбор группы
+    el.groupSelectBtn.addEventListener('click', () => {
       resetIdleTimer();
-    }, { passive: true });
-  });
+      el.groupSearchInput.value = '';
+      renderGroupsList();
+      el.groupModal.classList.remove('hidden');
+    });
 
-  // ИНИЦИАЛИЗАЦИЯ
-  function init() {
-    tickClock();
-    setInterval(tickClock, 1000);
+    el.closeModalBtn.addEventListener('click', closeModal);
 
-    setupTabs();
-    setupGroupFilters();
-    setupTeacherFilters();
-    setupKeyboard();
-    renderBellsTable();
+    el.kbGroupBtn.addEventListener('click', () => {
+      showKeyboard(el.groupSearchInput, 'Поиск учебной группы');
+    });
 
-    loadGroups();
-    loadTeachers();
+    el.groupSearchInput.addEventListener('click', () => {
+      showKeyboard(el.groupSearchInput, 'Поиск учебной группы');
+    });
 
-    resetIdleTimer();
+    // Каталог преподавателей
+    el.teachersCatalogBtn.addEventListener('click', () => {
+      resetIdleTimer();
+      el.teacherSearchInput.value = '';
+      renderTeachersCatalog();
+      el.teachersCatalogModal.classList.remove('hidden');
+    });
+
+    el.closeTeachersCatalogBtn.addEventListener('click', () => {
+      el.teachersCatalogModal.classList.add('hidden');
+      hideKeyboard();
+    });
+
+    el.kbTeacherBtn.addEventListener('click', () => {
+      showKeyboard(el.teacherSearchInput, 'Поиск преподавателя');
+    });
+
+    el.teacherSearchInput.addEventListener('click', () => {
+      showKeyboard(el.teacherSearchInput, 'Поиск преподавателя');
+    });
+
+    // Модалка преподавателя
+    el.closeTeacherModalBtn.addEventListener('click', () => {
+      el.teacherModal.classList.add('hidden');
+    });
+    el.closeTeacherBottomBtn.addEventListener('click', () => {
+      el.teacherModal.classList.add('hidden');
+    });
+
+    // Модалка звонков
+    el.bellsModalBtn.addEventListener('click', () => {
+      resetIdleTimer();
+      renderBellsTable();
+      el.bellsModal.classList.remove('hidden');
+    });
+    el.closeBellsModalBtn.addEventListener('click', () => {
+      el.bellsModal.classList.add('hidden');
+    });
+
+    // Модалка приложения
+    el.appModalBtn.addEventListener('click', () => {
+      resetIdleTimer();
+      el.appPromoModal.classList.remove('hidden');
+    });
+    el.closeAppPromoModalBtn.addEventListener('click', () => {
+      el.appPromoModal.classList.add('hidden');
+    });
+
+    // Переключение недель
+    el.week1Btn.addEventListener('click', () => {
+      resetIdleTimer();
+      state.currentWeek = 1;
+      updateWeekUI();
+      renderSchedule();
+    });
+
+    el.week2Btn.addEventListener('click', () => {
+      resetIdleTimer();
+      state.currentWeek = 2;
+      updateWeekUI();
+      renderSchedule();
+    });
+
+    // Переключение дней
+    document.querySelectorAll('.day-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        resetIdleTimer();
+        state.currentDay = parseInt(chip.getAttribute('data-day'));
+        updateDaysUI();
+        renderSchedule();
+      });
+    });
+
+    // Переключение подгрупп
+    el.subgroupBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        resetIdleTimer();
+        el.subgroupBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.subgroup = parseInt(btn.getAttribute('data-sg'));
+        renderSchedule();
+      });
+    });
+
+    // Кнопка продолжения в диалоге бездействия
+    if (el.continueBtn) {
+      el.continueBtn.addEventListener('click', resetIdleTimer);
+    }
+
+    // Слушатель касаний для сброса таймера
+    ['touchstart', 'mousedown', 'pointerdown'].forEach(evt => {
+      window.addEventListener(evt, resetIdleTimer, { passive: true });
+    });
   }
 
   if (document.readyState === 'loading') {

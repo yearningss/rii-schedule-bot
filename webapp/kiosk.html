@@ -3,335 +3,332 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Сенсорный киоск РИИ АлтГТУ</title>
+  <title>РИИ Расписание | Сенсорный терминал</title>
+  
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/kiosk.css">
 </head>
-<body class="kiosk-body" oncontextmenu="return false;">
-  <!-- Главная оболочка сенсорного киоска -->
-  <div class="kiosk-container">
-
-    <!-- Верхняя фиксированная панель терминала -->
-    <header class="kiosk-topbar">
-      <div class="kiosk-top-left">
-        <img src="/icons/logo_app.png" alt="Логотип РИИ" class="kiosk-logo">
-        <div class="kiosk-heading">
-          <h1 class="kiosk-title">РУБЦОВСКИЙ ИНДУСТРИАЛЬНЫЙ ИНСТИТУТ</h1>
-          <span class="kiosk-subtitle">Терминал самообслуживания: расписание занятий</span>
-        </div>
-      </div>
-
-      <div class="kiosk-top-center">
-        <div class="kiosk-live-bell" id="kioskLiveBell">
-          <span class="kiosk-bell-badge" id="kioskBellBadge">ЗАНЯТИЯ</span>
-          <span class="kiosk-bell-text" id="kioskBellText">Загрузка звонков...</span>
-        </div>
-      </div>
-
-      <div class="kiosk-top-right">
-        <div class="kiosk-datetime">
-          <div class="kiosk-clock" id="kioskClock">--:--</div>
-          <div class="kiosk-date" id="kioskDate">--.--.----</div>
-        </div>
-
-        <button type="button" class="kiosk-home-btn" id="kioskHomeBtn" title="Вернуться на главный экран">
-          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-          <span>На главную</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- Основная панель вкладок разделов -->
-    <nav class="kiosk-nav-tabs">
-      <button type="button" class="kiosk-tab-btn active" data-tab="tab-groups">
-        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
-        <span>Расписание групп</span>
-      </button>
-      <button type="button" class="kiosk-tab-btn" data-tab="tab-teachers">
-        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        <span>Преподаватели</span>
-      </button>
-      <button type="button" class="kiosk-tab-btn" data-tab="tab-bells">
-        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-        <span>Расписание звонков</span>
-      </button>
-      <button type="button" class="kiosk-tab-btn" data-tab="tab-app">
-        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
-        <span>Мобильное приложение и бот</span>
-      </button>
-    </nav>
-
-    <!-- Основной контент вкладок -->
-    <main class="kiosk-main">
-
-      <!-- ВКЛАДКА 1: РАСПИСАНИЕ ГРУПП -->
-      <section class="kiosk-tab-content active" id="tab-groups">
-        <!-- Режим 1: Выбор группы -->
-        <div class="kiosk-groups-selector" id="kioskGroupsSelector">
-          <!-- Верхний блок фильтрации и поиска -->
-          <div class="kiosk-search-row">
-            <div class="kiosk-course-chips" id="kioskCourseChips">
-              <button type="button" class="kiosk-chip active" data-course="all">Все группы</button>
-              <button type="button" class="kiosk-chip" data-course="1">1 курс</button>
-              <button type="button" class="kiosk-chip" data-course="2">2 курс</button>
-              <button type="button" class="kiosk-chip" data-course="3">3 курс</button>
-              <button type="button" class="kiosk-chip" data-course="4">4 курс</button>
-              <button type="button" class="kiosk-chip" data-course="spo">СПО / Колледж</button>
-            </div>
-
-            <div class="kiosk-input-wrapper">
-              <input type="text" id="kioskGroupSearchInput" class="kiosk-search-input" placeholder="Поиск группы..." readonly>
-              <button type="button" class="kiosk-keyboard-trigger-btn" id="openGroupKeyboardBtn" title="Открыть экранную клавиатуру">
-                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
-                <span>Клавиатура</span>
-              </button>
-              <button type="button" class="kiosk-clear-input-btn hidden" id="clearGroupSearchBtn">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Сетка плиток учебных групп -->
-          <div class="kiosk-groups-grid" id="kioskGroupsGrid">
-            <div class="kiosk-loading-box">
-              <div class="kiosk-spinner"></div>
-              <span>Загрузка учебных групп...</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Режим 2: Просмотр расписания выбранной группы -->
-        <div class="kiosk-schedule-view hidden" id="kioskScheduleView">
-          <!-- Шапка группы -->
-          <div class="kiosk-schedule-header">
-            <button type="button" class="kiosk-back-btn" id="kioskBackToGroupsBtn">
-              <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-              <span>Назад к группам</span>
-            </button>
-
-            <div class="kiosk-selected-group-info">
-              <h2 class="kiosk-group-title" id="kioskSelectedGroupName">Группа</h2>
-              <span class="kiosk-group-course-tag" id="kioskSelectedGroupCourse">1 курс</span>
-            </div>
-
-            <!-- Переключатель недели: числитель / знаменатель -->
-            <div class="kiosk-week-switch">
-              <button type="button" class="kiosk-week-btn active" data-week="1" id="kioskWeekBtn1">1: Числитель</button>
-              <button type="button" class="kiosk-week-btn" data-week="2" id="kioskWeekBtn2">2: Знаменатель</button>
-            </div>
-          </div>
-
-          <!-- Панель выбора дня недели (Пн - Сб) -->
-          <div class="kiosk-days-nav" id="kioskDaysNav">
-            <button type="button" class="kiosk-day-btn" data-day="1"><span>Понедельник</span><small id="kioskDayDate1">--.--</small></button>
-            <button type="button" class="kiosk-day-btn" data-day="2"><span>Вторник</span><small id="kioskDayDate2">--.--</small></button>
-            <button type="button" class="kiosk-day-btn" data-day="3"><span>Среда</span><small id="kioskDayDate3">--.--</small></button>
-            <button type="button" class="kiosk-day-btn" data-day="4"><span>Четверг</span><small id="kioskDayDate4">--.--</small></button>
-            <button type="button" class="kiosk-day-btn" data-day="5"><span>Пятница</span><small id="kioskDayDate5">--.--</small></button>
-            <button type="button" class="kiosk-day-btn" data-day="6"><span>Суббота</span><small id="kioskDayDate6">--.--</small></button>
-          </div>
-
-          <!-- Карточки занятий на день -->
-          <div class="kiosk-schedule-cards" id="kioskScheduleCards">
-            <!-- Генерируются скриптом kiosk.js -->
-          </div>
-        </div>
-      </section>
-
-      <!-- ВКЛАДКА 2: ПРЕПОДАВАТЕЛИ -->
-      <section class="kiosk-tab-content" id="tab-teachers">
-        <div class="kiosk-teachers-layout">
-          <!-- Верхний поиск преподавателя -->
-          <div class="kiosk-search-row">
-            <div class="kiosk-input-wrapper flex-grow">
-              <input type="text" id="kioskTeacherSearchInput" class="kiosk-search-input" placeholder="Поиск преподавателя по фамилии или кафедре..." readonly>
-              <button type="button" class="kiosk-keyboard-trigger-btn" id="openTeacherKeyboardBtn">
-                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
-                <span>Клавиатура</span>
-              </button>
-              <button type="button" class="kiosk-clear-input-btn hidden" id="clearTeacherSearchBtn">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Сетка преподавателей -->
-          <div class="kiosk-teachers-grid" id="kioskTeachersGrid">
-            <div class="kiosk-loading-box">
-              <div class="kiosk-spinner"></div>
-              <span>Загрузка списка преподавателей...</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ВКЛАДКА 3: РАСПИСАНИЕ ЗВОНКОВ -->
-      <section class="kiosk-tab-content" id="tab-bells">
-        <div class="kiosk-bells-layout">
-          <div class="kiosk-bells-header">
-            <h2>Регламент учебных занятий РИИ АлтГТУ</h2>
-            <p>Стандартная продолжительность одной пары составляет 1 час 30 минут (90 минут).</p>
-          </div>
-
-          <div class="kiosk-bells-table-wrapper">
-            <table class="kiosk-bells-table" id="kioskFullBellsTable">
-              <thead>
-                <tr>
-                  <th>Пара</th>
-                  <th>Время пары</th>
-                  <th>Перемена</th>
-                  <th>Статус</th>
-                </tr>
-              </thead>
-              <tbody id="kioskBellsTableBody">
-                <!-- Заполняется динамически -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ВКЛАДКА 4: МОБИЛЬНОЕ ПРИЛОЖЕНИЕ И БОТ -->
-      <section class="kiosk-tab-content" id="tab-app">
-        <div class="kiosk-app-promo">
-          <div class="kiosk-app-card">
-            <div class="kiosk-app-qr-col">
-              <img src="/qr_bot.png" alt="QR-код бота" class="kiosk-large-qr">
-              <span class="kiosk-qr-hint">Наведите камеру смартфона</span>
-            </div>
-            <div class="kiosk-app-info-col">
-              <h2>Расписание РИИ всегда в вашем кармане</h2>
-              <p class="kiosk-app-desc">
-                Официальный сервис расписания Рубцовского индустриального института доступен бесплатно без регистрации.
-              </p>
-              <ul class="kiosk-features-list">
-                <li>
-                  <span class="kiosk-feature-check">OK</span>
-                  <span><strong>Telegram-бот @rubinst_bot:</strong> мгновенные уведомления о парах и заменах прямо в мессенджер.</span>
-                </li>
-                <li>
-                  <span class="kiosk-feature-check">OK</span>
-                  <span><strong>Telegram Mini App:</strong> быстрое интерактивное расписание внутри Telegram.</span>
-                </li>
-                <li>
-                  <span class="kiosk-feature-check">OK</span>
-                  <span><strong>Мобильное приложение для Android и iOS:</strong> домашний виджет, оффлайн-режим, push-уведомления.</span>
-                </li>
-              </ul>
-              <div class="kiosk-bot-link-box">
-                <span class="kiosk-bot-label">Ссылка в Telegram:</span>
-                <span class="kiosk-bot-link">t.me/rubinst_bot</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- ВСТРОЕННАЯ СЕНСОРНАЯ КЛАВИАТУРА -->
-    <div class="kiosk-keyboard-panel hidden" id="kioskKeyboardPanel">
-      <div class="kiosk-keyboard-header">
-        <span class="kiosk-keyboard-title" id="kioskKeyboardTargetLabel">Ввод текста</span>
-        <button type="button" class="kiosk-keyboard-close-btn" id="closeKeyboardBtn">
-          <span>Скрыть клавиатуру</span>
-          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
-      </div>
-
-      <!-- Цифровой ряд -->
-      <div class="kiosk-key-row">
-        <button type="button" class="kiosk-key" data-char="1">1</button>
-        <button type="button" class="kiosk-key" data-char="2">2</button>
-        <button type="button" class="kiosk-key" data-char="3">3</button>
-        <button type="button" class="kiosk-key" data-char="4">4</button>
-        <button type="button" class="kiosk-key" data-char="5">5</button>
-        <button type="button" class="kiosk-key" data-char="6">6</button>
-        <button type="button" class="kiosk-key" data-char="7">7</button>
-        <button type="button" class="kiosk-key" data-char="8">8</button>
-        <button type="button" class="kiosk-key" data-char="9">9</button>
-        <button type="button" class="kiosk-key" data-char="0">0</button>
-        <button type="button" class="kiosk-key" data-char="-">-</button>
-        <button type="button" class="kiosk-key kiosk-key-action" id="keyBackspace">
-          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>
-        </button>
-      </div>
-
-      <!-- 1 ряд букв: Й Ц У К Е Н Г Ш Щ З Х Ъ -->
-      <div class="kiosk-key-row">
-        <button type="button" class="kiosk-key" data-char="Й">Й</button>
-        <button type="button" class="kiosk-key" data-char="Ц">Ц</button>
-        <button type="button" class="kiosk-key" data-char="У">У</button>
-        <button type="button" class="kiosk-key" data-char="К">К</button>
-        <button type="button" class="kiosk-key" data-char="Е">Е</button>
-        <button type="button" class="kiosk-key" data-char="Н">Н</button>
-        <button type="button" class="kiosk-key" data-char="Г">Г</button>
-        <button type="button" class="kiosk-key" data-char="Ш">Ш</button>
-        <button type="button" class="kiosk-key" data-char="Щ">Щ</button>
-        <button type="button" class="kiosk-key" data-char="З">З</button>
-        <button type="button" class="kiosk-key" data-char="Х">Х</button>
-        <button type="button" class="kiosk-key" data-char="Ъ">Ъ</button>
-      </div>
-
-      <!-- 2 ряд букв: Ф Ы В А П Р О Л Д Ж Э -->
-      <div class="kiosk-key-row">
-        <button type="button" class="kiosk-key" data-char="Ф">Ф</button>
-        <button type="button" class="kiosk-key" data-char="Ы">Ы</button>
-        <button type="button" class="kiosk-key" data-char="В">В</button>
-        <button type="button" class="kiosk-key" data-char="А">А</button>
-        <button type="button" class="kiosk-key" data-char="П">П</button>
-        <button type="button" class="kiosk-key" data-char="Р">Р</button>
-        <button type="button" class="kiosk-key" data-char="О">О</button>
-        <button type="button" class="kiosk-key" data-char="Л">Л</button>
-        <button type="button" class="kiosk-key" data-char="Д">Д</button>
-        <button type="button" class="kiosk-key" data-char="Ж">Ж</button>
-        <button type="button" class="kiosk-key" data-char="Э">Э</button>
-      </div>
-
-      <!-- 3 ряд: Я Ч С М И Т Ь Б Ю . Пробел Стереть -->
-      <div class="kiosk-key-row">
-        <button type="button" class="kiosk-key" data-char="Я">Я</button>
-        <button type="button" class="kiosk-key" data-char="Ч">Ч</button>
-        <button type="button" class="kiosk-key" data-char="С">С</button>
-        <button type="button" class="kiosk-key" data-char="М">М</button>
-        <button type="button" class="kiosk-key" data-char="И">И</button>
-        <button type="button" class="kiosk-key" data-char="Т">Т</button>
-        <button type="button" class="kiosk-key" data-char="Ь">Ь</button>
-        <button type="button" class="kiosk-key" data-char="Б">Б</button>
-        <button type="button" class="kiosk-key" data-char="Ю">Ю</button>
-        <button type="button" class="kiosk-key kiosk-key-space" id="keySpace">ПРОБЕЛ</button>
-        <button type="button" class="kiosk-key kiosk-key-clear" id="keyClear">ОЧИСТИТЬ</button>
+<body class="kiosk-app-body" oncontextmenu="return false;">
+  
+  <!-- Верхняя строка терминала самообслуживания -->
+  <aside class="kiosk-status-strip">
+    <div class="kiosk-status-left">
+      <img src="/icons/logo_app.png" alt="РИИ АлтГТУ" class="kiosk-strip-logo">
+      <div class="kiosk-strip-text">
+        <strong class="kiosk-strip-title">РУБЦОВСКИЙ ИНДУСТРИАЛЬНЫЙ ИНСТИТУТ</strong>
+        <span class="kiosk-strip-sub">Терминал расписания занятий</span>
       </div>
     </div>
+    <div class="kiosk-status-center">
+      <div class="kiosk-live-bell-badge" id="kioskLiveBellBadge">
+        <span class="kiosk-bell-dot"></span>
+        <span id="kioskLiveBellText">Загрузка звонков...</span>
+      </div>
+    </div>
+    <div class="kiosk-status-right">
+      <div class="kiosk-clock-block">
+        <span class="kiosk-clock-time" id="kioskClockTime">--:--</span>
+        <span class="kiosk-clock-date" id="kioskClockDate">--.--.----</span>
+      </div>
+      <button type="button" class="kiosk-reset-btn" id="kioskResetBtn" title="Сбросить на главную">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>На главную</span>
+      </button>
+    </div>
+  </aside>
 
-    <!-- МОДАЛЬНОЕ ОКНО ПРЕПОДАВАТЕЛЯ -->
-    <div class="kiosk-modal-overlay hidden" id="kioskTeacherModal">
-      <div class="kiosk-modal-dialog">
-        <div class="kiosk-modal-header">
-          <div class="kiosk-modal-teacher-top">
-            <h3 class="kiosk-modal-teacher-name" id="kioskModalTeacherName">Преподаватель</h3>
-            <span class="kiosk-modal-teacher-post" id="kioskModalTeacherPost">Должность</span>
-          </div>
-          <button type="button" class="kiosk-modal-close-btn" id="closeTeacherModalBtn">
-            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+  <!-- Основной контейнер в дизайне Mini App / Мобильного приложения -->
+  <div class="app-container kiosk-scaled-container">
+    
+    <!-- Шапка приложения (в точности как в Mini App) -->
+    <header class="app-header">
+      <div class="header-top">
+        <button id="groupSelectBtn" class="group-btn">
+          <span id="currentGroupName">Выбрать группу</span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+          </svg>
+        </button>
+
+        <div class="header-action-btns">
+          <button id="teachersCatalogBtn" class="teachers-nav-btn" title="Каталог преподавателей">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <span>Преподаватели</span>
+          </button>
+
+          <button id="bellsModalBtn" class="teachers-nav-btn" title="Расписание звонков">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            <span>Звонки</span>
+          </button>
+
+          <button id="appModalBtn" class="teachers-nav-btn" title="Приложение и бот">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+            <span>В телефон</span>
           </button>
         </div>
 
-        <div class="kiosk-modal-body" id="kioskTeacherModalBody">
-          <!-- Контент карточки преподавателя и расписание -->
+        <div class="week-toggle">
+          <button id="week1Btn" class="week-btn active" data-week="1">I нед</button>
+          <button id="week2Btn" class="week-btn" data-week="2">II нед</button>
+        </div>
+      </div>
+
+      <!-- Полоса дней недели -->
+      <nav class="days-nav" id="daysNav">
+        <button class="day-chip" data-day="1">Пн</button>
+        <button class="day-chip" data-day="2">Вт</button>
+        <button class="day-chip" data-day="3">Ср</button>
+        <button class="day-chip" data-day="4">Чт</button>
+        <button class="day-chip" data-day="5">Пт</button>
+        <button class="day-chip" data-day="6">Сб</button>
+      </nav>
+    </header>
+
+    <!-- Информационная плашка статуса -->
+    <div id="liveStatusBar" class="live-status-bar hidden">
+      <span class="status-indicator"></span>
+      <span id="liveStatusText" class="status-text">Загрузка...</span>
+    </div>
+
+    <!-- Основной контент расписания -->
+    <main class="schedule-container" id="scheduleContainer">
+      <div id="scheduleCards" class="cards-list">
+        <!-- Карточки пар генерируются динамически через JS -->
+      </div>
+      <div id="emptyState" class="empty-state hidden">
+        <p class="empty-title">Занятий нет</p>
+        <p class="empty-subtitle">В этот день пар в расписании не найдено</p>
+      </div>
+      <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <p>Загрузка расписания...</p>
+      </div>
+    </main>
+
+    <!-- Фильтр подгруппы (в точности как в Mini App) -->
+    <footer class="app-footer">
+      <div class="subgroup-selector">
+        <button class="sg-btn active" data-sg="0">Все подгруппы</button>
+        <button class="sg-btn" data-sg="1">1 п/г</button>
+        <button class="sg-btn" data-sg="2">2 п/г</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Модальное окно выбора группы (в точности как в Mini App) -->
+  <div id="groupModal" class="modal-backdrop hidden">
+    <div class="modal-sheet kiosk-modal-sheet">
+      <div class="modal-header">
+        <h3>Выбор учебной группы</h3>
+        <button id="closeModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="search-box kiosk-search-box-row">
+        <input type="text" id="groupSearchInput" placeholder="Поиск группы (например: ИВТ-61)..." autocomplete="off" readonly>
+        <button type="button" class="kiosk-kb-btn" id="kbGroupBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
+          <span>Клавиатура</span>
+        </button>
+      </div>
+      <div id="groupsListContainer" class="groups-list">
+        <!-- Список курсов и групп -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно каталога преподавателей (в точности как в Mini App) -->
+  <div id="teachersCatalogModal" class="modal-backdrop hidden">
+    <div class="modal-sheet teachers-catalog-sheet kiosk-modal-sheet">
+      <div class="modal-header">
+        <h3>Преподаватели РИИ АлтГТУ</h3>
+        <button id="closeTeachersCatalogBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="search-box kiosk-search-box-row">
+        <input type="text" id="teacherSearchInput" placeholder="Поиск преподавателя по фамилии или кафедре..." autocomplete="off" readonly>
+        <button type="button" class="kiosk-kb-btn" id="kbTeacherBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
+          <span>Клавиатура</span>
+        </button>
+      </div>
+      <div id="teachersListContainer" class="teachers-catalog-list">
+        <!-- Список преподавателей -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно преподавателя (в точности как в Mini App) -->
+  <div id="teacherModal" class="modal-backdrop hidden">
+    <div class="modal-sheet teacher-modal-sheet kiosk-modal-sheet">
+      <div class="modal-header">
+        <h3>Информация о преподавателе</h3>
+        <button id="closeTeacherModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div id="teacherLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Загрузка данных...</p>
+      </div>
+      <div id="teacherContent" class="teacher-details hidden">
+        <div class="teacher-profile-header">
+          <div class="teacher-avatar-wrap">
+            <img id="teacherPhoto" class="teacher-photo hidden" src="" alt="Фото">
+            <div id="teacherAvatarFallback" class="teacher-avatar-fallback">
+              <svg viewBox="0 0 24 24" width="36" height="36"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+          </div>
+          <div class="teacher-main-meta">
+            <h2 id="teacherFullName" class="teacher-fullname">ФИО</h2>
+            <div id="teacherPost" class="teacher-post">Должность</div>
+            <div id="teacherDeptBadge" class="teacher-dept-badge hidden">Кафедра</div>
+          </div>
+        </div>
+
+        <div class="teacher-info-list">
+          <div id="teacherRoomRow" class="teacher-info-row hidden">
+            <span class="teacher-info-label">Аудитория:</span>
+            <span id="teacherRoom" class="teacher-info-val"></span>
+          </div>
+          <div id="teacherDegreeRow" class="teacher-info-row hidden">
+            <span class="teacher-info-label">Степень / звание:</span>
+            <span id="teacherDegree" class="teacher-info-val"></span>
+          </div>
+          <div id="teacherPhoneRow" class="teacher-info-row hidden">
+            <span class="teacher-info-label">Телефон:</span>
+            <span id="teacherPhone" class="teacher-info-val"></span>
+          </div>
+          <div id="teacherEmailRow" class="teacher-info-row hidden">
+            <span class="teacher-info-label">Email:</span>
+            <span id="teacherEmail" class="teacher-info-val"></span>
+          </div>
+          <div id="teacherDisciplinesRow" class="teacher-info-row hidden">
+            <span class="teacher-info-label">Дисциплины:</span>
+            <span id="teacherDisciplines" class="teacher-info-val"></span>
+          </div>
+        </div>
+
+        <!-- Недельное расписание преподавателя -->
+        <div class="teacher-schedule-section" id="teacherScheduleSection">
+          <div class="teacher-sched-heading">Расписание занятий преподавателя</div>
+          <div id="teacherSchedList" class="teacher-sched-list">
+            <!-- Заполняется динамически -->
+          </div>
+        </div>
+
+        <div class="teacher-actions">
+          <button id="closeTeacherBottomBtn" class="close-teacher-action-btn">Закрыть</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- ДИАЛОГ СБРОСА БЕЗДЕЙСТВИЯ (60 СЕК) -->
-    <div class="kiosk-idle-overlay hidden" id="kioskIdleOverlay">
-      <div class="kiosk-idle-box">
-        <h3>Сессия завершается</h3>
-        <p>Вы еще пользуетесь терминалом? Через <strong id="kioskIdleCountdown">10</strong> секунд киоск вернется на главный экран.</p>
-        <button type="button" class="kiosk-idle-continue-btn" id="kioskIdleContinueBtn">Продолжить работу</button>
+  <!-- Модальное окно звонков института -->
+  <div id="bellsModal" class="modal-backdrop hidden">
+    <div class="modal-sheet kiosk-modal-sheet">
+      <div class="modal-header">
+        <h3>Расписание звонков РИИ АлтГТУ</h3>
+        <button id="closeBellsModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="kiosk-bells-content">
+        <table class="kiosk-app-bells-table">
+          <thead>
+            <tr>
+              <th>Пара</th>
+              <th>Время пары</th>
+              <th>Перемена</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody id="appBellsTableBody">
+            <!-- Заполняется через JS -->
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
 
+  <!-- Модальное окно скачивания приложения и бота -->
+  <div id="appPromoModal" class="modal-backdrop hidden">
+    <div class="modal-sheet kiosk-modal-sheet">
+      <div class="modal-header">
+        <h3>Расписание в смартфоне</h3>
+        <button id="closeAppPromoModalBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="kiosk-promo-body">
+        <img src="/qr_bot.png" alt="QR-код бота" class="kiosk-promo-qr">
+        <h4>Telegram-бот @rubinst_bot и мобильное приложение</h4>
+        <p>Наведите камеру смартфона на QR-код для быстрого доступа к расписанию занятий, виджету и уведомлениям.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Экранная сенсорная клавиатура -->
+  <div class="kiosk-keyboard-drawer hidden" id="kioskKeyboardDrawer">
+    <div class="kiosk-kb-header">
+      <span id="kioskKbLabel">Ввод текста</span>
+      <button type="button" class="kiosk-kb-hide-btn" id="kioskKbHideBtn">Скрыть клавиатуру</button>
+    </div>
+    <div class="kiosk-kb-row">
+      <button type="button" class="kb-key" data-k="1">1</button>
+      <button type="button" class="kb-key" data-k="2">2</button>
+      <button type="button" class="kb-key" data-k="3">3</button>
+      <button type="button" class="kb-key" data-k="4">4</button>
+      <button type="button" class="kb-key" data-k="5">5</button>
+      <button type="button" class="kb-key" data-k="6">6</button>
+      <button type="button" class="kb-key" data-k="7">7</button>
+      <button type="button" class="kb-key" data-k="8">8</button>
+      <button type="button" class="kb-key" data-k="9">9</button>
+      <button type="button" class="kb-key" data-k="0">0</button>
+      <button type="button" class="kb-key" data-k="-">-</button>
+      <button type="button" class="kb-key kb-key-bs" id="kbKeyBackspace">&larr;</button>
+    </div>
+    <div class="kiosk-kb-row">
+      <button type="button" class="kb-key" data-k="Й">Й</button>
+      <button type="button" class="kb-key" data-k="Ц">Ц</button>
+      <button type="button" class="kb-key" data-k="У">У</button>
+      <button type="button" class="kb-key" data-k="К">К</button>
+      <button type="button" class="kb-key" data-k="Е">Е</button>
+      <button type="button" class="kb-key" data-k="Н">Н</button>
+      <button type="button" class="kb-key" data-k="Г">Г</button>
+      <button type="button" class="kb-key" data-k="Ш">Ш</button>
+      <button type="button" class="kb-key" data-k="Щ">Щ</button>
+      <button type="button" class="kb-key" data-k="З">З</button>
+      <button type="button" class="kb-key" data-k="Х">Х</button>
+      <button type="button" class="kb-key" data-k="Ъ">Ъ</button>
+    </div>
+    <div class="kiosk-kb-row">
+      <button type="button" class="kb-key" data-k="Ф">Ф</button>
+      <button type="button" class="kb-key" data-k="Ы">Ы</button>
+      <button type="button" class="kb-key" data-k="В">В</button>
+      <button type="button" class="kb-key" data-k="А">А</button>
+      <button type="button" class="kb-key" data-k="П">П</button>
+      <button type="button" class="kb-key" data-k="Р">Р</button>
+      <button type="button" class="kb-key" data-k="О">О</button>
+      <button type="button" class="kb-key" data-k="Л">Л</button>
+      <button type="button" class="kb-key" data-k="Д">Д</button>
+      <button type="button" class="kb-key" data-k="Ж">Ж</button>
+      <button type="button" class="kb-key" data-k="Э">Э</button>
+    </div>
+    <div class="kiosk-kb-row">
+      <button type="button" class="kb-key" data-k="Я">Я</button>
+      <button type="button" class="kb-key" data-k="Ч">Ч</button>
+      <button type="button" class="kb-key" data-k="С">С</button>
+      <button type="button" class="kb-key" data-k="М">М</button>
+      <button type="button" class="kb-key" data-k="И">И</button>
+      <button type="button" class="kb-key" data-k="Т">Т</button>
+      <button type="button" class="kb-key" data-k="Ь">Ь</button>
+      <button type="button" class="kb-key" data-k="Б">Б</button>
+      <button type="button" class="kb-key" data-k="Ю">Ю</button>
+      <button type="button" class="kb-key kb-key-space" id="kbKeySpace">Пробел</button>
+      <button type="button" class="kb-key kb-key-clear" id="kbKeyClear">Очистить</button>
+    </div>
+  </div>
+
+  <!-- Диалог бездействия (60 секунд) -->
+  <div id="kioskIdleDialog" class="modal-backdrop hidden">
+    <div class="kiosk-idle-modal">
+      <h3>Сессия завершается</h3>
+      <p>Вы еще пользуетесь расписанием? Через <strong id="kioskIdleSeconds">10</strong> секунд терминал вернется на главный экран.</p>
+      <button type="button" class="kiosk-continue-btn" id="kioskContinueBtn">Продолжить работу</button>
+    </div>
   </div>
 
   <script src="/kiosk.js"></script>
