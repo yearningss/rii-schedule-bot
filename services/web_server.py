@@ -20,7 +20,7 @@ WEBAPP_DIR = Path(__file__).resolve().parent.parent / "webapp"
 
 async def handle_index(request: web.Request) -> web.FileResponse:
     host = (request.headers.get("X-Forwarded-Host") or request.headers.get("Host") or "").lower()
-    if "tv.kiosk" in host:
+    if "tv" in host:
         return web.FileResponse(WEBAPP_DIR / "tv.html")
     elif "kiosk" in host:
         return web.FileResponse(WEBAPP_DIR / "kiosk.html")
