@@ -26,79 +26,83 @@
     bellStatus: null
   };
 
-  // Элементы DOM
-  const dom = {
-    // Экраны
-    screenWelcome: document.getElementById('screenWelcome'),
-    screenGroupSelect: document.getElementById('screenGroupSelect'),
-    screenSchedule: document.getElementById('screenSchedule'),
+  // Элементы DOM (инициализируются в initDom)
+  let dom = {};
 
-    // Экран 1 (Заставка)
-    welcomeClock: document.getElementById('welcomeClock'),
-    welcomeDate: document.getElementById('welcomeDate'),
-    welcomeWeatherCard: document.getElementById('welcomeWeatherCard'),
-    welcomeWeatherIcon: document.getElementById('welcomeWeatherIcon'),
-    welcomeWeatherTemp: document.getElementById('welcomeWeatherTemp'),
-    welcomeWeatherDesc: document.getElementById('welcomeWeatherDesc'),
-    welcomeBellTitle: document.getElementById('welcomeBellTitle'),
-    welcomeBellCountdown: document.getElementById('welcomeBellCountdown'),
-    welcomeBellProgressBar: document.getElementById('welcomeBellProgressBar'),
-    welcomeWeekPill: document.getElementById('welcomeWeekPill'),
-    startKioskBtn: document.getElementById('startKioskBtn'),
+  function initDom() {
+    dom = {
+      // Экраны
+      screenWelcome: document.getElementById('screenWelcome'),
+      screenGroupSelect: document.getElementById('screenGroupSelect'),
+      screenSchedule: document.getElementById('screenSchedule'),
 
-    // Шапка активной сессии
-    btnBackToWelcome: document.getElementById('btnBackToWelcome'),
-    kioskSessionTimerBadge: document.getElementById('kioskSessionTimerBadge'),
-    kioskSessionTimeVal: document.getElementById('kioskSessionTimeVal'),
-    btnFinishSession1: document.getElementById('btnFinishSession1'),
+      // Экран 1 (Заставка)
+      welcomeClock: document.getElementById('welcomeClock'),
+      welcomeDate: document.getElementById('welcomeDate'),
+      welcomeWeatherCard: document.getElementById('welcomeWeatherCard'),
+      welcomeWeatherIcon: document.getElementById('welcomeWeatherIcon'),
+      welcomeWeatherTemp: document.getElementById('welcomeWeatherTemp'),
+      welcomeWeatherDesc: document.getElementById('welcomeWeatherDesc'),
+      welcomeBellTitle: document.getElementById('welcomeBellTitle'),
+      welcomeBellCountdown: document.getElementById('welcomeBellCountdown'),
+      welcomeBellProgressBar: document.getElementById('welcomeBellProgressBar'),
+      welcomeWeekPill: document.getElementById('welcomeWeekPill'),
+      startKioskBtn: document.getElementById('startKioskBtn'),
 
-    kioskSessionTimerBadge2: document.getElementById('kioskSessionTimerBadge2'),
-    kioskSessionTimeVal2: document.getElementById('kioskSessionTimeVal2'),
-    btnFinishSession2: document.getElementById('btnFinishSession2'),
-    btnBackToGroups: document.getElementById('btnBackToGroups'),
-    kioskSelectedGroupName: document.getElementById('kioskSelectedGroupName'),
+      // Шапка активной сессии
+      btnBackToWelcome: document.getElementById('btnBackToWelcome'),
+      kioskSessionTimerBadge: document.getElementById('kioskSessionTimerBadge'),
+      kioskSessionTimeVal: document.getElementById('kioskSessionTimeVal'),
+      btnFinishSession1: document.getElementById('btnFinishSession1'),
 
-    // Экран 2 (Группы)
-    kioskCourseTabs: document.getElementById('kioskCourseTabs'),
-    kioskGroupSearch: document.getElementById('kioskGroupSearch'),
-    btnClearSearch: document.getElementById('btnClearSearch'),
-    kioskGroupsGrid: document.getElementById('kioskGroupsGrid'),
-    kioskNoGroupsFound: document.getElementById('kioskNoGroupsFound'),
-    quickTags: document.querySelectorAll('.quick-tag'),
+      kioskSessionTimerBadge2: document.getElementById('kioskSessionTimerBadge2'),
+      kioskSessionTimeVal2: document.getElementById('kioskSessionTimeVal2'),
+      btnFinishSession2: document.getElementById('btnFinishSession2'),
+      btnBackToGroups: document.getElementById('btnBackToGroups'),
+      kioskSelectedGroupName: document.getElementById('kioskSelectedGroupName'),
 
-    // Экран 3 (Расписание)
-    kioskWeek1Btn: document.getElementById('kioskWeek1Btn'),
-    kioskWeek2Btn: document.getElementById('kioskWeek2Btn'),
-    kioskDaysNav: document.getElementById('kioskDaysNav'),
-    subgroupBtns: document.querySelectorAll('.kiosk-sg-btn'),
-    kioskLiveStatusBar: document.getElementById('kioskLiveStatusBar'),
-    kioskLiveStatusText: document.getElementById('kioskLiveStatusText'),
-    kioskScheduleCards: document.getElementById('kioskScheduleCards'),
-    kioskScheduleEmpty: document.getElementById('kioskScheduleEmpty'),
-    kioskScheduleLoading: document.getElementById('kioskScheduleLoading'),
+      // Экран 2 (Группы)
+      kioskCourseTabs: document.getElementById('kioskCourseTabs'),
+      kioskGroupSearch: document.getElementById('kioskGroupSearch'),
+      btnClearSearch: document.getElementById('btnClearSearch'),
+      kioskGroupsGrid: document.getElementById('kioskGroupsGrid'),
+      kioskNoGroupsFound: document.getElementById('kioskNoGroupsFound'),
+      quickTags: document.querySelectorAll('.quick-tag'),
 
-    // Модалка преподавателя
-    kioskTeacherModal: document.getElementById('kioskTeacherModal'),
-    btnCloseTeacherModal: document.getElementById('btnCloseTeacherModal'),
-    btnCloseTeacherBottom: document.getElementById('btnCloseTeacherBottom'),
-    kioskTeacherLoading: document.getElementById('kioskTeacherLoading'),
-    kioskTeacherContent: document.getElementById('kioskTeacherContent'),
-    ktPhoto: document.getElementById('ktPhoto'),
-    ktAvatarFallback: document.getElementById('ktAvatarFallback'),
-    ktFullName: document.getElementById('ktFullName'),
-    ktPost: document.getElementById('ktPost'),
-    ktDept: document.getElementById('ktDept'),
-    ktRoomRow: document.getElementById('ktRoomRow'),
-    ktRoom: document.getElementById('ktRoom'),
-    ktDegreeRow: document.getElementById('ktDegreeRow'),
-    ktDegree: document.getElementById('ktDegree'),
-    ktPhoneRow: document.getElementById('ktPhoneRow'),
-    ktPhone: document.getElementById('ktPhone'),
-    ktEmailRow: document.getElementById('ktEmailRow'),
-    ktEmail: document.getElementById('ktEmail'),
-    ktDisciplinesRow: document.getElementById('ktDisciplinesRow'),
-    ktDisciplines: document.getElementById('ktDisciplines')
-  };
+      // Экран 3 (Расписание)
+      kioskWeek1Btn: document.getElementById('kioskWeek1Btn'),
+      kioskWeek2Btn: document.getElementById('kioskWeek2Btn'),
+      kioskDaysNav: document.getElementById('kioskDaysNav'),
+      subgroupBtns: document.querySelectorAll('.kiosk-sg-btn'),
+      kioskLiveStatusBar: document.getElementById('kioskLiveStatusBar'),
+      kioskLiveStatusText: document.getElementById('kioskLiveStatusText'),
+      kioskScheduleCards: document.getElementById('kioskScheduleCards'),
+      kioskScheduleEmpty: document.getElementById('kioskScheduleEmpty'),
+      kioskScheduleLoading: document.getElementById('kioskScheduleLoading'),
+
+      // Модалка преподавателя
+      kioskTeacherModal: document.getElementById('kioskTeacherModal'),
+      btnCloseTeacherModal: document.getElementById('btnCloseTeacherModal'),
+      btnCloseTeacherBottom: document.getElementById('btnCloseTeacherBottom'),
+      kioskTeacherLoading: document.getElementById('kioskTeacherLoading'),
+      kioskTeacherContent: document.getElementById('kioskTeacherContent'),
+      ktPhoto: document.getElementById('ktPhoto'),
+      ktAvatarFallback: document.getElementById('ktAvatarFallback'),
+      ktFullName: document.getElementById('ktFullName'),
+      ktPost: document.getElementById('ktPost'),
+      ktDept: document.getElementById('ktDept'),
+      ktRoomRow: document.getElementById('ktRoomRow'),
+      ktRoom: document.getElementById('ktRoom'),
+      ktDegreeRow: document.getElementById('ktDegreeRow'),
+      ktDegree: document.getElementById('ktDegree'),
+      ktPhoneRow: document.getElementById('ktPhoneRow'),
+      ktPhone: document.getElementById('ktPhone'),
+      ktEmailRow: document.getElementById('ktEmailRow'),
+      ktEmail: document.getElementById('ktEmail'),
+      ktDisciplinesRow: document.getElementById('ktDisciplinesRow'),
+      ktDisciplines: document.getElementById('ktDisciplines')
+    };
+  }
 
   // Вспомогательная функция времени в Рубцовске (UTC+7)
   function getRubtsovskDate() {
@@ -129,25 +133,25 @@
   function showScreen(screenName) {
     state.currentScreen = screenName;
 
-    dom.screenWelcome.classList.add('hidden');
-    dom.screenWelcome.classList.remove('active');
-    dom.screenGroupSelect.classList.add('hidden');
-    dom.screenGroupSelect.classList.remove('active');
-    dom.screenSchedule.classList.add('hidden');
-    dom.screenSchedule.classList.remove('active');
+    dom.screenWelcome?.classList.add('hidden');
+    dom.screenWelcome?.classList.remove('active');
+    dom.screenGroupSelect?.classList.add('hidden');
+    dom.screenGroupSelect?.classList.remove('active');
+    dom.screenSchedule?.classList.add('hidden');
+    dom.screenSchedule?.classList.remove('active');
 
     if (screenName === 'welcome') {
-      dom.screenWelcome.classList.remove('hidden');
-      dom.screenWelcome.classList.add('active');
+      dom.screenWelcome?.classList.remove('hidden');
+      dom.screenWelcome?.classList.add('active');
       stopSessionTimer();
     } else if (screenName === 'groupSelect') {
-      dom.screenGroupSelect.classList.remove('hidden');
-      dom.screenGroupSelect.classList.add('active');
+      dom.screenGroupSelect?.classList.remove('hidden');
+      dom.screenGroupSelect?.classList.add('active');
       startOrResetSessionTimer();
       renderGroupsList();
     } else if (screenName === 'schedule') {
-      dom.screenSchedule.classList.remove('hidden');
-      dom.screenSchedule.classList.add('active');
+      dom.screenSchedule?.classList.remove('hidden');
+      dom.screenSchedule?.classList.add('active');
       startOrResetSessionTimer();
     }
   }
@@ -356,7 +360,7 @@
     }).join('');
 
     // Навешиваем клики
-    dom.kioskGroupsGrid.querySelectorAll('.kiosk-group-card').forEach(card => {
+    dom.kioskGroupsGrid?.querySelectorAll('.kiosk-group-card').forEach(card => {
       card.addEventListener('click', () => {
         const gid = parseInt(card.dataset.groupId);
         const gname = card.dataset.groupName;
@@ -596,7 +600,7 @@
     }
 
     // Клики по преподавателям
-    dom.kioskScheduleCards.querySelectorAll('.kpc-teacher-btn').forEach(btn => {
+    dom.kioskScheduleCards?.querySelectorAll('.kpc-teacher-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const tName = btn.dataset.teacher;
@@ -773,6 +777,7 @@
   }
 
   function init() {
+    initDom();
     initEventListeners();
     updateLiveClock();
     liveClockInterval = setInterval(updateLiveClock, 1000);
@@ -784,5 +789,9 @@
     showScreen('welcome');
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

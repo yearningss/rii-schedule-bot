@@ -5,7 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Информационное табло расписания РИИ АлтГТУ</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/tv.css">
+  <link rel="stylesheet" href="/tv.css?v=2.1">
+  <script>
+    // Информационное табло работает в онлайн-режиме: отключаем старый кэш
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var reg of registrations) {
+          reg.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (var name of names) {
+          caches.delete(name);
+        }
+      });
+    }
+  </script>
 </head>
 <body class="tv-body">
   <!-- Главный контейнер экрана 1080p/4K -->
@@ -127,6 +144,6 @@
 
   </div>
 
-  <script src="/tv.js"></script>
+  <script src="/tv.js?v=2.1"></script>
 </body>
 </html>

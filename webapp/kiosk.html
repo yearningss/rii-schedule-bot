@@ -15,7 +15,24 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="shortcut icon" href="/favicon.ico">
 
-  <link rel="stylesheet" href="/kiosk.css">
+  <link rel="stylesheet" href="/kiosk.css?v=2.1">
+  <script>
+    // Терминал работает в онлайн-режиме: отключаем старый кэш и Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var reg of registrations) {
+          reg.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (var name of names) {
+          caches.delete(name);
+        }
+      });
+    }
+  </script>
 </head>
 <body class="kiosk-body">
 
@@ -371,6 +388,6 @@
     </div>
   </div>
 
-  <script src="/kiosk.js"></script>
+  <script src="/kiosk.js?v=2.1"></script>
 </body>
 </html>
