@@ -3,16 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>РИИ Расписание | Сенсорный терминал</title>
+  <title>РИИ Расписание | Рубцовский индустриальный институт</title>
   
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <!-- Manifest и PWA настройки -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="РИИ Бот">
+
+  <!-- Favicon и иконки -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  <!-- Метатеги для браузера и соцсетей (Open Graph) -->
+  <meta name="description" content="Удобное расписание занятий Рубцовского индустриального института (РИИ АлтГТУ). Статус пар в реальном времени, уведомления и свайпы дней.">
+  <meta property="og:title" content="РИИ Расписание пар">
+  <meta property="og:description" content="Актуальное расписание занятий студентов РИИ АлтГТУ прямо в Telegram и браузере.">
+  <meta property="og:image" content="/favicon.png">
+  <meta property="og:type" content="website">
+
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/kiosk.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body class="kiosk-mode-body" oncontextmenu="return false;">
+<body>
   <div class="app-container">
-    
-    <!-- Шапка (в точности как в Web App) -->
+    <!-- Шапка -->
     <header class="app-header">
       <div class="header-top">
         <button id="groupSelectBtn" class="group-btn">
@@ -21,22 +40,6 @@
             <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
           </svg>
         </button>
-
-        <button id="teachersCatalogBtn" class="teachers-nav-btn" title="Преподаватели РИИ">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-          <span>Преподаватели</span>
-        </button>
-
-        <button id="bellsBtn" class="teachers-nav-btn" title="Расписание звонков">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-          <span>Звонки</span>
-        </button>
-
-        <button id="appQrBtn" class="teachers-nav-btn" title="В телефон">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
-          <span>В телефон</span>
-        </button>
-
         <div class="week-toggle">
           <button id="week1Btn" class="week-btn active" data-week="1">I нед</button>
           <button id="week2Btn" class="week-btn" data-week="2">II нед</button>
@@ -60,6 +63,18 @@
       <span id="liveStatusText" class="status-text">Загрузка...</span>
     </div>
 
+    <!-- Подсказка для установки PWA в браузере -->
+    <div id="pwaInstallBanner" class="pwa-install-banner hidden">
+      <div class="pwa-banner-content">
+        <img src="/favicon-32x32.png" alt="Иконка" class="pwa-icon">
+        <div class="pwa-banner-text">
+          <strong>Установить приложение</strong>
+          <span>Быстрый доступ с экрана «Домой»</span>
+        </div>
+      </div>
+      <button id="pwaInstallBtn" class="pwa-action-btn">Установить</button>
+    </div>
+
     <!-- Основной контент расписания -->
     <main class="schedule-container" id="scheduleContainer">
       <div id="scheduleCards" class="cards-list">
@@ -75,7 +90,7 @@
       </div>
     </main>
 
-    <!-- Фильтр подгруппы (в точности как в Web App) -->
+    <!-- Фильтр подгруппы -->
     <footer class="app-footer">
       <div class="subgroup-selector">
         <button class="sg-btn active" data-sg="0">Все подгруппы</button>
@@ -85,7 +100,7 @@
     </footer>
   </div>
 
-  <!-- Модальное окно выбора группы (в точности как в Web App) -->
+  <!-- Модальное окно выбора группы -->
   <div id="groupModal" class="modal-backdrop hidden">
     <div class="modal-sheet">
       <div class="modal-header">
@@ -101,7 +116,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно преподавателя (в точности как в Web App) -->
+  <!-- Модальное окно преподавателя -->
   <div id="teacherModal" class="modal-backdrop hidden">
     <div class="modal-sheet teacher-modal-sheet">
       <div class="modal-header">
@@ -161,7 +176,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно каталога преподавателей (в точности как в Web App) -->
+  <!-- Модальное окно каталога преподавателей -->
   <div id="teachersCatalogModal" class="modal-backdrop hidden">
     <div class="modal-sheet teachers-catalog-sheet">
       <div class="modal-header">
@@ -177,117 +192,6 @@
     </div>
   </div>
 
-  <!-- Модальное окно звонков (в том же стиле modal-sheet) -->
-  <div id="bellsModal" class="modal-backdrop hidden">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <h3>Расписание звонков</h3>
-        <button id="closeBellsBtn" class="close-btn">&times;</button>
-      </div>
-      <div class="bells-modal-body">
-        <table class="bells-table">
-          <thead>
-            <tr>
-              <th>Пара</th>
-              <th>Время</th>
-              <th>Перемена</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><strong>1 пара</strong></td><td>08:30 - 10:00</td><td>10 мин</td></tr>
-            <tr><td><strong>2 пара</strong></td><td>10:10 - 11:40</td><td>30 мин (обед)</td></tr>
-            <tr><td><strong>3 пара</strong></td><td>12:10 - 13:40</td><td>10 мин</td></tr>
-            <tr><td><strong>4 пара</strong></td><td>13:50 - 15:20</td><td>10 мин</td></tr>
-            <tr><td><strong>5 пара</strong></td><td>15:30 - 17:00</td><td>10 мин</td></tr>
-            <tr><td><strong>6 пара</strong></td><td>17:10 - 18:40</td><td>10 мин</td></tr>
-            <tr><td><strong>7 пара</strong></td><td>18:50 - 20:20</td><td>Окончание пар</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модальное окно QR-кода на бота и приложение -->
-  <div id="appQrModal" class="modal-backdrop hidden">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <h3>Расписание в смартфоне</h3>
-        <button id="closeAppQrBtn" class="close-btn">&times;</button>
-      </div>
-      <div class="qr-modal-body">
-        <img src="/qr_bot.png" alt="QR-код бота" class="qr-modal-image">
-        <p class="qr-modal-desc">
-          Наведите камеру смартфона на QR-код для перехода в Telegram-бота <strong>@rubinst_bot</strong> или установки мобильного приложения.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Экранная клавиатура для сенсорного экрана -->
-  <div class="touch-keyboard-drawer hidden" id="touchKeyboardDrawer">
-    <div class="kb-header-row">
-      <span class="kb-title" id="kbTitle">Ввод текста</span>
-      <button type="button" class="kb-hide-btn" id="kbHideBtn">Скрыть клавиатуру</button>
-    </div>
-    <div class="kb-row">
-      <button type="button" class="k-btn" data-char="1">1</button>
-      <button type="button" class="k-btn" data-char="2">2</button>
-      <button type="button" class="k-btn" data-char="3">3</button>
-      <button type="button" class="k-btn" data-char="4">4</button>
-      <button type="button" class="k-btn" data-char="5">5</button>
-      <button type="button" class="k-btn" data-char="6">6</button>
-      <button type="button" class="k-btn" data-char="7">7</button>
-      <button type="button" class="k-btn" data-char="8">8</button>
-      <button type="button" class="k-btn" data-char="9">9</button>
-      <button type="button" class="k-btn" data-char="0">0</button>
-      <button type="button" class="k-btn" data-char="-">-</button>
-      <button type="button" class="k-btn k-btn-action" id="kBackspace">&larr;</button>
-    </div>
-    <div class="kb-row">
-      <button type="button" class="k-btn" data-char="Й">Й</button>
-      <button type="button" class="k-btn" data-char="Ц">Ц</button>
-      <button type="button" class="k-btn" data-char="У">У</button>
-      <button type="button" class="k-btn" data-char="К">К</button>
-      <button type="button" class="k-btn" data-char="Е">Е</button>
-      <button type="button" class="k-btn" data-char="Н">Н</button>
-      <button type="button" class="k-btn" data-char="Г">Г</button>
-      <button type="button" class="k-btn" data-char="Ш">Ш</button>
-      <button type="button" class="k-btn" data-char="Щ">Щ</button>
-      <button type="button" class="k-btn" data-char="З">З</button>
-      <button type="button" class="k-btn" data-char="Х">Х</button>
-      <button type="button" class="k-btn" data-char="Ъ">Ъ</button>
-    </div>
-    <div class="kb-row">
-      <button type="button" class="k-btn" data-char="Ф">Ф</button>
-      <button type="button" class="k-btn" data-char="Ы">Ы</button>
-      <button type="button" class="k-btn" data-char="В">В</button>
-      <button type="button" class="k-btn" data-char="А">А</button>
-      <button type="button" class="k-btn" data-char="П">П</button>
-      <button type="button" class="k-btn" data-char="Р">Р</button>
-      <button type="button" class="k-btn" data-char="О">О</button>
-      <button type="button" class="k-btn" data-char="Л">Л</button>
-      <button type="button" class="k-btn" data-char="Д">Д</button>
-      <button type="button" class="k-btn" data-char="Ж">Ж</button>
-      <button type="button" class="k-btn" data-char="Э">Э</button>
-    </div>
-    <div class="kb-row">
-      <button type="button" class="k-btn" data-char="Я">Я</button>
-      <button type="button" class="k-btn" data-char="Ч">Ч</button>
-      <button type="button" class="k-btn" data-char="С">С</button>
-      <button type="button" class="k-btn" data-char="М">М</button>
-      <button type="button" class="k-btn" data-char="И">И</button>
-      <button type="button" class="k-btn" data-char="Т">Т</button>
-      <button type="button" class="k-btn" data-char="Ь">Ь</button>
-      <button type="button" class="k-btn" data-char="Б">Б</button>
-      <button type="button" class="k-btn" data-char="Ю">Ю</button>
-      <button type="button" class="k-btn k-btn-space" id="kSpace">Пробел</button>
-      <button type="button" class="k-btn k-btn-clear" id="kClear">Очистить</button>
-    </div>
-  </div>
-
-  <!-- Базовый скрипт приложения (тот же самый, что в Web App!) -->
   <script src="/app.js"></script>
-  <!-- Дополнительный скрипт для сенсорного киоска -->
-  <script src="/kiosk.js"></script>
 </body>
 </html>
