@@ -184,10 +184,33 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.20',
+        title: 'Релиз v1.0.20 (сборка 21)',
+        publishedAt: '2026-09-17T07:30:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.20',
+        rawBody: '''* Live-расписание занятий в реальном времени: закрепленное уведомление на Android со встроенным хронометром и Live Activities / Dynamic Island для iOS.
+* Нативная авторизация через Яндекс ID на Android для быстрого входа в один клик.
+* Интерактивная карточка преподавателя по клику на ФИО с фото, контактами, должностью и кафедрой.
+* Полный федеральный формат телефонных номеров +7 (38557) для звонков с мобильных устройств.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56500000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.20/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8380000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.20/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.19',
         title: 'Релиз v1.0.19 (сборка 20)',
         publishedAt: '2026-09-08T11:00:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.19',
         rawBody: '''* Устранено бесконечное появление диалога и баннера обновления при уже установленной актуальной версии приложения.
 * Синхронизация кода сборки и версии AppInfo (v1.0.19, сборка 20).
