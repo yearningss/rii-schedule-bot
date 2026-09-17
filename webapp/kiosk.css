@@ -577,10 +577,10 @@ html, body {
 .kiosk-filter-bar {
   background: var(--card-bg);
   border-bottom: 1px solid var(--border-color);
-  padding: clamp(10px, 1.5vh, 16px) clamp(16px, 2.5vw, 28px);
+  padding: clamp(8px, 1.2vh, 12px) clamp(14px, 2vw, 24px);
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.2vh, 12px);
+  gap: clamp(6px, 1vh, 10px);
   flex-shrink: 0;
 }
 
@@ -588,7 +588,7 @@ html, body {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -601,9 +601,9 @@ html, body {
   background: var(--secondary-bg);
   color: var(--hint-color);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: clamp(8px, 1.2vh, 12px) clamp(14px, 1.8vw, 20px);
-  font-size: clamp(0.85rem, 1vw, 1.05rem);
+  border-radius: 10px;
+  padding: clamp(6px, 1vh, 9px) clamp(12px, 1.5vw, 18px);
+  font-size: clamp(0.82rem, 0.95vw, 1rem);
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -620,13 +620,13 @@ html, body {
 .kiosk-search-row {
   display: flex;
   align-items: center;
-  gap: clamp(8px, 1.5vw, 16px);
+  gap: clamp(8px, 1.2vw, 14px);
   flex-wrap: wrap;
 }
 
 .kiosk-search-input-wrap {
   flex: 1;
-  min-width: 260px;
+  min-width: 240px;
   position: relative;
   display: flex;
   align-items: center;
@@ -634,7 +634,7 @@ html, body {
 
 .search-ico {
   position: absolute;
-  left: 16px;
+  left: 14px;
   color: var(--hint-color);
   pointer-events: none;
 }
@@ -643,9 +643,9 @@ html, body {
   width: 100%;
   background: var(--secondary-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: clamp(10px, 1.4vh, 14px) 44px clamp(10px, 1.4vh, 14px) 48px;
-  font-size: clamp(0.9rem, 1.05vw, 1.1rem);
+  border-radius: 12px;
+  padding: clamp(7px, 1vh, 10px) 38px clamp(7px, 1vh, 10px) 42px;
+  font-size: clamp(0.85rem, 0.95vw, 1rem);
   color: #ffffff;
   outline: none;
   font-family: inherit;
@@ -658,18 +658,18 @@ html, body {
 
 .btn-clear-search {
   position: absolute;
-  right: 12px;
+  right: 10px;
   background: none;
   border: none;
   color: var(--hint-color);
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 2px 6px;
 }
 
 .kiosk-quick-tags {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -683,9 +683,9 @@ html, body {
   background: var(--secondary-bg);
   color: var(--accent-color);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: clamp(8px, 1vh, 10px) clamp(10px, 1.2vw, 14px);
-  font-size: clamp(0.8rem, 0.9vw, 0.95rem);
+  border-radius: 8px;
+  padding: clamp(6px, 0.8vh, 8px) clamp(8px, 1vw, 12px);
+  font-size: clamp(0.75rem, 0.85vw, 0.9rem);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -698,21 +698,135 @@ html, body {
   border-color: var(--btn-color);
 }
 
-/* Сетка карточек групп */
+/* Контейнер карточек групп */
 .kiosk-groups-container {
   flex: 1;
   overflow-y: auto;
-  padding: clamp(14px, 2vh, 24px) clamp(16px, 2.5vw, 28px);
+  padding: clamp(10px, 1.5vh, 16px) clamp(14px, 2vw, 24px);
   -webkit-overflow-scrolling: touch;
+  min-height: 0;
 }
 
+/* Режим 4 колонок курсов для Все группы (0 скролла на экране 1080p) */
+.kiosk-groups-columns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(8px, 1.2vw, 14px);
+  height: 100%;
+}
+
+.kiosk-course-col {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 8px;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.kcc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--secondary-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.kcc-header:active {
+  border-color: var(--btn-color);
+  background: var(--card-bg-hover);
+}
+
+.kcc-title {
+  font-size: clamp(0.95rem, 1.1vw, 1.15rem);
+  font-weight: 900;
+  color: var(--accent-color);
+}
+
+.kcc-badge {
+  font-size: clamp(0.7rem, 0.8vw, 0.8rem);
+  font-weight: 700;
+  color: var(--hint-color);
+}
+
+.kcc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.kcc-list::-webkit-scrollbar {
+  display: none;
+}
+
+.kiosk-group-card.column-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: clamp(5px, 0.7vh, 7px) 10px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-height: clamp(38px, 4.8vh, 46px);
+}
+
+.kiosk-group-card.column-card:active {
+  transform: scale(0.98);
+  border-color: var(--btn-color);
+  background: var(--card-bg-hover);
+}
+
+.kgc-col-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kgc-col-info .kgc-name {
+  font-size: clamp(1.05rem, 1.22vw, 1.35rem);
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.kgc-badge-spo {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.kgc-badge-vo {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+/* Сетка для одного курса или поиска */
 .kiosk-groups-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(clamp(200px, 18vw, 260px), 1fr));
   gap: clamp(10px, 1.5vw, 16px);
 }
 
-.kiosk-group-card {
+.kiosk-group-card.grid-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 16px;
@@ -726,7 +840,7 @@ html, body {
   min-height: clamp(95px, 12vh, 125px);
 }
 
-.kiosk-group-card:active {
+.kiosk-group-card.grid-card:active {
   transform: scale(0.98);
   border-color: var(--btn-color);
   background: var(--card-bg-hover);
@@ -1401,4 +1515,14 @@ html, body {
   .kiosk-groups-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
+  .kiosk-groups-columns {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
+
+@media (max-width: 680px) {
+  .kiosk-groups-columns {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -398,24 +398,52 @@
 
     if (dom.kioskNoGroupsFound) dom.kioskNoGroupsFound.classList.add('hidden');
 
-    dom.kioskGroupsGrid.innerHTML = filtered.map(group => {
-      const courseStr = group.course ? `${group.course} курс` : 'ВПО / СПО';
-      const facStr = getGroupFacultyName(group.name);
-      return `
-        <div class="kiosk-group-card" data-group-id="${group.id}" data-group-name="${escapeHtml(group.name)}">
-          <div class="kgc-header">
-            <span class="kgc-name">${escapeHtml(group.name)}</span>
-            <span class="kgc-course-badge">${courseStr}</span>
+    // Если выбраны "Все группы" без поиска и без тега:
+    // отображаем структурированно по 4 курсам в 4 колонках без необходимости прокрутки!
+    if (state.selectedCourse === 'all' && state.selectedTag === 'all' && !state.searchQuery.trim()) {
+      const c1 = filtered.filter(g => parseInt(g.course || 0) === 1);
+      const c2 = filtered.filter(g => parseInt(g.course || 0) === 2);
+      const c3 = filtered.filter(g => parseInt(g.course || 0) === 3);
+      const c4 = filtered.filter(g => parseInt(g.course || 0) === 4);
+
+      const renderColumn = (cNum, list) => {
+        return `
+          <div class="kiosk-course-col">
+            <div class="kcc-header" data-course="${cNum}">
+              <span class="kcc-title">${cNum} КУРС</span>
+              <span class="kcc-badge">${list.length} групп</span>
+            </div>
+            <div class="kcc-list">
+              ${list.map(g => renderSingleGroupCard(g, true)).join('')}
+            </div>
           </div>
-          <div class="kgc-meta">
-            <span class="kgc-faculty">${facStr}</span>
-            <span class="kgc-arrow">
-              <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-            </span>
-          </div>
-        </div>
+        `;
+      };
+
+      dom.kioskGroupsGrid.className = 'kiosk-groups-columns';
+      dom.kioskGroupsGrid.innerHTML = `
+        ${renderColumn(1, c1)}
+        ${renderColumn(2, c2)}
+        ${renderColumn(3, c3)}
+        ${renderColumn(4, c4)}
       `;
-    }).join('');
+
+      // Клик по шапке колонки переключает вкладку на этот курс
+      dom.kioskGroupsGrid.querySelectorAll('.kcc-header').forEach(hdr => {
+        hdr.addEventListener('click', () => {
+          const c = hdr.dataset.course;
+          if (c) {
+            state.selectedCourse = c;
+            updateCourseTabsUI();
+            renderGroupsList();
+          }
+        });
+      });
+    } else {
+      // Режим выбранного курса или поиска: просторная сетка крупных карточек
+      dom.kioskGroupsGrid.className = 'kiosk-groups-grid';
+      dom.kioskGroupsGrid.innerHTML = filtered.map(g => renderSingleGroupCard(g, false)).join('');
+    }
 
     // Обработчики сенсорного нажатия на карточку группы
     dom.kioskGroupsGrid.querySelectorAll('.kiosk-group-card').forEach(card => {
@@ -425,6 +453,42 @@
         selectGroupAndOpenSchedule(gid, gname);
       });
     });
+  }
+
+  function renderSingleGroupCard(group, isColumnMode = false) {
+    const isSpo = isSpoGroup(group.name);
+    const facBadge = isSpo ? '<span class="kgc-badge-spo">СПО</span>' : '<span class="kgc-badge-vo">ВО</span>';
+    const facFull = getGroupFacultyName(group.name);
+    const courseStr = group.course ? `${group.course} курс` : 'ВПО / СПО';
+
+    if (isColumnMode) {
+      return `
+        <div class="kiosk-group-card column-card" data-group-id="${group.id}" data-group-name="${escapeHtml(group.name)}">
+          <div class="kgc-col-info">
+            <span class="kgc-name">${escapeHtml(group.name)}</span>
+            ${facBadge}
+          </div>
+          <span class="kgc-arrow">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+          </span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="kiosk-group-card grid-card" data-group-id="${group.id}" data-group-name="${escapeHtml(group.name)}">
+        <div class="kgc-header">
+          <span class="kgc-name">${escapeHtml(group.name)}</span>
+          <span class="kgc-course-badge">${courseStr}</span>
+        </div>
+        <div class="kgc-meta">
+          <span class="kgc-faculty">${facFull}</span>
+          <span class="kgc-arrow">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+          </span>
+        </div>
+      </div>
+    `;
   }
 
   function selectGroupAndOpenSchedule(groupId, groupName) {
