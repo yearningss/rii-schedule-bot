@@ -180,10 +180,11 @@ class MainActivity: FlutterActivity() {
                 try {
                     if (yandexAuthSdk == null) {
                         val options = YandexAuthOptions(applicationContext, true)
-                        yandexAuthSdk = YandexAuthSdk.create(options)
+                        yandexAuthSdk = YandexAuthSdk(applicationContext, options)
                     }
                     yandexLoginResultCallback = result
-                    val intent = yandexAuthSdk!!.createLoginIntent(YandexAuthLoginOptions())
+                    val loginOptions = YandexAuthLoginOptions.Builder().build()
+                    val intent = yandexAuthSdk!!.createLoginIntent(loginOptions)
                     startActivityForResult(intent, REQUEST_LOGIN_YANDEX)
                 } catch (e: Exception) {
                     result.error("YANDEX_INIT_ERROR", e.message, null)
@@ -201,13 +202,12 @@ class MainActivity: FlutterActivity() {
             yandexLoginResultCallback = null
             if (callback == null) return
             try {
-                val yandexSdk = yandexAuthSdk ?: YandexAuthSdk.create(YandexAuthOptions(applicationContext, true))
+                val yandexSdk = yandexAuthSdk ?: YandexAuthSdk(applicationContext, YandexAuthOptions(applicationContext, true))
                 val yandexToken = yandexSdk.extractToken(resultCode, data)
                 if (yandexToken != null) {
                     callback.success(mapOf(
                         "status" to "success",
-                        "token" to yandexToken.value,
-                        "expiresIn" to yandexToken.expiresIn
+                        "token" to yandexToken.value
                     ))
                 } else {
                     callback.success(mapOf(
