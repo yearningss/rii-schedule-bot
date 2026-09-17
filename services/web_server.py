@@ -381,10 +381,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.20",
-        "latest_build": 21,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.20/{target_ext}",
-        "release_notes": "Обновление v1.0.20 (сборка 21):\n- Live-расписание занятий (Android Ongoing Notification и iOS Live Activities / Dynamic Island)\n- Нативная авторизация через Яндекс ID\n- Карточки преподавателей с подробным описанием и контактами\n- Интеграция номеров РИИ в федеральном формате",
+        "latest_version": "1.0.21",
+        "latest_build": 22,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/{target_ext}",
+        "release_notes": "Обновление v1.0.21 (сборка 22):\n- Улучшено модальное окно преподавателя (кнопка закрытия, закрепленный заголовок)\n- Устранена повторная загрузка с сервера при свайпах и касаниях\n- Интерактивный каталог преподавателей с поиском\n- Кнопки преподавателей в Telegram Mini App",
         "is_required": False
     }
 

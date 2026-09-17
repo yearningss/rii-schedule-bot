@@ -538,41 +538,102 @@ body {
   color: var(--btn-text-color);
 }
 
-/* Стили ссылки на преподавателя в карточке пары */
-.teacher-clickable {
+.group-btn:hover {
+  background: var(--border-color);
+}
+
+.teachers-nav-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--accent-color);
+  gap: 5px;
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  border-radius: 6px;
-  padding: 1px 5px;
-  margin: -1px -5px;
-  transition: background 0.15s ease, opacity 0.15s ease;
-  font-weight: 500;
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  text-underline-offset: 3px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.teacher-clickable:hover {
+.teachers-nav-btn:hover {
   background: var(--accent-light);
-  text-decoration-style: solid;
+  color: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
-.teacher-clickable:active {
-  opacity: 0.7;
+.teachers-nav-btn:active {
+  transform: scale(0.96);
 }
 
-.teacher-icon {
+/* Кнопка преподавателя в карточке пары */
+.teacher-btn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent-light);
+  color: var(--accent-color);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+  max-width: 100%;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.teacher-btn-chip:hover {
+  background: var(--accent-color);
+  color: #fff;
+  border-color: var(--accent-color);
+}
+
+.teacher-btn-chip:active {
+  transform: scale(0.97);
+}
+
+.teacher-btn-chip .teacher-icon {
   flex-shrink: 0;
+}
+
+.teacher-btn-chip .teacher-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teacher-btn-chip .teacher-post-hint {
+  font-size: 11px;
   opacity: 0.85;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.teacher-btn-chip .teacher-arrow {
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 /* Карточка и модальное окно преподавателя */
 .teacher-modal-sheet {
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.teacher-modal-sheet .modal-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  z-index: 10;
 }
 
 .teacher-details {
@@ -580,6 +641,9 @@ body {
   flex-direction: column;
   gap: 16px;
   padding-bottom: 8px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
 }
 
 .teacher-profile-header {
@@ -696,16 +760,42 @@ body {
 
 .teacher-actions {
   display: flex;
+  gap: 10px;
   margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  background: var(--card-bg);
+  flex-shrink: 0;
+}
+
+.teacher-close-btn {
+  flex: 1;
+  padding: 11px 14px;
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.teacher-close-btn:hover {
+  background: var(--secondary-bg);
+}
+
+.teacher-close-btn:active {
+  opacity: 0.7;
 }
 
 .teacher-site-btn {
+  flex: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  padding: 12px 16px;
+  padding: 11px 16px;
   background: var(--btn-color);
   color: var(--btn-text-color);
   text-decoration: none;
@@ -717,6 +807,97 @@ body {
 
 .teacher-site-btn:active {
   opacity: 0.8;
+}
+
+/* Модальное окно каталога преподавателей */
+.teachers-catalog-sheet {
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.teachers-catalog-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+}
+
+.teacher-catalog-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.teacher-catalog-item:hover {
+  background: var(--secondary-bg);
+}
+
+.teacher-catalog-item:active {
+  background: var(--accent-light);
+}
+
+.teacher-catalog-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hint-color);
+}
+
+.teacher-catalog-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.teacher-catalog-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.teacher-catalog-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teacher-catalog-post {
+  font-size: 12px;
+  color: var(--hint-color);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teacher-catalog-dept {
+  font-size: 11px;
+  color: var(--accent-color);
+  font-weight: 500;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teacher-catalog-arrow {
+  color: var(--hint-color);
+  flex-shrink: 0;
 }
 
 .hidden {

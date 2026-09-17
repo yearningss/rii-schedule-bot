@@ -184,10 +184,33 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.21',
+        title: 'Релиз v1.0.21 (сборка 22)',
+        publishedAt: '2026-09-17T08:10:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.21',
+        rawBody: '''* Улучшено модальное окно преподавателя: кнопка закрытия, закрепленный заголовок и подвал.
+* Устранена повторная загрузка с сервера: кэширование профилей при касаниях и свайпах.
+* Интерактивный каталог преподавателей института с поиском.
+* Наглядные кнопки преподавателей в Telegram Mini App.''',
+        assets: [
+          const ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 56500000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/RiiSchedule.apk',
+          ),
+          const ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 8380000,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.20',
         title: 'Релиз v1.0.20 (сборка 21)',
         publishedAt: '2026-09-17T07:30:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.20',
         rawBody: '''* Live-расписание занятий в реальном времени: закрепленное уведомление на Android со встроенным хронометром и Live Activities / Dynamic Island для iOS.
 * Нативная авторизация через Яндекс ID на Android для быстрого входа в один клик.

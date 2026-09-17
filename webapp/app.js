@@ -66,7 +66,13 @@ const el = {
   teacherEmailRow: document.getElementById('teacherEmailRow'),
   teacherDisciplines: document.getElementById('teacherDisciplines'),
   teacherDisciplinesRow: document.getElementById('teacherDisciplinesRow'),
-  teacherSiteLink: document.getElementById('teacherSiteLink')
+  teacherSiteLink: document.getElementById('teacherSiteLink'),
+  closeTeacherBottomBtn: document.getElementById('closeTeacherBottomBtn'),
+  teachersCatalogBtn: document.getElementById('teachersCatalogBtn'),
+  teachersCatalogModal: document.getElementById('teachersCatalogModal'),
+  closeTeachersCatalogBtn: document.getElementById('closeTeachersCatalogBtn'),
+  teacherSearchInput: document.getElementById('teacherSearchInput'),
+  teachersListContainer: document.getElementById('teachersListContainer')
 };
 
 // Определение текущего времени и дня в Рубцовске (UTC+7)
@@ -308,10 +314,11 @@ function renderTeacherHtml(teacher, post) {
   const cleanTeacher = teacher.trim();
   const cleanPost = (post || '').trim();
   const postDisplay = cleanPost ? ` (${cleanPost})` : '';
-  return `<span class="teacher-clickable" onclick="openTeacherModal('${escapeAttr(cleanTeacher)}', '${escapeAttr(cleanPost)}')">
+  return `<button type="button" class="teacher-btn-chip" data-teacher="${escapeAttr(cleanTeacher)}" data-post="${escapeAttr(cleanPost)}" title="Профиль преподавателя">
     <svg class="teacher-icon" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-    <span>${escapeHtml(cleanTeacher)}</span>${escapeHtml(postDisplay)}
-  </span>`;
+    <span class="teacher-name">${escapeHtml(cleanTeacher)}</span>${postDisplay ? `<span class="teacher-post-hint">${escapeHtml(postDisplay)}</span>` : ''}
+    <svg class="teacher-arrow" viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+  </button>`;
 }
 
 // Отрисовка расписания на выбранный день
@@ -560,11 +567,22 @@ function closeGroupModal() {
   el.groupModal.classList.add('hidden');
 }
 
-// Модальное окно преподавателя
+const teacherCache = new Map();
+
+// Модальное окно преподавателя с кэшированием
 async function openTeacherModal(name, post) {
   if (!name) return;
   triggerHaptic();
   el.teacherModal.classList.remove('hidden');
+
+  const cacheKey = `${name.trim()}|${(post || '').trim()}`;
+  if (teacherCache.has(cacheKey)) {
+    populateTeacherModal(teacherCache.get(cacheKey));
+    el.teacherLoading.classList.add('hidden');
+    el.teacherContent.classList.remove('hidden');
+    return;
+  }
+
   el.teacherLoading.classList.remove('hidden');
   el.teacherContent.classList.add('hidden');
 
@@ -572,6 +590,7 @@ async function openTeacherModal(name, post) {
     const res = await fetch(`/api/teacher?name=${encodeURIComponent(name)}&post=${encodeURIComponent(post || '')}`);
     if (!res.ok) throw new Error('Ошибка загрузки данных');
     const data = await res.json();
+    teacherCache.set(cacheKey, data);
     populateTeacherModal(data);
   } catch (e) {
     console.error('Ошибка получения данных преподавателя:', e);
@@ -711,6 +730,58 @@ el.scheduleContainer.addEventListener('touchend', e => {
   }
 }, { passive: true });
 
+// Каталог преподавателей института
+let allTeachersData = [];
+
+async function openTeachersCatalogModal() {
+  triggerHaptic();
+  el.teachersCatalogModal.classList.remove('hidden');
+  el.teacherSearchInput.value = '';
+
+  if (allTeachersData.length === 0) {
+    el.teachersListContainer.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Загрузка преподавателей...</p></div>';
+    try {
+      const res = await fetch('/api/teachers');
+      allTeachersData = await res.json();
+    } catch (e) {
+      el.teachersListContainer.innerHTML = '<div class="empty-state"><p>Не удалось загрузить преподавателей</p></div>';
+      return;
+    }
+  }
+  renderTeachersCatalog(allTeachersData);
+}
+
+function closeTeachersCatalogModal() {
+  el.teachersCatalogModal.classList.add('hidden');
+}
+
+function renderTeachersCatalog(list) {
+  if (!list || list.length === 0) {
+    el.teachersListContainer.innerHTML = '<div class="empty-state"><p>Ничего не найдено</p></div>';
+    return;
+  }
+  let html = '';
+  for (const t of list) {
+    const name = t.full_name || t.short_name || 'Преподаватель';
+    const post = t.post || '';
+    const dept = t.department || '';
+    const photo = t.photo_url || '';
+    html += `
+      <div class="teacher-catalog-item" data-name="${escapeAttr(name)}" data-post="${escapeAttr(post)}">
+        <div class="teacher-catalog-avatar">
+          ${photo ? `<img src="${escapeAttr(photo)}" alt="" onerror="this.remove()">` : `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`}
+        </div>
+        <div class="teacher-catalog-info">
+          <div class="teacher-catalog-name">${escapeHtml(name)}</div>
+          ${post ? `<div class="teacher-catalog-post">${escapeHtml(post)}</div>` : ''}
+          ${dept ? `<div class="teacher-catalog-dept">${escapeHtml(dept)}</div>` : ''}
+        </div>
+        <svg class="teacher-catalog-arrow" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+      </div>`;
+  }
+  el.teachersListContainer.innerHTML = html;
+}
+
 // Обработчики событий
 el.groupSelectBtn.addEventListener('click', openGroupModal);
 el.closeModalBtn.addEventListener('click', closeGroupModal);
@@ -719,14 +790,61 @@ el.groupModal.addEventListener('click', e => {
 });
 
 el.closeTeacherModalBtn.addEventListener('click', closeTeacherModal);
+el.closeTeacherBottomBtn?.addEventListener('click', closeTeacherModal);
 el.teacherModal.addEventListener('click', e => {
   if (e.target === el.teacherModal) closeTeacherModal();
+});
+
+el.teachersCatalogBtn?.addEventListener('click', openTeachersCatalogModal);
+el.closeTeachersCatalogBtn?.addEventListener('click', closeTeachersCatalogModal);
+el.teachersCatalogModal?.addEventListener('click', e => {
+  if (e.target === el.teachersCatalogModal) closeTeachersCatalogModal();
+});
+
+el.teacherSearchInput?.addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) {
+    renderTeachersCatalog(allTeachersData);
+  } else {
+    const filtered = allTeachersData.filter(t => {
+      return (t.full_name || '').toLowerCase().includes(q) ||
+             (t.short_name || '').toLowerCase().includes(q) ||
+             (t.department || '').toLowerCase().includes(q) ||
+             (t.post || '').toLowerCase().includes(q) ||
+             (t.disciplines || '').toLowerCase().includes(q);
+    });
+    renderTeachersCatalog(filtered);
+  }
+});
+
+el.teachersListContainer?.addEventListener('click', e => {
+  const item = e.target.closest('.teacher-catalog-item');
+  if (item) {
+    const name = item.dataset.name;
+    const post = item.dataset.post || '';
+    openTeacherModal(name, post);
+  }
+});
+
+// Делегирование кликов по кнопкам преподавателя в карточках расписания
+el.scheduleCards.addEventListener('click', e => {
+  const btn = e.target.closest('.teacher-btn-chip');
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    const teacher = btn.dataset.teacher;
+    const post = btn.dataset.post || '';
+    if (teacher) {
+      openTeacherModal(teacher, post);
+    }
+  }
 });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeGroupModal();
     closeTeacherModal();
+    closeTeachersCatalogModal();
   }
 });
 

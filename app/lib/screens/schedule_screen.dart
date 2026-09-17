@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../services/widget_service.dart';
 import '../widgets/para_card.dart';
+import '../widgets/teacher_modal_sheet.dart';
 import 'bells_screen.dart';
 import 'group_picker_screen.dart';
 import 'settings_screen.dart';
@@ -644,6 +645,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
           ),
           const SizedBox(width: 8),
           IconButton(
+            icon: const Icon(Icons.people_alt_outlined),
+            tooltip: 'Преподаватели',
+            onPressed: () => _showTeachersCatalogModal(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.access_time_rounded),
             tooltip: 'Звонки',
             onPressed: () {
@@ -1037,266 +1043,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObse
   }
 
   void _showTeacherModal(BuildContext context, String teacher, String? post) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1E232D) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => TeacherModalSheet(
+        teacher: teacher,
+        post: post,
+        api: widget.api,
       ),
-      builder: (ctx) {
-        return FutureBuilder<TeacherInfo?>(
-          future: widget.api.getTeacherInfo(teacher, post: post),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48.0),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Загрузка сведений о преподавателе...',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            final info = snapshot.data ?? TeacherInfo(
-              fullName: teacher,
-              post: post ?? 'Преподаватель',
-              profileUrl: 'https://www.rubinst.ru/structure',
-            );
-
-            return SafeArea(
-              top: false,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey[700] : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(40),
-                          child: Container(
-                            width: 76,
-                            height: 76,
-                            color: isDark ? const Color(0xFF2B3240) : const Color(0xFFF1F5F9),
-                            child: info.photoUrl.isNotEmpty
-                                ? Image.network(
-                                    info.photoUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Icon(
-                                      Icons.person,
-                                      size: 40,
-                                      color: isDark ? Colors.grey[500] : Colors.grey[400],
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: isDark ? Colors.grey[500] : Colors.grey[400],
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                info.fullName.isNotEmpty ? info.fullName : teacher,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              if (info.post.isNotEmpty)
-                                Text(
-                                  info.post,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                  ),
-                                ),
-                              if (info.department.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2563EB).withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    info.department,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF2563EB),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    const Divider(height: 1),
-                    const SizedBox(height: 14),
-                    if (info.room.isNotEmpty)
-                      _buildTeacherDetailRow(
-                        Icons.meeting_room_outlined,
-                        'Аудитория',
-                        info.room,
-                        isDark,
-                      ),
-                    if (info.degree.isNotEmpty || info.title.isNotEmpty)
-                      _buildTeacherDetailRow(
-                        Icons.school_outlined,
-                        'Степень и звание',
-                        [info.degree, info.title].where((s) => s.isNotEmpty).join(', '),
-                        isDark,
-                      ),
-                    if (info.phones.isNotEmpty)
-                      ...info.phones.map((p) => _buildTeacherDetailRow(
-                            Icons.phone_outlined,
-                            'Телефон',
-                            p['display'] ?? '',
-                            isDark,
-                            onTap: (p['dial']?.isNotEmpty ?? false)
-                                ? () => launchUrl(Uri.parse('tel:${p['dial']}'))
-                                : null,
-                          ))
-                    else if (info.phone.isNotEmpty)
-                      _buildTeacherDetailRow(
-                        Icons.phone_outlined,
-                        'Телефон',
-                        info.phone,
-                        isDark,
-                        onTap: () => launchUrl(Uri.parse('tel:${info.dialPhone}')),
-                      ),
-                    if (info.email.isNotEmpty)
-                      _buildTeacherDetailRow(
-                        Icons.email_outlined,
-                        'Email',
-                        info.email,
-                        isDark,
-                        onTap: () {
-                          final first = info.email.split(RegExp(r'\s+')).first;
-                          launchUrl(Uri.parse('mailto:$first'));
-                        },
-                      ),
-                    if (info.disciplines.isNotEmpty)
-                      _buildTeacherDetailRow(
-                        Icons.menu_book_outlined,
-                        'Дисциплины',
-                        info.disciplines,
-                        isDark,
-                      ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          final url = info.profileUrl.isNotEmpty
-                              ? info.profileUrl
-                              : 'https://www.rubinst.ru/structure';
-                          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-                        label: const Text('Открыть на сайте РИИ', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
-  Widget _buildTeacherDetailRow(
-    IconData icon,
-    String label,
-    String value,
-    bool isDark, {
-    VoidCallback? onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 18, color: const Color(0xFF2563EB)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: onTap != null
-                            ? (isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB))
-                            : (isDark ? Colors.white : const Color(0xFF1E293B)),
-                        decoration: onTap != null ? TextDecoration.underline : TextDecoration.none,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+  void _showTeachersCatalogModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => TeachersCatalogSheet(
+        api: widget.api,
+        onTeacherSelected: (teacher, post) {
+          Navigator.of(ctx).pop();
+          _showTeacherModal(context, teacher, post);
+        },
       ),
     );
   }

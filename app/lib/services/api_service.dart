@@ -26,8 +26,14 @@ class ApiService {
     throw Exception('Не удалось загрузить расписание (код ${res.statusCode})');
   }
 
-  // Получение подробной информации о преподавателе
+  final Map<String, TeacherInfo> _teacherCache = {};
+
+  // Получение подробной информации о преподавателе с кэшированием
   Future<TeacherInfo?> getTeacherInfo(String name, {String? post}) async {
+    final cacheKey = '${name.trim()}|${(post ?? '').trim()}';
+    if (_teacherCache.containsKey(cacheKey)) {
+      return _teacherCache[cacheKey];
+    }
     try {
       final uri = Uri.parse('$baseUrl/api/teacher').replace(queryParameters: {
         'name': name,
@@ -36,12 +42,31 @@ class ApiService {
       final res = await http.get(uri).timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
-        return TeacherInfo.fromJson(data);
+        final info = TeacherInfo.fromJson(data);
+        _teacherCache[cacheKey] = info;
+        return info;
       }
     } catch (e) {
       debugPrint('Ошибка запроса информации о преподавателе: $e');
     }
     return null;
+  }
+
+  // Получение каталога преподавателей с возможностью поиска
+  Future<List<TeacherInfo>> getTeachersList({String? query}) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/teachers').replace(queryParameters: {
+        if (query != null && query.isNotEmpty) 'q': query,
+      });
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
+        return data.map((json) => TeacherInfo.fromJson(json as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      debugPrint('Ошибка загрузки списка преподавателей: $e');
+    }
+    return [];
   }
 
   // Инициализация сессии авторизации через Telegram

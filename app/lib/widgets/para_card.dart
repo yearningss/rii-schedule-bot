@@ -237,29 +237,42 @@ class ParaCard extends StatelessWidget {
               Expanded(
                 child: InkWell(
                   onTap: onTeacherTap != null ? () => onTeacherTap!(teacher, post) : null,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2563EB).withOpacity(0.18) : const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF3B82F6).withOpacity(0.35) : const Color(0xFFBFDBFE),
+                        width: 0.8,
+                      ),
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.person_outline,
+                          Icons.person_rounded,
                           size: 14,
-                          color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                          color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Flexible(
                           child: Text(
-                            '$teacher ${post != null && post.isNotEmpty ? '($post)' : ''}',
+                            '$teacher${post != null && post.isNotEmpty ? ' ($post)' : ''}',
                             style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
-                              decoration: TextDecoration.underline,
-                              decorationStyle: TextDecorationStyle.dotted,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 14,
+                          color: isDark ? const Color(0xFF93C5FD).withOpacity(0.7) : const Color(0xFF1D4ED8).withOpacity(0.7),
                         ),
                       ],
                     ),
