@@ -1,5 +1,5 @@
 // Service Worker для поддержки PWA и офлайн-режима
-const CACHE_NAME = 'rii-schedule-pwa-v1';
+const CACHE_NAME = 'rii-schedule-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -34,6 +34,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
+  // Игнорируем внешние запросы (Cloudflare Insights, аналитика, сторонние CDN)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   // Для API запросов: Network-First (сначала свежая сеть, при отсутствии связи - кэш)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
@@ -50,27 +55,20 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Для статических файлов: Cache-First (кэш для мгновенной загрузки, обновление в фоне)
+  // Для статических файлов: Stale-While-Revalidate
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      if (cachedResponse) {
-        // Фоновое обновление кэша
-        fetch(event.request)
-          .then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse));
-            }
-          })
-          .catch(() => {});
-        return cachedResponse;
-      }
-      return fetch(event.request).then(networkResponse => {
-        if (networkResponse && networkResponse.status === 200) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return networkResponse;
-      });
+      const fetchPromise = fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => cachedResponse);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });

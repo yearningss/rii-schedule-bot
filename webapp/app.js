@@ -1,9 +1,13 @@
 // Telegram Mini App логика на чистом Vanilla JS
 const tg = window.Telegram?.WebApp;
 if (tg) {
-  tg.ready();
-  tg.expand();
-  if (tg.setHeaderColor) tg.setHeaderColor('bg_color');
+  try {
+    tg.ready();
+    tg.expand();
+    if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.1') && tg.setHeaderColor) {
+      tg.setHeaderColor('bg_color');
+    }
+  } catch (e) {}
 }
 
 const telegramUser = tg?.initDataUnsafe?.user || null;
