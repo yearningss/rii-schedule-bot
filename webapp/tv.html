@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Информационное табло расписания РИИ АлтГТУ</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/tv.css">
+</head>
+<body class="tv-body">
+  <!-- Главный контейнер экрана 1080p/4K -->
+  <div class="tv-container">
+    
+    <!-- Шапка табло -->
+    <header class="tv-header">
+      <!-- Левая часть: логотип и наименование института -->
+      <div class="tv-header-left">
+        <img src="/icons/logo_app.png" alt="Логотип РИИ" class="tv-logo">
+        <div class="tv-title-block">
+          <h1 class="tv-title">РУБЦОВСКИЙ ИНДУСТРИАЛЬНЫЙ ИНСТИТУТ</h1>
+          <div class="tv-subtitle-row">
+            <span class="tv-subtitle">Информационное табло расписания</span>
+            <span class="tv-online-badge" id="tvOnlineBadge">
+              <span class="tv-pulse-dot"></span>
+              <span id="tvOnlineText">ОНЛАЙН</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Центральная часть: статус звонка и обратный отсчет -->
+      <div class="tv-header-center">
+        <div class="tv-bell-card" id="tvBellCard">
+          <div class="tv-bell-status-row">
+            <span class="tv-bell-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            </span>
+            <span class="tv-bell-title" id="tvBellTitle">Загрузка статуса...</span>
+          </div>
+          <div class="tv-bell-timer" id="tvBellTimer">--:--</div>
+          <div class="tv-bell-progress-track">
+            <div class="tv-bell-progress-bar" id="tvBellProgressBar" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Правая часть: точные часы и дата -->
+      <div class="tv-header-right">
+        <div class="tv-clock" id="tvClock">--:--:--</div>
+        <div class="tv-date-row">
+          <span class="tv-day-name" id="tvDayName">------</span>
+          <span class="tv-date-val" id="tvDateVal">--.--.----</span>
+        </div>
+        <div class="tv-week-badge" id="tvWeekBadge">-- неделя</div>
+      </div>
+    </header>
+
+    <!-- Полоса навигации страниц и прогресс авторотации -->
+    <div class="tv-carousel-bar">
+      <div class="tv-page-info" id="tvPageInfo">Страница 1 из 1</div>
+      <div class="tv-carousel-progress-track">
+        <div class="tv-carousel-progress-bar" id="tvCarouselProgressBar"></div>
+      </div>
+      <div class="tv-page-dots" id="tvPageDots"></div>
+    </div>
+
+    <!-- Основная сетка групп -->
+    <main class="tv-main">
+      <div class="tv-grid" id="tvGrid">
+        <!-- Карточки генерируются скриптом tv.js -->
+        <div class="tv-loading-state">
+          <div class="tv-spinner"></div>
+          <div class="tv-loading-text">Загрузка расписания занятий института...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Подвал табло -->
+    <footer class="tv-footer">
+      <!-- Расписание звонков в строчку -->
+      <div class="tv-bells-strip">
+        <div class="tv-bells-label">ЗВОНКИ:</div>
+        <div class="tv-bells-items">
+          <span class="tv-bell-item" id="bellItem1">1: 08:30-10:00</span>
+          <span class="tv-bell-sep">/</span>
+          <span class="tv-bell-item" id="bellItem2">2: 10:10-11:40</span>
+          <span class="tv-bell-sep">/</span>
+          <span class="tv-bell-item" id="bellItem3">3: 12:10-13:40</span>
+          <span class="tv-bell-sep">/</span>
+          <span class="tv-bell-item" id="bellItem4">4: 13:50-15:20</span>
+          <span class="tv-bell-sep">/</span>
+          <span class="tv-bell-item" id="bellItem5">5: 15:30-17:00</span>
+          <span class="tv-bell-sep">/</span>
+          <span class="tv-bell-item" id="bellItem6">6: 17:10-18:40</span>
+          <span class="tv-bell-sep">/</span>
+          <span class="tv-bell-item" id="bellItem7">7: 18:50-20:20</span>
+        </div>
+      </div>
+
+      <!-- Информационная бегущая строка -->
+      <div class="tv-ticker-container">
+        <div class="tv-ticker-content" id="tvTickerContent">
+          Официальное расписание занятий Рубцовского индустриального института (филиал) АлтГТУ им. И.И. Ползунова * Данные обновляются в реальном времени * Контакты учебной части: каб. 210, тел. (38557) 5-98-33 * Бот и приложение: t.me/rubinst_bot
+        </div>
+      </div>
+
+      <!-- QR-код на бота и приложение -->
+      <div class="tv-qr-box">
+        <img src="/qr_bot.png" alt="QR-код бота" class="tv-qr-img">
+        <div class="tv-qr-text">
+          <span class="tv-qr-title">Расписание в телефоне</span>
+          <span class="tv-qr-sub">Telegram-бот и приложение</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="/tv.js"></script>
+</body>
+</html>

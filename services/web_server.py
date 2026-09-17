@@ -11,6 +11,7 @@ import aiohttp
 from aiohttp import web
 from services.api import api_client
 from services.teacher_service import find_teacher_info, get_all_teachers_list
+from services.kiosk_service import get_live_board_data, BELLS_SCHEDULE, get_teacher_full_schedule
 from database import get_user, set_user_group, set_user_subgroup, update_user_notifications
 
 logger = logging.getLogger("rii_schedule_bot.web")
@@ -18,8 +19,19 @@ logger = logging.getLogger("rii_schedule_bot.web")
 WEBAPP_DIR = Path(__file__).resolve().parent.parent / "webapp"
 
 async def handle_index(request: web.Request) -> web.FileResponse:
+    host = (request.headers.get("X-Forwarded-Host") or request.headers.get("Host") or "").lower()
+    if "tv.kiosk" in host:
+        return web.FileResponse(WEBAPP_DIR / "tv.html")
+    elif "kiosk" in host:
+        return web.FileResponse(WEBAPP_DIR / "kiosk.html")
     index_file = WEBAPP_DIR / "index.html"
     return web.FileResponse(index_file)
+
+async def handle_tv(request: web.Request) -> web.FileResponse:
+    return web.FileResponse(WEBAPP_DIR / "tv.html")
+
+async def handle_kiosk(request: web.Request) -> web.FileResponse:
+    return web.FileResponse(WEBAPP_DIR / "kiosk.html")
 
 async def handle_api_groups(request: web.Request) -> web.Response:
     try:
@@ -440,9 +452,43 @@ async def handle_api_teachers(request: web.Request) -> web.Response:
         logger.error("Ошибка API teachers: %s", e)
         return web.json_response({"error": "Failed to list teachers"}, status=500)
 
+async def handle_api_kiosk_live_board(request: web.Request) -> web.Response:
+    try:
+        force_str = request.query.get("force", "0")
+        force_refresh = force_str in ("1", "true", "True")
+        data = await get_live_board_data(force_refresh=force_refresh)
+        return web.json_response(data)
+    except Exception as e:
+        logger.error("Ошибка API kiosk live-board: %s", e)
+        return web.json_response({"error": "Failed to fetch live board"}, status=500)
+
+async def handle_api_kiosk_bells(request: web.Request) -> web.Response:
+    return web.json_response({
+        "status": "ok",
+        "bells": BELLS_SCHEDULE
+    })
+
+async def handle_api_kiosk_teacher_schedule(request: web.Request) -> web.Response:
+    name = request.query.get("name", "").strip()
+    if not name:
+        return web.json_response({"error": "Missing name parameter"}, status=400)
+    try:
+        data = await get_teacher_full_schedule(name)
+        return web.json_response(data)
+    except Exception as e:
+        logger.error("Ошибка API kiosk teacher-schedule для %s: %s", name, e)
+        return web.json_response({"error": "Failed to fetch teacher schedule"}, status=500)
+
 def create_web_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/", handle_index)
+    app.router.add_get("/tv", handle_tv)
+    app.router.add_get("/tv.html", handle_tv)
+    app.router.add_get("/kiosk", handle_kiosk)
+    app.router.add_get("/kiosk.html", handle_kiosk)
+    app.router.add_get("/api/kiosk/live-board", handle_api_kiosk_live_board)
+    app.router.add_get("/api/kiosk/bells", handle_api_kiosk_bells)
+    app.router.add_get("/api/kiosk/teacher-schedule", handle_api_kiosk_teacher_schedule)
     app.router.add_get("/api/groups", handle_api_groups)
     app.router.add_get("/api/schedule", handle_api_schedule)
     app.router.add_get("/api/teacher", handle_api_teacher)
