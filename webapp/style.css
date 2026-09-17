@@ -542,31 +542,6 @@ body {
   background: var(--border-color);
 }
 
-.teachers-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--secondary-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-color);
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.teachers-nav-btn:hover {
-  background: var(--accent-light);
-  color: var(--accent-color);
-  border-color: var(--accent-color);
-}
-
-.teachers-nav-btn:active {
-  transform: scale(0.96);
-}
 
 /* Кнопка преподавателя в карточке пары */
 .teacher-btn-chip {
@@ -807,97 +782,6 @@ body {
 
 .teacher-site-btn:active {
   opacity: 0.8;
-}
-
-/* Модальное окно каталога преподавателей */
-.teachers-catalog-sheet {
-  max-height: 88vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.teachers-catalog-list {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 4px 0;
-}
-
-.teacher-catalog-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border-color);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.teacher-catalog-item:hover {
-  background: var(--secondary-bg);
-}
-
-.teacher-catalog-item:active {
-  background: var(--accent-light);
-}
-
-.teacher-catalog-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--secondary-bg);
-  border: 1px solid var(--border-color);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--hint-color);
-}
-
-.teacher-catalog-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.teacher-catalog-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.teacher-catalog-name {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--text-color);
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.teacher-catalog-post {
-  font-size: 12px;
-  color: var(--hint-color);
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.teacher-catalog-dept {
-  font-size: 11px;
-  color: var(--accent-color);
-  font-weight: 500;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.teacher-catalog-arrow {
-  color: var(--hint-color);
-  flex-shrink: 0;
 }
 
 .hidden {

@@ -26,8 +26,19 @@
   <meta property="og:image" content="/favicon.png">
   <meta property="og:type" content="website">
 
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=5">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (var name of names) {
+          if (name !== 'rii-schedule-pwa-v5') {
+            caches.delete(name);
+          }
+        }
+      });
+    }
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -176,22 +187,6 @@
     </div>
   </div>
 
-  <!-- Модальное окно каталога преподавателей -->
-  <div id="teachersCatalogModal" class="modal-backdrop hidden">
-    <div class="modal-sheet teachers-catalog-sheet">
-      <div class="modal-header">
-        <h3>Преподаватели РИИ</h3>
-        <button id="closeTeachersCatalogBtn" class="close-btn">&times;</button>
-      </div>
-      <div class="search-box">
-        <input type="text" id="teacherSearchInput" placeholder="Поиск по ФИО, кафедре, предмету..." autocomplete="off">
-      </div>
-      <div id="teachersListContainer" class="teachers-catalog-list">
-        <!-- Список преподавателей -->
-      </div>
-    </div>
-  </div>
-
-  <script src="/app.js"></script>
+  <script src="/app.js?v=5"></script>
 </body>
 </html>
