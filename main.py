@@ -28,6 +28,7 @@ logger = logging.getLogger("rii_schedule_bot")
 async def set_bot_commands(bot: Bot):
     commands = [
         BotCommand(command="app", description="Открыть расписание (Mini App)"),
+        BotCommand(command="guide", description="Краткий гид: как пользоваться ботом"),
         BotCommand(command="today", description="Расписание на сегодня"),
         BotCommand(command="tomorrow", description="Расписание на завтра"),
         BotCommand(command="now", description="Что идет прямо сейчас"),

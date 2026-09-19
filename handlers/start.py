@@ -13,9 +13,15 @@ from aiogram.types import (
 )
 from aiogram.exceptions import TelegramBadRequest
 
-from database import get_user, set_user_group, get_auth_session, confirm_auth_session
+from database import (
+    get_user, set_user_group, set_user_has_seen_guide,
+    get_auth_session, confirm_auth_session
+)
 from services.api import api_client
-from keyboards import get_main_keyboard, get_courses_keyboard, get_groups_keyboard
+from keyboards import (
+    get_main_keyboard, get_courses_keyboard, get_groups_keyboard,
+    get_guide_keyboard
+)
 from config import WEBAPP_URL
 
 logger = logging.getLogger("rii_schedule_bot.start")
@@ -25,6 +31,71 @@ DISCLAIMER = (
     "Это неофициальный бот с расписанием РИИ АлтГТУ. Сделан по приколу и для удобства.\n"
     "Исходный код полностью открыт на GitHub: https://github.com/yearningss/rii-schedule-bot"
 )
+
+GUIDE_PAGES = {
+    1: (
+        "Руководство пользователя: Раздел 1 из 4 (Меню и расписание)\n\n"
+        "Кнопки быстрого меню внизу экрана:\n"
+        "- «Сегодня»: расписание на текущий день с аудиториями, временем и именами преподавателей.\n"
+        "- «Завтра»: расписание на следующий учебный день (в субботу автоматически показывает пары понедельника).\n"
+        "- «Неделя»: полное расписание на текущую учебную неделю.\n"
+        "- «Настройки»: переключение подгруппы (1 / 2 подгруппа), времени напоминаний и смена группы.\n\n"
+        "Быстрые команды бота:\n"
+        "/today - расписание на сегодня\n"
+        "/tomorrow - расписание на завтра\n"
+        "/now - пара, которая идет прямо сейчас, и сколько минут до конца\n"
+        "/week - расписание на текущую неделю\n"
+        "/nextweek - расписание на следующую неделю\n"
+        "/bells - точное время звонков и перемен\n"
+        "/exams - расписание сессии, консультаций и экзаменов\n"
+        "/menu - вернуть клавиатуру с кнопками внизу экрана"
+    ),
+    2: (
+        "Руководство пользователя: Раздел 2 из 4 (Mini App и подгруппы)\n\n"
+        "Интерактивное веб-приложение (Mini App):\n"
+        "- Нажмите кнопку «Расписание» слева от поля ввода текста или отправьте команду /app.\n"
+        "- Откроется интерактивное расписание с переключением дней и недель.\n"
+        "- Встроенный календарь: можно быстро выбрать любую дату.\n"
+        "- Оффлайн-режим: однажды открытое расписание сохраняется на устройстве и работает даже при отсутствии интернета на паре.\n\n"
+        "Фильтрация по 1 и 2 подгруппам:\n"
+        "- Практические и лабораторные занятия часто делятся на подгруппы.\n"
+        "- В Mini App вверху экрана есть переключатель: «Все», «1 п/г», «2 п/г».\n"
+        "- В самом боте вы можете зафиксировать подгруппу в разделе «Настройки» (/settings), чтобы видеть только свои пары."
+    ),
+    3: (
+        "Руководство пользователя: Раздел 3 из 4 (Умные уведомления)\n\n"
+        "Как работают напоминания:\n"
+        "- Перед началом занятий: бот присылает сообщение за 10 минут до первой пары дня с указанием аудитории и предмета.\n"
+        "- На переменах: бот заранее напоминает о следующей паре и кабинете.\n"
+        "- Оповещения об изменениях: если на официальном сайте института изменилось расписание на завтра, бот предупредит об этом вечером.\n\n"
+        "Управление уведомлениями:\n"
+        "- Откройте раздел «Настройки» или введите команду /settings.\n"
+        "- Доступны опции:\n"
+        "  - За сколько минут предупреждать: за 10 минут, за 5 минут или без предварительного оповещения.\n"
+        "  - Включение / выключение напоминаний о переменах.\n"
+        "  - Включение / выключение оповещений о начале занятий.\n"
+        "  - Включение / выключение оповещений об изменениях."
+    ),
+    4: (
+        "Руководство пользователя: Раздел 4 из 4 (Поиск и чаты)\n\n"
+        "Поиск расписания преподавателей:\n"
+        "- Просто напишите фамилию преподавателя в чат с ботом (например: Иванов).\n"
+        "- Бот найдет преподавателя и покажет его пары на сегодня и ближайшие дни.\n\n"
+        "Инлайн-поиск в любых диалогах Telegram:\n"
+        "- В любом чате введите в поле ввода сообщения:\n"
+        "  @rubinst_bot Фамилия\n"
+        "  или\n"
+        "  @rubinst_bot НомерГруппы\n"
+        "- Бот мгновенно выдаст карточку с расписанием, которую можно отправить собеседнику.\n\n"
+        "Работа в беседах групп:\n"
+        "- Добавьте бота в чат вашей группы.\n"
+        "- Администратор группы закрепляет учебную группу командой /group.\n"
+        "- Все студенты могут смотреть расписание через команды прямо в общей беседе.\n\n"
+        "Мобильное приложение:\n"
+        "- Приложение для Android и iOS с виджетами на рабочий стол: /download"
+    )
+}
+
 
 async def is_chat_admin(bot, chat_id: int, user_id: int) -> bool:
     try:
@@ -91,7 +162,8 @@ async def cmd_start(message: Message, command: CommandObject = None):
                 f"Привет!\n\n"
                 f"{DISCLAIMER}\n\n"
                 f"Текущая группа чата: {chat_user['group_name']}\n\n"
-                "Используйте команды /today, /tomorrow, /week, /now для просмотра расписания.",
+                "Используйте команды /today, /tomorrow, /week, /now для просмотра расписания.\n"
+                "Подробный гид по боту: /guide",
                 reply_markup=kb,
                 reply_to_message_id=reply_to
             )
@@ -105,8 +177,13 @@ async def cmd_start(message: Message, command: CommandObject = None):
         await message.answer(
             f"Привет!\n\n"
             f"{DISCLAIMER}\n\n"
-            "Выбери курс, чтобы указать учебную группу для этого чата:",
-            reply_markup=get_courses_keyboard(list(courses_map.keys()))
+            "Бот расписания РИИ АлтГТУ готов к работе в этой беседе.\n\n"
+            "Краткий гид для бесед:\n"
+            "1. Администратор чата выбирает учебную группу кнопками ниже или командой /group.\n"
+            "2. Участники беседы могут смотреть расписание командами /today, /tomorrow, /week, /now.\n"
+            "3. Режим клавиатуры (только вызвавшему или всем) настраивается администратором через /settings.\n\n"
+            "Выберите курс, чтобы указать учебную группу для этого чата:",
+            reply_markup=get_courses_keyboard(list(courses_map.keys()), include_guide_button=True)
         )
         return
 
@@ -119,6 +196,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
             f"{DISCLAIMER}\n\n"
             f"Текущая группа: {user['group_name']}\n\n"
             "Используй кнопки меню или открой расписание в приложении.\n"
+            "Краткий гид по боту: /guide\n"
             "Также доступно нативное мобильное приложение для Android и iOS: /download",
             reply_markup=kb
         )
@@ -129,11 +207,27 @@ async def cmd_start(message: Message, command: CommandObject = None):
         await message.answer("Не удалось загрузить список групп с сайта РИИ. Попробуй позже.")
         return
 
-    await message.answer(
+    first_run_text = (
         f"Привет, {message.from_user.first_name}!\n\n"
         f"{DISCLAIMER}\n\n"
-        "Выбери свой курс, чтобы указать учебную группу:",
-        reply_markup=get_courses_keyboard(list(courses_map.keys()))
+        "Добро пожаловать! Это бот расписания Рубцовского индустриального института (РИИ АлтГТУ).\n\n"
+        "Краткий гид: как всем пользоваться\n\n"
+        "1. Выбор группы:\n"
+        "Выберите свой курс на кнопках ниже или просто напишите название группы сообщением в этот чат (например: ИВТ-21 или 9-61).\n\n"
+        "2. Просмотр расписания в чате:\n"
+        "После выбора группы внизу появятся кнопки: «Сегодня», «Завтра», «Неделя» и «Настройки», а также команды /today, /tomorrow, /week, /now (пара прямо сейчас) и /bells (звонки).\n\n"
+        "3. Интерактивное приложение (Mini App):\n"
+        "Кнопка «Расписание» рядом со строкой ввода текста открывает веб-расписание с календарем и удобным фильтром по 1 и 2 подгруппам.\n\n"
+        "4. Умные напоминания:\n"
+        "Бот автоматически присылает уведомление за 10 минут до первой пары дня. Время и типы оповещений настраиваются в меню «Настройки».\n\n"
+        "5. Поиск преподавателей:\n"
+        "Отправьте фамилию преподавателя прямо в этот чат или используйте инлайн-поиск @rubinst_bot в любом диалоге Telegram.\n\n"
+        "Шаг 1: Выберите свой курс:"
+    )
+
+    await message.answer(
+        first_run_text,
+        reply_markup=get_courses_keyboard(list(courses_map.keys()), include_guide_button=True)
     )
 
 @router.callback_query(F.data.startswith("appauth:"))
@@ -196,14 +290,12 @@ async def cmd_stats(message: Message):
 @router.message(F.text.casefold().in_({"помощь", "справка", "команды", "что умеет бот"}))
 async def cmd_help(message: Message):
     is_group = message.chat.type in ("group", "supergroup")
-    target_user = await get_user(message.chat.id) if is_group else await get_user(message.from_user.id)
-    gid = target_user.get("group_id") if target_user else None
-    kb = await get_reply_markup_for_chat(message, gid)
-    reply_to = message.message_id if (kb and kb.selective) else None
+    reply_to = message.message_id if is_group else None
     text = (
         f"{DISCLAIMER}\n\n"
         "Команды бота:\n"
         "/start - Главное меню и приветствие\n"
+        "/guide - Краткий гид: как пользоваться ботом\n"
         "/app - Открыть расписание в Mini App\n"
         "/today - Расписание на сегодня\n"
         "/tomorrow - Расписание на завтра\n"
@@ -221,7 +313,68 @@ async def cmd_help(message: Message):
         "/help - Справка по командам\n\n"
         "Также можно написать название группы в чат (например: ИВТ-61 или 9-61), чтобы быстро найти её."
     )
-    await message.answer(text, reply_markup=kb, reply_to_message_id=reply_to)
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Открыть подробный гид", callback_data="guide_page:1")]
+    ])
+    await message.answer(text, reply_markup=inline_kb, reply_to_message_id=reply_to)
+
+
+@router.message(Command("guide", "гайд", "инструкция", ignore_case=True))
+@router.message(F.text.casefold().in_({"гайд", "гид", "как пользоваться", "инструкция", "руководство", "как пользоваться ботом"}))
+async def cmd_guide(message: Message):
+    is_group = message.chat.type in ("group", "supergroup")
+    target_id = message.chat.id if is_group else message.from_user.id
+    user = await get_user(target_id)
+    has_group = bool(user and user.get("group_name"))
+
+    text = GUIDE_PAGES[1]
+    kb = get_guide_keyboard(current_page=1, total_pages=4, has_group=has_group)
+    await message.answer(text, reply_markup=kb)
+
+
+@router.callback_query(F.data.startswith("guide_page:"))
+async def cb_guide_page(callback: CallbackQuery):
+    try:
+        page = int(callback.data.split(":")[1])
+    except (ValueError, IndexError):
+        page = 1
+    page = max(1, min(4, page))
+
+    is_group = callback.message.chat.type in ("group", "supergroup")
+    target_id = callback.message.chat.id if is_group else callback.from_user.id
+    user = await get_user(target_id)
+    has_group = bool(user and user.get("group_name"))
+
+    text = GUIDE_PAGES.get(page, GUIDE_PAGES[1])
+    kb = get_guide_keyboard(current_page=page, total_pages=4, has_group=has_group)
+
+    try:
+        await callback.message.edit_text(text, reply_markup=kb)
+    except TelegramBadRequest:
+        pass
+    except Exception as e:
+        logger.warning("Ошибка в cb_guide_page: %s", e)
+    finally:
+        await callback.answer()
+
+
+@router.callback_query(F.data == "guide_close")
+async def cb_guide_close(callback: CallbackQuery):
+    try:
+        await callback.message.delete()
+    except Exception:
+        try:
+            await callback.message.edit_text("Гид закрыт. Вы всегда можете открыть его снова командой /guide.")
+        except Exception:
+            pass
+    finally:
+        await callback.answer("Гид закрыт")
+
+
+@router.callback_query(F.data == "guide_noop")
+async def cb_guide_noop(callback: CallbackQuery):
+    await callback.answer()
+
 
 @router.message(Command("menu", "меню", ignore_case=True))
 @router.message(F.text.casefold().in_({"меню", "главное меню", "кнопки", "старт"}))
@@ -327,21 +480,37 @@ async def cb_set_group(callback: CallbackQuery):
 
         await callback.message.answer(
             f"Для этого чата сохранена группа: {group['name']}\n\n"
-            "Теперь участники могут смотреть расписание командами /today, /tomorrow, /week, /now и др."
+            "Теперь участники могут смотреть расписание командами /today, /tomorrow, /week, /now и др.\n"
+            "Справка и гид по боту: /guide"
         )
         await callback.answer(f"Выбрана {group['name']}")
     else:
+        user = await get_user(callback.from_user.id)
+        has_seen_guide = user.get("has_seen_guide", 0) if user else 0
         await set_user_group(callback.from_user.id, group["id"], group["name"])
         try:
             await callback.message.delete()
         except Exception:
             pass
 
-        await callback.message.answer(
-            f"Группа сохранена: {group['name']}\n\n"
-            "Теперь ты можешь смотреть расписание через кнопки меню или в Mini App.",
-            reply_markup=get_main_keyboard(group["id"])
-        )
+        if not has_seen_guide:
+            await set_user_has_seen_guide(callback.from_user.id, 1)
+            await callback.message.answer(
+                f"Группа сохранена: {group['name']}.\n\n"
+                "Памятка для старта:\n"
+                "- Меню внизу экрана: используйте кнопки «Сегодня», «Завтра» и «Неделя» для быстрого просмотра расписания.\n"
+                "- Mini App: нажмите кнопку «Расписание» слева от поля ввода, чтобы открыть интерактивное расписание с переключением 1 и 2 подгруппы.\n"
+                "- Напоминания: бот уведомит вас за 10 минут до первой пары. Время можно изменить в кнопке «Настройки».\n"
+                "- Поиск преподавателей: отправьте фамилию преподавателя прямо в этот чат.\n\n"
+                "Полная интерактивная инструкция доступна по команде /guide.",
+                reply_markup=get_main_keyboard(group["id"])
+            )
+        else:
+            await callback.message.answer(
+                f"Группа сохранена: {group['name']}\n\n"
+                "Теперь ты можешь смотреть расписание через кнопки меню или в Mini App.",
+                reply_markup=get_main_keyboard(group["id"])
+            )
         await callback.answer(f"Выбрана {group['name']}")
 
 @router.message(F.text)

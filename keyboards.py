@@ -51,7 +51,11 @@ def get_app_download_keyboard(bot_username: str = "rubinst_bot", is_group: bool 
         ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-def get_courses_keyboard(courses: List[int], allow_cancel: bool = False) -> InlineKeyboardMarkup:
+def get_courses_keyboard(
+    courses: List[int],
+    allow_cancel: bool = False,
+    include_guide_button: bool = False
+) -> InlineKeyboardMarkup:
     buttons = []
     row = []
     for c in courses:
@@ -61,9 +65,54 @@ def get_courses_keyboard(courses: List[int], allow_cancel: bool = False) -> Inli
             row = []
     if row:
         buttons.append(row)
+    if include_guide_button:
+        buttons.append([InlineKeyboardButton(text="Подробный гид по разделам", callback_data="guide_page:1")])
     if allow_cancel:
         buttons.append([InlineKeyboardButton(text="<< Назад", callback_data="cancel_course_select")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def get_guide_keyboard(current_page: int = 1, total_pages: int = 4, has_group: bool = True) -> InlineKeyboardMarkup:
+    nav_row = []
+    if current_page > 1:
+        nav_row.append(InlineKeyboardButton(text="<< Назад", callback_data=f"guide_page:{current_page - 1}"))
+    else:
+        nav_row.append(InlineKeyboardButton(text="<< Назад", callback_data="guide_noop"))
+
+    nav_row.append(InlineKeyboardButton(text=f"{current_page} из {total_pages}", callback_data="guide_noop"))
+
+    if current_page < total_pages:
+        nav_row.append(InlineKeyboardButton(text="Вперед >>", callback_data=f"guide_page:{current_page + 1}"))
+    else:
+        nav_row.append(InlineKeyboardButton(text="Вперед >>", callback_data="guide_noop"))
+
+    topics_row1 = [
+        InlineKeyboardButton(
+            text="[1] Меню" if current_page == 1 else "1. Меню",
+            callback_data="guide_page:1"
+        ),
+        InlineKeyboardButton(
+            text="[2] Mini App" if current_page == 2 else "2. Mini App",
+            callback_data="guide_page:2"
+        ),
+    ]
+    topics_row2 = [
+        InlineKeyboardButton(
+            text="[3] Уведомления" if current_page == 3 else "3. Уведомления",
+            callback_data="guide_page:3"
+        ),
+        InlineKeyboardButton(
+            text="[4] Поиск и чаты" if current_page == 4 else "4. Поиск и чаты",
+            callback_data="guide_page:4"
+        ),
+    ]
+
+    action_row = []
+    if not has_group:
+        action_row.append(InlineKeyboardButton(text="Выбрать группу", callback_data="change_group"))
+    action_row.append(InlineKeyboardButton(text="Закрыть гид", callback_data="guide_close"))
+
+    return InlineKeyboardMarkup(inline_keyboard=[nav_row, topics_row1, topics_row2, action_row])
+
 
 def get_groups_keyboard(course: int, groups: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
     buttons = []
@@ -157,6 +206,7 @@ def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=sg1, callback_data="set_sg:1"),
             InlineKeyboardButton(text=sg2, callback_data="set_sg:2")
         ],
+        [InlineKeyboardButton(text="Как пользоваться ботом (Гайд)", callback_data="guide_page:1")],
         [InlineKeyboardButton(text="Сменить учебную группу", callback_data="change_group")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -188,6 +238,7 @@ def get_group_settings_keyboard(chat_user: Dict[str, Any]) -> InlineKeyboardMark
             InlineKeyboardButton(text=sg2, callback_data="grp_sg:2")
         ],
         [InlineKeyboardButton(text=notif_text, callback_data="grp_toggle_notif")],
+        [InlineKeyboardButton(text="Как пользоваться ботом (Гайд)", callback_data="guide_page:1")],
         [InlineKeyboardButton(text="Сменить учебную группу чата", callback_data="change_group")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
