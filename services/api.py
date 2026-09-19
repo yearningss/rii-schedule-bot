@@ -4,6 +4,7 @@ import time
 import re
 import json
 import hashlib
+import html
 import aiohttp
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -209,6 +210,132 @@ def format_para_item(
             
     return "\n".join(lines)
 
+def format_time_whatqt(time_str: Optional[str], default_para_num: int = 1) -> str:
+    default_times = {
+        1: "8:30-10:00",
+        2: "10:10-11:40",
+        3: "12:10-13:40",
+        4: "13:50-15:20",
+        5: "15:30-17:00",
+        6: "17:10-18:40"
+    }
+    if not time_str:
+        return default_times.get(default_para_num, "")
+    c = clean_time(time_str)
+    match = re.search(r"(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})", c)
+    if match:
+        s_h, s_m = int(match.group(1)), int(match.group(2))
+        e_h, e_m = int(match.group(3)), int(match.group(4))
+        return f"{s_h}:{s_m:02d}-{e_h}:{e_m:02d}"
+    clean_no_spaces = clean_time(time_str).replace(" ", "")
+    return default_times.get(default_para_num, clean_no_spaces)
+
+def emoji_number_couple(number: Any) -> str:
+    try:
+        n = int(number)
+    except Exception:
+        return str(number)
+    match n:
+        case 1:
+            return "1️⃣"
+        case 2:
+            return "2️⃣"
+        case 3:
+            return "3️⃣"
+        case 4:
+            return "4️⃣"
+        case 5:
+            return "5️⃣"
+        case 6:
+            return "6️⃣"
+        case 7:
+            return "7️⃣"
+        case 8:
+            return "8️⃣"
+        case 9:
+            return "9️⃣"
+        case 0:
+            return "0️⃣"
+        case _:
+            return str(n)
+
+def emoji_time_couple(time_str: str) -> str:
+    norm = time_str.replace(" ", "").replace(".", ":")
+    if norm.startswith("0"):
+        norm = norm[1:]
+    match norm:
+        case "8:30-10:00":
+            return "🕗"
+        case "10:10-11:40":
+            return "🕙"
+        case "12:10-13:40":
+            return "🕛"
+        case "13:50-15:20":
+            return "🕐"
+        case "15:30-17:00":
+            return "🕜"
+        case "17:10-18:40":
+            return "🕔"
+        case _:
+            return "🕒"
+
+def format_para_item_whatqt(
+    p_num: int,
+    p_time: str,
+    item: Optional[Dict[str, Any]],
+    user_subgroup: int = 0,
+    status_tag: str = ""
+) -> str:
+    emoji_t = emoji_time_couple(p_time)
+    emoji_n = emoji_number_couple(p_num)
+    tag_html = f" <i>[{html.escape(status_tag)}]</i>" if status_tag else ""
+
+    if not item:
+        return f"{emoji_t} <b>{html.escape(p_time)}</b> | {emoji_n} пара | <i><b>Окно</b></i>"
+
+    if item.get("isDouble"):
+        if user_subgroup == 1:
+            s1 = html.escape(item.get("subj1") or "")
+            t1 = f" ({html.escape(item.get('type1'))})" if item.get("type1") else ""
+            a1 = f", ауд. {html.escape(str(item.get('aud1')))}" if item.get("aud1") else ""
+            tch1 = f", {html.escape(item.get('teacher1'))}" if item.get("teacher1") else ""
+            return f"{emoji_t} <b>{html.escape(p_time)}</b> | {emoji_n} пара{tag_html} | <b><u>{s1}</u></b>{t1}{a1}{tch1} (1 п/г)"
+        elif user_subgroup == 2:
+            s2 = html.escape(item.get("subj2") or "")
+            t2 = f" ({html.escape(item.get('type2'))})" if item.get("type2") else ""
+            a2 = f", ауд. {html.escape(str(item.get('aud2')))}" if item.get("aud2") else ""
+            tch2 = f", {html.escape(item.get('teacher2'))}" if item.get("teacher2") else ""
+            return f"{emoji_t} <b>{html.escape(p_time)}</b> | {emoji_n} пара{tag_html} | <b><u>{s2}</u></b>{t2}{a2}{tch2} (2 п/г)"
+        else:
+            lines = [f"{emoji_t} <b>{html.escape(p_time)}</b> | {emoji_n} пара{tag_html}"]
+            if item.get("subj1"):
+                s1 = html.escape(item.get("subj1") or "")
+                t1 = f" ({html.escape(item.get('type1'))})" if item.get("type1") else ""
+                a1 = f", ауд. {html.escape(str(item.get('aud1')))}" if item.get("aud1") else ""
+                tch1 = f", {html.escape(item.get('teacher1'))}" if item.get("teacher1") else ""
+                lines.append(f"  1 п/г: <b><u>{s1}</u></b>{t1}{a1}{tch1}")
+            else:
+                lines.append("  1 п/г: <i>Окно</i>")
+
+            if item.get("subj2"):
+                s2 = html.escape(item.get("subj2") or "")
+                t2 = f" ({html.escape(item.get('type2'))})" if item.get("type2") else ""
+                a2 = f", ауд. {html.escape(str(item.get('aud2')))}" if item.get("aud2") else ""
+                tch2 = f", {html.escape(item.get('teacher2'))}" if item.get("teacher2") else ""
+                lines.append(f"  2 п/г: <b><u>{s2}</u></b>{t2}{a2}{tch2}")
+            else:
+                lines.append("  2 п/г: <i>Окно</i>")
+            return "\n".join(lines)
+
+    subj = html.escape(item.get("subj1") or "")
+    type_str = f" ({html.escape(item.get('type1'))})" if item.get("type1") else ""
+    aud = f", ауд. {html.escape(str(item.get('aud1')))}" if item.get("aud1") else ""
+    tch = f", {html.escape(item.get('teacher1'))}" if item.get("teacher1") else ""
+    post = f" ({html.escape(item.get('teachPost1'))})" if item.get("teachPost1") else ""
+    teacher_full = f"{tch}{post}".strip()
+    details = f"{type_str}{aud}{teacher_full}"
+    return f"{emoji_t} <b>{html.escape(p_time)}</b> | {emoji_n} пара{tag_html} | <b><u>{subj}</u></b>{details}"
+
 def get_rubtsovsk_now() -> datetime:
     return datetime.now(RUBTSOVSK_TZ)
 
@@ -237,7 +364,8 @@ def format_day_schedule(
     week_num: int,
     day_num: int,
     user_subgroup: int = 0,
-    check_live_status: bool = True
+    check_live_status: bool = True,
+    view_mode: str = "standard"
 ) -> str:
     if day_num <= 0:
         day_num = 1
@@ -261,6 +389,76 @@ def format_day_schedule(
     
     is_today = (real_weekday <= 6 and week_num == cur_week_site and day_num == real_weekday)
     
+    if view_mode == "whatqt":
+        week_title = "Первая неделя" if week_num == 1 else "Вторая неделя"
+        header_parts = [
+            f"<b>{html.escape(group_name)}</b>",
+            f"<b>{html.escape(week_title)}</b> - <b>{html.escape(day_name)}</b>"
+        ]
+        if is_today:
+            header_parts.append(f"Время в Рубцовске: {time_str}")
+        header = "\n".join(header_parts)
+
+        if not day_data:
+            return f"{header}\n\nПар нет"
+
+        status_bar = ""
+        next_para_num = None
+        sorted_paras = sorted(day_data.keys(), key=lambda x: int(x))
+
+        if is_today and check_live_status:
+            ongoing_para = None
+            for p_str in sorted_paras:
+                p_n = int(p_str)
+                s_m, e_m, s_s, e_s = parse_para_time_range(para_times.get(p_str), p_n)
+                if s_m <= cur_mins <= e_m:
+                    ongoing_para = (p_n, e_s, e_m - cur_mins)
+                    break
+                elif cur_mins < s_m and next_para_num is None:
+                    next_para_num = (p_n, s_s, s_m - cur_mins)
+
+            if ongoing_para:
+                p_n, end_s, rem = ongoing_para
+                status_bar = f"<i>Статус: Идет {p_n} пара (до {end_s}, осталось {rem} мин)</i>\n"
+            elif next_para_num:
+                p_n, start_s, rem = next_para_num
+                first_p_n = int(sorted_paras[0])
+                first_s_m, _, _, _ = parse_para_time_range(para_times.get(str(first_p_n)), first_p_n)
+                if cur_mins < first_s_m:
+                    status_bar = f"<i>Статус: Занятия еще не начались. {first_p_n} пара начнется в {start_s} (через {rem} мин)</i>\n"
+                else:
+                    status_bar = f"<i>Статус: Сейчас перемена (до {start_s}, осталось {rem} мин). Следующая: {p_n} пара</i>\n"
+            else:
+                status_bar = "<i>Статус: Все пары на сегодня завершены</i>\n"
+
+        max_para = max(int(k) for k in day_data.keys())
+        pairs = []
+        found_next = False
+        for p_n in range(1, max(max_para, 1) + 1):
+            p_str = str(p_n)
+            p_info = day_data.get(p_str)
+            p_time_raw = para_times.get(p_str)
+            p_time_whatqt = format_time_whatqt(p_time_raw, p_n)
+
+            status_tag = ""
+            if is_today and check_live_status and p_info:
+                s_m, e_m, _, _ = parse_para_time_range(p_time_raw, p_n)
+                if cur_mins > e_m:
+                    status_tag = "ЗАВЕРШЕНА"
+                elif s_m <= cur_mins <= e_m:
+                    status_tag = "ИДЕТ СЕЙЧАС"
+                elif cur_mins < s_m and not found_next:
+                    status_tag = "СЛЕДУЮЩАЯ"
+                    found_next = True
+                else:
+                    status_tag = "ПРЕДСТОИТ"
+
+            pairs.append(format_para_item_whatqt(p_n, p_time_whatqt, p_info, user_subgroup, status_tag))
+
+        status_prefix = f"\n{status_bar}\n" if status_bar else "\n\n"
+        return f"{header}{status_prefix}" + "\n\n".join(pairs)
+
+    # Стандартный режим (standard)
     week_rome = "I" if week_num == 1 else "II"
     header_parts = [
         f"Расписание: {group_name}",
@@ -332,14 +530,20 @@ def format_day_schedule(
     
     return "\n".join(result_parts)
 
-def format_now_status(group_name: str, schedule: Dict[str, Any], user_subgroup: int = 0) -> str:
+def format_now_status(
+    group_name: str,
+    schedule: Dict[str, Any],
+    user_subgroup: int = 0,
+    view_mode: str = "standard"
+) -> str:
     now = get_rubtsovsk_now()
     real_weekday = now.isoweekday()
     if real_weekday > 6:
+        if view_mode == "whatqt":
+            return f"<b>{html.escape(group_name)}</b>\nСегодня воскресенье (выходной день). Занятий нет."
         return f"Расписание: {group_name}\nСегодня воскресенье (выходной день). Занятий нет."
 
     cur_week = int(schedule.get("weekNumber", 1))
-    week_rome = "I" if cur_week == 1 else "II"
     day_names_ru = {
         "1": "Понедельник", "2": "Вторник", "3": "Среда",
         "4": "Четверг", "5": "Пятница", "6": "Суббота", "7": "Воскресенье"
@@ -353,6 +557,55 @@ def format_now_status(group_name: str, schedule: Dict[str, Any], user_subgroup: 
     schedule_data = schedule.get("scheduleData", {})
     day_data = schedule_data.get(str(cur_week), {}).get(str(real_weekday), {})
 
+    if view_mode == "whatqt":
+        week_title = "Первая неделя" if cur_week == 1 else "Вторая неделя"
+        header = (
+            f"<b>{html.escape(group_name)}</b> | Текущий статус\n"
+            f"<b>{html.escape(week_title)}</b> - <b>{html.escape(day_name)}</b> (время: {time_str})\n"
+            + "-" * 30
+        )
+        if not day_data:
+            return f"{header}\nНа сегодня пар нет."
+
+        sorted_paras = sorted(day_data.keys(), key=lambda x: int(x))
+        ongoing_para = None
+        next_para = None
+
+        for p_str in sorted_paras:
+            p_n = int(p_str)
+            s_m, e_m, s_s, e_s = parse_para_time_range(para_times.get(p_str), p_n)
+            if s_m <= cur_mins <= e_m:
+                ongoing_para = (p_n, s_s, e_s, e_m - cur_mins, day_data[p_str], p_str)
+                break
+            elif cur_mins < s_m and next_para is None:
+                next_para = (p_n, s_s, e_s, s_m - cur_mins, day_data[p_str], p_str)
+
+        if ongoing_para:
+            p_n, s_s, e_s, rem, p_info, p_str = ongoing_para
+            p_time_whatqt = format_time_whatqt(para_times.get(p_str), p_n)
+            item_text = format_para_item_whatqt(p_n, p_time_whatqt, p_info, user_subgroup)
+            return (
+                f"{header}\n"
+                f"Сейчас идет {emoji_number_couple(p_n)} пара (до {e_s}, осталось {rem} мин):\n\n"
+                f"{item_text}"
+            )
+
+        if next_para:
+            p_n, s_s, e_s, rem, p_info, p_str = next_para
+            first_p_n = int(sorted_paras[0])
+            first_s_m, _, _, _ = parse_para_time_range(para_times.get(str(first_p_n)), first_p_n)
+            p_time_whatqt = format_time_whatqt(para_times.get(p_str), p_n)
+            item_text = format_para_item_whatqt(p_n, p_time_whatqt, p_info, user_subgroup)
+            if cur_mins < first_s_m:
+                status_desc = f"Занятия еще не начались.\nПервая пара ({emoji_number_couple(p_n)} пара) начнется в {s_s} (через {rem} мин):"
+            else:
+                status_desc = f"Сейчас перемена (до {s_s}, осталось {rem} мин).\nСледующая {emoji_number_couple(p_n)} пара:"
+            return f"{header}\n{status_desc}\n\n{item_text}"
+
+        return f"{header}\nВсе пары на сегодня завершены!"
+
+    # Стандартный режим
+    week_rome = "I" if cur_week == 1 else "II"
     header = (
         f"Текущий статус: {group_name}\n"
         f"{day_name} ({week_rome} неделя), время в Рубцовске: {time_str}\n"
@@ -403,14 +656,50 @@ def format_week_schedule(
     group_name: str,
     schedule: Dict[str, Any],
     week_num: int,
-    user_subgroup: int = 0
+    user_subgroup: int = 0,
+    view_mode: str = "standard"
 ) -> List[str]:
     week_days = schedule.get("weekDays", {})
     para_times = schedule.get("paraTimes", {})
     schedule_data = schedule.get("scheduleData", {})
     week_data = schedule_data.get(str(week_num), {})
+
+    if view_mode == "whatqt":
+        week_title = "Первая неделя" if week_num == 1 else "Вторая неделя"
+        header = f"<b>{html.escape(group_name)}</b>\n<b>{html.escape(week_title)}</b>\n" + "=" * 25
+        day_blocks = []
+        has_any = False
+        for d_num in range(1, 7):
+            d_str = str(d_num)
+            day_name = week_days.get(d_str, f"День {d_num}")
+            day_data = week_data.get(d_str, {})
+            if not day_data:
+                day_blocks.append(f"\n<b>{html.escape(day_name)}</b>\nПар нет")
+            else:
+                has_any = True
+                max_para = max(int(k) for k in day_data.keys())
+                para_lines = []
+                for p_n in range(1, max(max_para, 1) + 1):
+                    p_str = str(p_n)
+                    p_info = day_data.get(p_str)
+                    p_time_raw = para_times.get(p_str)
+                    p_time_whatqt = format_time_whatqt(p_time_raw, p_n)
+                    para_lines.append(format_para_item_whatqt(p_n, p_time_whatqt, p_info, user_subgroup))
+                day_blocks.append(f"\n<b>{html.escape(day_name)}</b>\n\n" + "\n\n".join(para_lines))
+
+        if not has_any:
+            return [f"<b>{html.escape(group_name)}</b>\n<b>{html.escape(week_title)}</b>\n\nНа этой неделе занятий нет."]
+
+        full_text = header + "\n" + "\n".join(day_blocks)
+        if len(full_text) <= 3900:
+            return [full_text]
+
+        part1 = header + "\n" + "\n".join(day_blocks[:3])
+        part2 = f"<b>{html.escape(group_name)}</b> (продолжение)\n<b>{html.escape(week_title)}</b>\n" + "=" * 25 + "\n" + "\n".join(day_blocks[3:])
+        return [part1, part2]
+
+    # Стандартный режим
     week_rome = "I" if week_num == 1 else "II"
-    
     header = f"Расписание на неделю: {group_name}\nНеделя {week_rome}\n" + "=" * 30
     
     day_blocks = []

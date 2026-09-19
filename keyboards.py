@@ -180,6 +180,10 @@ def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
     sg1 = "[✓ 1 п/г]" if subgroup == 1 else "1 п/г"
     sg2 = "[✓ 2 п/г]" if subgroup == 2 else "2 п/г"
 
+    view_mode = user.get("schedule_view_mode", "standard")
+    vm_std = "[✓ 1. Стандарт]" if view_mode == "standard" else "1. Стандарт"
+    vm_wqt = "[✓ 2. whatqt]" if view_mode == "whatqt" else "2. whatqt"
+
     notif_text = "Уведомления: ВКЛ" if notif_enabled == 1 else "Уведомления: ВЫКЛ"
     breaks_text = "О перемене: ВКЛ" if breaks_enabled == 1 else "О перемене: ВЫКЛ"
     start_text = "О начале: ВКЛ" if start_enabled == 1 else "О начале: ВЫКЛ"
@@ -190,6 +194,10 @@ def get_settings_keyboard(user: Dict[str, Any]) -> InlineKeyboardMarkup:
     b0 = "[✓ Выкл]" if before_mins == 0 else "Без пред."
 
     buttons = [
+        [
+            InlineKeyboardButton(text=vm_std, callback_data="set_vmode:standard"),
+            InlineKeyboardButton(text=vm_wqt, callback_data="set_vmode:whatqt")
+        ],
         [InlineKeyboardButton(text=notif_text, callback_data="toggle_notif")],
         [
             InlineKeyboardButton(text=b10, callback_data="set_before:10"),
@@ -217,6 +225,10 @@ def get_group_settings_keyboard(chat_user: Dict[str, Any]) -> InlineKeyboardMark
     m_all = "[✓ Всем]" if kb_mode == "all" else "Всем"
     m_none = "[✓ Выкл]" if kb_mode == "none" else "Выкл"
 
+    view_mode = chat_user.get("schedule_view_mode", "standard")
+    vm_std = "[✓ 1. Стандарт]" if view_mode == "standard" else "1. Стандарт"
+    vm_wqt = "[✓ 2. whatqt]" if view_mode == "whatqt" else "2. whatqt"
+
     notif_enabled = chat_user.get("notifications_enabled", 1)
     notif_text = "Оповещения в чат: ВКЛ" if notif_enabled == 1 else "Оповещения в чат: ВЫКЛ"
 
@@ -226,6 +238,11 @@ def get_group_settings_keyboard(chat_user: Dict[str, Any]) -> InlineKeyboardMark
     sg2 = "[✓ 2 п/г]" if subgroup == 2 else "2 п/г"
 
     buttons = [
+        [
+            InlineKeyboardButton(text="Вид:", callback_data="grp_vm_noop"),
+            InlineKeyboardButton(text=vm_std, callback_data="grp_vmode:standard"),
+            InlineKeyboardButton(text=vm_wqt, callback_data="grp_vmode:whatqt")
+        ],
         [
             InlineKeyboardButton(text="Клавиатура:", callback_data="grp_kb_noop"),
             InlineKeyboardButton(text=m_sel, callback_data="grp_kb:selective"),

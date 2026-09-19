@@ -90,7 +90,8 @@ async def show_today(message: Message):
         cur_week = site_week
         note = ""
 
-    text = note + format_day_schedule(user["group_name"], sched, cur_week, cur_day, subgroup)
+    vmode = user.get("schedule_view_mode", "standard")
+    text = note + format_day_schedule(user["group_name"], sched, cur_week, cur_day, subgroup, view_mode=vmode)
     await message.answer(text, reply_markup=get_day_nav_keyboard(cur_week, cur_day, group_id))
 
 @router.message(Command("tomorrow", "завтра", ignore_case=True))
@@ -121,7 +122,8 @@ async def show_tomorrow(message: Message):
         next_day = real_weekday + 1
         next_week = site_week
 
-    text = note + format_day_schedule(user["group_name"], sched, next_week, next_day, subgroup)
+    vmode = user.get("schedule_view_mode", "standard")
+    text = note + format_day_schedule(user["group_name"], sched, next_week, next_day, subgroup, view_mode=vmode)
     await message.answer(text, reply_markup=get_day_nav_keyboard(next_week, next_day, group_id))
 
 @router.message(Command("now", "сейчас", ignore_case=True))
@@ -137,7 +139,8 @@ async def show_now(message: Message):
         return
 
     subgroup = user.get("subgroup", 0)
-    text = format_now_status(user["group_name"], sched, subgroup)
+    vmode = user.get("schedule_view_mode", "standard")
+    text = format_now_status(user["group_name"], sched, subgroup, view_mode=vmode)
     await message.answer(text, reply_markup=get_now_nav_keyboard(group_id))
 
 @router.message(Command("week", "неделя", ignore_case=True))
@@ -154,7 +157,8 @@ async def show_current_week(message: Message):
 
     cur_week = int(sched.get("weekNumber", 1))
     subgroup = user.get("subgroup", 0)
-    parts = format_week_schedule(user["group_name"], sched, cur_week, subgroup)
+    vmode = user.get("schedule_view_mode", "standard")
+    parts = format_week_schedule(user["group_name"], sched, cur_week, subgroup, view_mode=vmode)
     kb = get_week_nav_keyboard(cur_week, group_id)
     for idx, part in enumerate(parts):
         reply_kb = kb if idx == len(parts) - 1 else None
@@ -175,7 +179,8 @@ async def show_next_week(message: Message):
     cur_week = int(sched.get("weekNumber", 1))
     next_week = 2 if cur_week == 1 else 1
     subgroup = user.get("subgroup", 0)
-    parts = format_week_schedule(user["group_name"], sched, next_week, subgroup)
+    vmode = user.get("schedule_view_mode", "standard")
+    parts = format_week_schedule(user["group_name"], sched, next_week, subgroup, view_mode=vmode)
     kb = get_week_nav_keyboard(next_week, group_id)
     for idx, part in enumerate(parts):
         reply_kb = kb if idx == len(parts) - 1 else None
@@ -413,13 +418,20 @@ async def cb_season_pick(callback: CallbackQuery):
         await callback.answer()
 
 
+async def get_schedule_target_user(callback: CallbackQuery) -> Optional[dict]:
+    if callback.message and callback.message.chat.type in ("group", "supergroup"):
+        chat_user = await get_user(callback.message.chat.id)
+        if chat_user and chat_user.get("group_id"):
+            return chat_user
+    return await get_user(callback.from_user.id)
+
 @router.callback_query(F.data.startswith("nav_day:"))
 async def cb_navigate_day(callback: CallbackQuery):
     parts = callback.data.split(":")
     week_num = int(parts[1])
     day_num = int(parts[2])
 
-    user = await get_user(callback.from_user.id)
+    user = await get_schedule_target_user(callback)
     if not user or not user.get("group_id"):
         await callback.answer("Группа не выбрана.", show_alert=True)
         return
@@ -427,7 +439,8 @@ async def cb_navigate_day(callback: CallbackQuery):
     try:
         sched = await api_client.get_schedule(user["group_id"])
         subgroup = user.get("subgroup", 0)
-        text = format_day_schedule(user["group_name"], sched, week_num, day_num, subgroup)
+        vmode = user.get("schedule_view_mode", "standard")
+        text = format_day_schedule(user["group_name"], sched, week_num, day_num, subgroup, view_mode=vmode)
         await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num, user["group_id"]))
     except TelegramBadRequest as e:
         if "message is not modified" in str(e).lower():
@@ -445,7 +458,7 @@ async def cb_refresh_day(callback: CallbackQuery):
     week_num = int(parts[1])
     day_num = int(parts[2])
 
-    user = await get_user(callback.from_user.id)
+    user = await get_schedule_target_user(callback)
     if not user or not user.get("group_id"):
         await callback.answer("Группа не выбрана.", show_alert=True)
         return
@@ -453,7 +466,8 @@ async def cb_refresh_day(callback: CallbackQuery):
     try:
         sched = await api_client.get_schedule(user["group_id"], force_refresh=True)
         subgroup = user.get("subgroup", 0)
-        text = format_day_schedule(user["group_name"], sched, week_num, day_num, subgroup)
+        vmode = user.get("schedule_view_mode", "standard")
+        text = format_day_schedule(user["group_name"], sched, week_num, day_num, subgroup, view_mode=vmode)
         await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(week_num, day_num, user["group_id"]))
         await callback.answer("Расписание обновлено")
     except TelegramBadRequest as e:
@@ -469,7 +483,7 @@ async def cb_refresh_day(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("nav_week:"))
 async def cb_navigate_week(callback: CallbackQuery):
     week_num = int(callback.data.split(":")[1])
-    user = await get_user(callback.from_user.id)
+    user = await get_schedule_target_user(callback)
     if not user or not user.get("group_id"):
         await callback.answer("Группа не выбрана.", show_alert=True)
         return
@@ -477,7 +491,8 @@ async def cb_navigate_week(callback: CallbackQuery):
     try:
         sched = await api_client.get_schedule(user["group_id"])
         subgroup = user.get("subgroup", 0)
-        parts = format_week_schedule(user["group_name"], sched, week_num, subgroup)
+        vmode = user.get("schedule_view_mode", "standard")
+        parts = format_week_schedule(user["group_name"], sched, week_num, subgroup, view_mode=vmode)
         kb = get_week_nav_keyboard(week_num, user["group_id"])
         if len(parts) == 1:
             await callback.message.edit_text(parts[0], reply_markup=kb)
@@ -502,7 +517,7 @@ async def cb_navigate_week(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("refresh_week:"))
 async def cb_refresh_week(callback: CallbackQuery):
     week_num = int(callback.data.split(":")[1])
-    user = await get_user(callback.from_user.id)
+    user = await get_schedule_target_user(callback)
     if not user or not user.get("group_id"):
         await callback.answer("Группа не выбрана.", show_alert=True)
         return
@@ -510,7 +525,8 @@ async def cb_refresh_week(callback: CallbackQuery):
     try:
         sched = await api_client.get_schedule(user["group_id"], force_refresh=True)
         subgroup = user.get("subgroup", 0)
-        parts = format_week_schedule(user["group_name"], sched, week_num, subgroup)
+        vmode = user.get("schedule_view_mode", "standard")
+        parts = format_week_schedule(user["group_name"], sched, week_num, subgroup, view_mode=vmode)
         kb = get_week_nav_keyboard(week_num, user["group_id"])
         if len(parts) == 1:
             await callback.message.edit_text(parts[0], reply_markup=kb)
@@ -534,7 +550,7 @@ async def cb_refresh_week(callback: CallbackQuery):
 
 @router.callback_query(F.data == "refresh_now")
 async def cb_refresh_now(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
+    user = await get_schedule_target_user(callback)
     if not user or not user.get("group_id"):
         await callback.answer("Группа не выбрана.", show_alert=True)
         return
@@ -542,7 +558,8 @@ async def cb_refresh_now(callback: CallbackQuery):
     try:
         sched = await api_client.get_schedule(user["group_id"], force_refresh=True)
         subgroup = user.get("subgroup", 0)
-        text = format_now_status(user["group_name"], sched, subgroup)
+        vmode = user.get("schedule_view_mode", "standard")
+        text = format_now_status(user["group_name"], sched, subgroup, view_mode=vmode)
         await callback.message.edit_text(text, reply_markup=get_now_nav_keyboard(user["group_id"]))
         await callback.answer("Статус обновлен")
     except TelegramBadRequest as e:
@@ -556,7 +573,7 @@ async def cb_refresh_now(callback: CallbackQuery):
 
 @router.callback_query(F.data == "nav_today")
 async def cb_nav_today(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
+    user = await get_schedule_target_user(callback)
     if not user or not user.get("group_id"):
         await callback.answer("Группа не выбрана.", show_alert=True)
         return
@@ -564,12 +581,13 @@ async def cb_nav_today(callback: CallbackQuery):
     try:
         sched = await api_client.get_schedule(user["group_id"])
         subgroup = user.get("subgroup", 0)
+        vmode = user.get("schedule_view_mode", "standard")
         now = get_rubtsovsk_now()
         real_weekday = now.isoweekday()
         site_week = int(sched.get("weekNumber", 1))
         cur_day = 1 if real_weekday > 6 else real_weekday
         cur_week = (2 if site_week == 1 else 1) if real_weekday > 6 else site_week
-        text = format_day_schedule(user["group_name"], sched, cur_week, cur_day, subgroup)
+        text = format_day_schedule(user["group_name"], sched, cur_week, cur_day, subgroup, view_mode=vmode)
         await callback.message.edit_text(text, reply_markup=get_day_nav_keyboard(cur_week, cur_day, user["group_id"]))
     except TelegramBadRequest as e:
         if "message is not modified" in str(e).lower():

@@ -9,7 +9,10 @@ from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 from aiogram.exceptions import TelegramBadRequest
 
-from database import get_user, set_user_subgroup, update_user_notifications, set_group_kb_mode
+from database import (
+    get_user, set_user_subgroup, update_user_notifications,
+    set_group_kb_mode, set_user_schedule_view_mode
+)
 from keyboards import get_settings_keyboard, get_courses_keyboard, get_group_settings_keyboard
 from services.api import api_client
 
@@ -27,6 +30,8 @@ def format_group_settings_text(chat_user: dict, chat_title: str) -> str:
     subgroup = chat_user.get("subgroup", 0)
     sg_text = "Все подгруппы" if subgroup == 0 else f"{subgroup}-я подгруппа"
     notif = "Включены" if chat_user.get("notifications_enabled", 1) == 1 else "Отключены"
+    view_mode = chat_user.get("schedule_view_mode", "standard")
+    vmode_text = "1. Стандартный" if view_mode == "standard" else "2. whatqt"
     kb_mode = chat_user.get("group_kb_mode", "selective")
     if kb_mode == "selective":
         kb_text = "Только вызвавшему (selective)"
@@ -38,6 +43,7 @@ def format_group_settings_text(chat_user: dict, chat_title: str) -> str:
     return (
         f"Настройки группы «{chat_title}»:\n"
         f"Учебная группа: {chat_user.get('group_name', 'Не выбрана')}\n"
+        f"Режим расписания: {vmode_text}\n"
         f"Подгруппа по умолчанию: {sg_text}\n"
         f"Reply-клавиатура в чате: {kb_text}\n"
         f"Оповещения в чат: {notif}\n\n"
@@ -48,6 +54,8 @@ def format_settings_text(user: dict) -> str:
     subgroup = user.get("subgroup", 0)
     sg_text = "Все подгруппы" if subgroup == 0 else f"{subgroup}-я подгруппа"
     notif = "Включены" if user.get("notifications_enabled", 1) == 1 else "Отключены"
+    view_mode = user.get("schedule_view_mode", "standard")
+    vmode_text = "1. Стандартный" if view_mode == "standard" else "2. whatqt"
     before = user.get("notify_before_mins", 10)
     before_text = f"За {before} минут" if before > 0 else "Отключено"
     breaks = "Включены" if user.get("notify_breaks", 1) == 1 else "Отключены"
@@ -58,6 +66,7 @@ def format_settings_text(user: dict) -> str:
     return (
         f"Настройки пользователя:\n"
         f"Группа: {user.get('group_name', 'Не выбрана')}\n"
+        f"Режим расписания: {vmode_text}\n"
         f"Подгруппа: {sg_text}\n"
         f"Мобильное приложение: {mobile_app}\n"
         f"Главные уведомления: {notif}\n"
@@ -274,6 +283,45 @@ async def cb_grp_toggle_notif(callback: CallbackQuery):
         logger.warning("Ошибка в cb_grp_toggle_notif: %s", e)
     status_label = "включены" if new_val == 1 else "отключены"
     await callback.answer(f"Оповещения в чат {status_label}")
+
+@router.callback_query(F.data.startswith("set_vmode:"))
+async def cb_set_vmode(callback: CallbackQuery):
+    vmode = callback.data.split(":")[1]
+    await set_user_schedule_view_mode(callback.from_user.id, vmode)
+    updated_user = await get_user(callback.from_user.id)
+    text = format_settings_text(updated_user)
+    try:
+        await callback.message.edit_text(text, reply_markup=get_settings_keyboard(updated_user))
+    except TelegramBadRequest:
+        pass
+    except Exception as e:
+        logger.warning("Ошибка в cb_set_vmode: %s", e)
+    vmode_labels = {"standard": "1. Стандартный", "whatqt": "2. whatqt"}
+    await callback.answer(f"Режим расписания: {vmode_labels.get(vmode, vmode)}")
+
+@router.callback_query(F.data == "grp_vm_noop")
+async def cb_grp_vm_noop(callback: CallbackQuery):
+    await callback.answer()
+
+@router.callback_query(F.data.startswith("grp_vmode:"))
+async def cb_grp_vmode(callback: CallbackQuery):
+    if not await is_chat_admin(callback.bot, callback.message.chat.id, callback.from_user.id):
+        await callback.answer("Только администратор чата может менять этот параметр.", show_alert=True)
+        return
+    vmode = callback.data.split(":")[1]
+    await set_user_schedule_view_mode(callback.message.chat.id, vmode)
+    chat_user = await get_user(callback.message.chat.id)
+    chat_title = callback.message.chat.title or "Групповой чат"
+    text = format_group_settings_text(chat_user, chat_title)
+    try:
+        await callback.message.edit_text(text, reply_markup=get_group_settings_keyboard(chat_user))
+    except TelegramBadRequest:
+        pass
+    except Exception as e:
+        logger.warning("Ошибка в cb_grp_vmode: %s", e)
+    vmode_labels = {"standard": "1. Стандартный", "whatqt": "2. whatqt"}
+    await callback.answer(f"Режим расписания: {vmode_labels.get(vmode, vmode)}")
+
 
 @router.callback_query(F.data == "cancel_course_select")
 async def cb_cancel_course_select(callback: CallbackQuery):
