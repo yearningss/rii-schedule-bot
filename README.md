@@ -119,7 +119,7 @@ rii-schedule-bot/
 │   └── pubspec.yaml            # Зависимости и версия мобильного приложения
 ├── config.py                   # Конфигурация и переменные окружения
 ├── database.py                 # База данных: модели и сессии SQLAlchemy ORM (asyncio)
-├── keyboards.py                # Клавиатуры и инлайн-кнопки бота
+├── keyboards.py                # Клавиатуры и кнопки бота
 ├── main.py                     # Точка входа: бот, веб-сервер aiohttp и воркер уведомлений
 ├── requirements.txt            # Зависимости Python
 ├── handlers/                   # Обработчики Telegram-бота
