@@ -197,7 +197,7 @@ jobs:
           RUSTORE_KEY_ID: ${{ secrets.RUSTORE_KEY_ID }}
           RUSTORE_PRIVATE_KEY: ${{ secrets.RUSTORE_PRIVATE_KEY }}
           RUSTORE_PACKAGE_NAME: "com.yearnings.rii"
-          RUSTORE_PUBLISH_TYPE: "AUTOMATICALLY"
+          RUSTORE_PUBLISH_TYPE: "MANUALLY"
           APK_PATH: "release-assets/RiiSchedule.apk"
         run: |
           python3 scripts/upload_to_rustore.py

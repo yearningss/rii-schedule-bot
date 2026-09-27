@@ -79,29 +79,36 @@ def get_or_create_draft_version(token: str, package_name: str, publish_type: str
     except Exception as e:
         print(f"Примечание при проверке черновика: {e}")
     
-    # 2. Создаем новый черновик версии
+    # 2. Создаем новый черновик версии.
+    # В RuStore API допустимым типом является "MANUALLY", либо параметр не передается.
     create_url = f"{API_BASE_URL}/public/v1/application/{package_name}/version"
-    payload = {
-        "publishType": publish_type,
-        "whatsNew": whats_new[:500] if whats_new else "Плановое обновление приложения и расписания."
-    }
+    clean_notes = whats_new[:500] if whats_new else "Плановое обновление приложения и расписания."
     
-    print(f"Создание новой версии приложения (тип публикации: {publish_type})...")
-    resp = requests.post(create_url, headers=headers, json=payload, timeout=30)
-    if resp.status_code not in (200, 201):
-        raise RuntimeError(f"Ошибка создания версии (HTTP {resp.status_code}): {resp.text}")
-    
-    body = resp.json().get("body")
-    if isinstance(body, dict):
-        version_id = body.get("versionId")
-    else:
-        version_id = body
-        
-    if not version_id:
-        raise RuntimeError(f"Не получен versionId из ответа: {resp.text}")
-    
-    print(f"Черновик версии успешно создан: ID {version_id}")
-    return int(version_id)
+    candidates = []
+    if publish_type and publish_type not in ("AUTOMATICALLY", "AUTOMATIC"):
+        candidates.append({"publishType": publish_type, "whatsNew": clean_notes})
+    candidates.append({"publishType": "MANUALLY", "whatsNew": clean_notes})
+    candidates.append({"whatsNew": clean_notes})
+    candidates.append({})
+
+    last_error = ""
+    for payload in candidates:
+        pt_info = payload.get("publishType", "не указан (по умолчанию)")
+        print(f"Попытка создания новой версии приложения (publishType: {pt_info})...")
+        resp = requests.post(create_url, headers=headers, json=payload, timeout=30)
+        if resp.status_code in (200, 201):
+            body = resp.json().get("body")
+            if isinstance(body, dict):
+                version_id = body.get("versionId")
+            else:
+                version_id = body
+            if version_id:
+                print(f"Черновик версии успешно создан: ID {version_id}")
+                return int(version_id)
+        last_error = f"HTTP {resp.status_code}: {resp.text}"
+        print(f"Ответ RuStore при publishType={pt_info}: {last_error}")
+
+    raise RuntimeError(f"Ошибка создания версии во всех вариантах. Последний ответ RuStore: {last_error}")
 
 def upload_apk(token: str, package_name: str, version_id: int, apk_path: str):
     if not os.path.isfile(apk_path):
@@ -110,35 +117,55 @@ def upload_apk(token: str, package_name: str, version_id: int, apk_path: str):
     file_size_mb = os.path.getsize(apk_path) / (1024 * 1024)
     print(f"Загрузка APK файла '{apk_path}' ({file_size_mb:.2f} МБ) в RuStore...")
     
-    url = f"{API_BASE_URL}/public/v1/application/{package_name}/version/{version_id}/apk?servicesType=Unknown&isMainApk=true"
+    urls = [
+        f"{API_BASE_URL}/public/v1/application/{package_name}/version/{version_id}/apk?servicesType=Unknown&isMainApk=true",
+        f"{API_BASE_URL}/public/v1/application/{package_name}/version/{version_id}/apk?isMainApk=true",
+        f"{API_BASE_URL}/public/v1/application/{package_name}/version/{version_id}/apk"
+    ]
     headers = {"Public-Token": token}
     
-    with open(apk_path, "rb") as f:
-        files = {"file": (os.path.basename(apk_path), f, "application/vnd.android.package-archive")}
-        resp = requests.post(url, headers=headers, files=files, timeout=300)
-    
-    if resp.status_code != 200:
-        raise RuntimeError(f"Ошибка загрузки APK (HTTP {resp.status_code}): {resp.text}")
-    
-    print("APK файл успешно загружен в RuStore.")
+    last_err = ""
+    for url in urls:
+        try:
+            with open(apk_path, "rb") as f:
+                files = {"file": (os.path.basename(apk_path), f, "application/vnd.android.package-archive")}
+                resp = requests.post(url, headers=headers, files=files, timeout=300)
+            if resp.status_code in (200, 201):
+                print("APK файл успешно загружен в RuStore.")
+                return
+            last_err = f"HTTP {resp.status_code}: {resp.text}"
+            print(f"Попытка загрузки по URL {url} вернула: {last_err}")
+        except Exception as ex:
+            last_err = str(ex)
+            print(f"Исключение при загрузке: {ex}")
+
+    raise RuntimeError(f"Ошибка загрузки APK: {last_err}")
 
 def commit_version(token: str, package_name: str, version_id: int):
     print(f"Отправка версии {version_id} на модерацию и публикацию...")
-    url = f"{API_BASE_URL}/public/v1/application/{package_name}/version/{version_id}/commit?priorityUpdate=0"
+    urls = [
+        f"{API_BASE_URL}/public/v1/application/{package_name}/version/{version_id}/commit?priorityUpdate=0",
+        f"{API_BASE_URL}/public/v1/application/{package_name}/version/{version_id}/commit"
+    ]
     headers = {"Public-Token": token}
     
-    resp = requests.post(url, headers=headers, timeout=60)
-    if resp.status_code != 200:
-        raise RuntimeError(f"Ошибка отправки на модерацию (HTTP {resp.status_code}): {resp.text}")
-    
-    print("Версия успешно отправлена на модерацию в RuStore!")
+    last_err = ""
+    for url in urls:
+        resp = requests.post(url, headers=headers, timeout=60)
+        if resp.status_code in (200, 201):
+            print("Версия успешно отправлена на модерацию в RuStore!")
+            return
+        last_err = f"HTTP {resp.status_code}: {resp.text}"
+        print(f"Ответ при отправке на модерацию: {last_err}")
+
+    raise RuntimeError(f"Ошибка отправки на модерацию: {last_err}")
 
 def main():
     parser = argparse.ArgumentParser(description="Автодеплой APK в RuStore")
     parser.add_argument("--key-id", default=os.environ.get("RUSTORE_KEY_ID"), help="Key ID из RuStore")
     parser.add_argument("--private-key", default=os.environ.get("RUSTORE_PRIVATE_KEY"), help="Приватный ключ PEM или путь к файлу")
     parser.add_argument("--package-name", default=os.environ.get("RUSTORE_PACKAGE_NAME", "com.yearnings.rii"), help="ID пакета приложения")
-    parser.add_argument("--publish-type", default=os.environ.get("RUSTORE_PUBLISH_TYPE", "AUTOMATICALLY"), choices=["AUTOMATICALLY", "MANUALLY"], help="Тип публикации")
+    parser.add_argument("--publish-type", default=os.environ.get("RUSTORE_PUBLISH_TYPE", "MANUALLY"), help="Тип публикации")
     parser.add_argument("--apk", default=os.environ.get("APK_PATH", "dist/RiiSchedule.apk"), help="Путь к файлу APK")
     parser.add_argument("--whats-new", default=os.environ.get("WHATS_NEW", "Обновление расписания и оптимизация работы приложения."), help="Описание изменений")
     
