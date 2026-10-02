@@ -1,6 +1,7 @@
 # Конфигурация и загрузка переменных окружения
 import os
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -21,5 +22,10 @@ CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "300"))
 CHANGE_CHECK_INTERVAL_SECONDS = int(os.getenv("CHANGE_CHECK_INTERVAL_SECONDS", "900"))
 
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://rii-bot.yearnings.ru")
+# Новая версия адреса обновляет сохранённую страницу Telegram Mini App.
+_webapp_parts = urlsplit(WEBAPP_URL)
+_webapp_query = dict(parse_qsl(_webapp_parts.query, keep_blank_values=True))
+_webapp_query["v"] = "9"
+WEBAPP_URL = urlunsplit(_webapp_parts._replace(query=urlencode(_webapp_query)))
 WEB_HOST = os.getenv("WEB_HOST", "127.0.0.1")
 WEB_PORT = int(os.getenv("WEB_PORT", "8082"))

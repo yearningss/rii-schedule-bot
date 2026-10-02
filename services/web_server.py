@@ -21,6 +21,12 @@ logger = logging.getLogger("rii_schedule_bot.web")
 
 WEBAPP_DIR = Path(__file__).resolve().parent.parent / "webapp"
 
+async def prevent_stale_pages(request: web.Request, response: web.StreamResponse) -> None:
+    # Страница и загрузчик офлайн-кэша всегда проверяются на сервере.
+    if request.path in {"/", "/index.html", "/kiosk", "/kiosk.html", "/tv", "/tv.html", "/sw.js"}:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+
+
 async def handle_index(request: web.Request) -> web.FileResponse:
     host = (request.headers.get("X-Forwarded-Host") or request.headers.get("Host") or "").lower()
     if "tv" in host:
@@ -516,6 +522,7 @@ async def timing_middleware(request, handler):
 def create_web_app() -> web.Application:
     app = web.Application(middlewares=[timing_middleware])
     app.on_cleanup.append(cleanup_upstream_clients)
+    app.on_response_prepare.append(prevent_stale_pages)
     app.router.add_get("/", handle_index)
     app.router.add_get("/tv", handle_tv)
     app.router.add_get("/tv.html", handle_tv)
