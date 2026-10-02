@@ -276,3 +276,29 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .has-sliding-indicator.indicator-ready::before,
   .has-sliding-indicator > button { transition: none; }
 }
+
+/* На телефоне расписание занимает основную часть экрана. */
+@media (max-width: 599px) {
+  .app-header { padding: calc(12px + env(safe-area-inset-top, 0px)) 12px 8px; }
+  .brand-heading { margin-bottom: 8px; }
+  .brand-eyebrow { display: none; }
+  .brand-heading h1 { font-size: 24px; margin: 0; line-height: 1.2; }
+  .header-top { margin-bottom: 8px; }
+  .group-btn { min-height: 44px; padding: 8px 12px; max-width: calc(100% - 140px); }
+  .group-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .week-btn, .sg-btn { min-height: 44px; padding: 8px; }
+  .days-nav { gap: 6px; }
+  .day-chip { min-height: 44px; padding: 10px 0; }
+  .live-status-bar { margin: 4px 12px; padding: 10px 12px; border-radius: 16px; }
+  .schedule-container { padding: 8px 12px calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .cards-list { gap: 8px; }
+  .para-card { padding: 12px; border-radius: 20px; }
+  .para-header, .para-num-time { gap: 4px; }
+  .para-header { margin-bottom: 4px; }
+  .para-num, .para-badge, .aud-pill, .type-pill { padding: 4px 8px; }
+  .para-subject { font-size: 16px; line-height: 1.35; margin: 8px 0; }
+  .para-meta { gap: 6px; }
+  .teacher-btn-chip { min-height: 44px; padding: 8px 10px; }
+  .teacher-btn-chip .teacher-post-hint { display: none; }
+  .app-footer { padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); }
+}

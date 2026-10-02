@@ -15,6 +15,12 @@ const assert=require('node:assert/strict');
   await page.goto(process.env.BASE_URL || 'http://127.0.0.1:8765/');
   await page.locator('.para-card').first().waitFor();
   assert.equal(await page.locator('.para-card').count(),2);
+  if (width < 600) {
+   assert.ok((await page.locator('.app-header').boundingBox()).height < 190, 'Шапка должна оставлять место расписанию');
+   assert.ok((await page.locator('.para-card').nth(1).boundingBox()).height < 160, 'Обычная карточка должна помещаться компактно');
+   assert.ok((await page.locator('.app-footer').boundingBox()).height < 84, 'Фильтр подгруппы не должен перекрывать расписание');
+  }
+
   await page.locator('[data-sg="1"]').click();
   assert.equal(await page.locator('#scheduleCards').getByText('Физика',{exact:true}).count(),0);
   await page.locator('[data-sg="0"]').click();
