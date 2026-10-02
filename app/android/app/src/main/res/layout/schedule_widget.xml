@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="16dp">
 
     <!-- Верхняя панель: Группа, дата и неделя -->
     <LinearLayout
@@ -18,21 +18,24 @@
             android:id="@+id/widget_group_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginRight="8dp"
+            android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Группа не выбрана"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/widget_on_surface"
             android:textSize="15sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_date_week"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="I неделя"
-            android:textColor="#94A3B8"
+            android:textColor="@color/widget_secondary"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -44,14 +47,16 @@
         android:layout_marginTop="8dp"
         android:background="@drawable/widget_card_inner"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="12dp">
 
         <TextView
             android:id="@+id/widget_status_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Идет пара"
-            android:textColor="#60A5FA"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Идёт пара"
+            android:textColor="@color/widget_primary"
             android:textSize="12sp"
             android:textStyle="bold" />
 
@@ -59,23 +64,23 @@
             android:id="@+id/widget_subject_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="8dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Название предмета"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_details_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="4dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Ауд. 000 • Преподаватель"
-            android:textColor="#CBD5E1"
+            android:textColor="@color/widget_secondary"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -95,7 +100,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Далее: пар больше нет"
-            android:textColor="#94A3B8"
-            android:textSize="11sp" />
+            android:textColor="@color/widget_secondary"
+            android:textSize="12sp" />
     </LinearLayout>
 </LinearLayout>

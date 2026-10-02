@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_surface">#F6FBF5</color>
+    <color name="widget_card">#EAF0E9</color>
+    <color name="widget_primary">#386A52</color>
+    <color name="widget_on_surface">#181D19</color>
+    <color name="widget_secondary">#414942</color>
+    <color name="widget_outline">#C1C9C0</color>
+    <color name="widget_badge">#D3E8D8</color>
+</resources>

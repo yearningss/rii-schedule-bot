@@ -8,6 +8,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
+import android.view.View
 import android.widget.RemoteViews
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -24,6 +26,11 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         scheduleNextTick(context)
     }
 
+    override fun onAppWidgetOptionsChanged(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         when (intent.action) {
@@ -31,7 +38,9 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             ACTION_SCHEDULE_TICK,
             Intent.ACTION_TIME_TICK,
             Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED -> {
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_CONFIGURATION_CHANGED,
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 updateAllWidgets(context)
             }
         }
@@ -187,6 +196,19 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
 
     private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
         val views = RemoteViews(context.packageName, R.layout.schedule_widget)
+        // На маленьком виджете оставляем статус и название ближайшей пары.
+        val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+        val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 140)
+        val width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250)
+        val density = context.resources.displayMetrics.density
+        val outerPadding = ((if (height < 140) 8 else 16) * density).toInt()
+        val cardPadding = ((if (height < 140) 8 else 12) * density).toInt()
+        views.setViewPadding(R.id.widget_root, outerPadding, outerPadding, outerPadding, outerPadding)
+        views.setViewPadding(R.id.widget_card_main, cardPadding, cardPadding, cardPadding, cardPadding)
+        views.setViewVisibility(R.id.widget_next_container, if (height >= 200) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_details_text, if (height >= 160) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_date_week, if (width >= 220) View.VISIBLE else View.GONE)
+
 
         // Клик по виджету открывает главное приложение
         val intent = Intent(context, MainActivity::class.java)

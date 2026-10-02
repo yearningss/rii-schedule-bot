@@ -189,10 +189,32 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.23',
+        title: 'Релиз v1.0.23 (сборка 24)',
+        publishedAt: '2026-10-02T00:00:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.23',
+        rawBody: '''* Обновлён Android-виджет по Material 3.
+* Добавлены светлая и тёмная темы и компактное отображение.
+* Исправлено обновление страницы Telegram Mini App.''',
+        assets: [
+          ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 0,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.23/RiiSchedule.apk',
+          ),
+          ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 0,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.23/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.22',
         title: 'Релиз v1.0.22 (сборка 23)',
         publishedAt: '2026-10-02T00:00:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.22',
         rawBody: '''* Обновлён дизайн приложения и веб-интерфейсов по Material 3.
 * Добавлено плавное переключение недели и подгруппы.
