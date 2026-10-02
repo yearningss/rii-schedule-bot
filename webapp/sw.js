@@ -1,11 +1,11 @@
 // Service Worker для поддержки PWA и офлайн-режима мобильного приложения
-const CACHE_NAME = 'rii-schedule-pwa-v6';
+const CACHE_NAME = 'rii-schedule-pwa-v7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/style.css?v=6',
-  '/app.js?v=6',
-  '/material.css?v=6',
+  '/style.css?v=7',
+  '/app.js?v=7',
+  '/material.css?v=7',
   '/manifest.json',
   '/favicon.png',
   '/favicon-32x32.png',
