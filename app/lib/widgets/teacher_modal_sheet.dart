@@ -28,7 +28,8 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
   @override
   void initState() {
     super.initState();
-    _teacherFuture = widget.api.getTeacherInfo(widget.teacher, post: widget.post);
+    _teacherFuture =
+        widget.api.getTeacherInfo(widget.teacher, post: widget.post);
   }
 
   @override
@@ -42,7 +43,7 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
         maxHeight: screenHeight * 0.85,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E232D) : Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
       ),
       child: SafeArea(
@@ -90,7 +91,9 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                               'Загрузка сведений о преподавателе...',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -99,11 +102,12 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                     );
                   }
 
-                  final info = snapshot.data ?? TeacherInfo(
-                    fullName: widget.teacher,
-                    post: widget.post ?? 'Преподаватель',
-                    profileUrl: 'https://www.rubinst.ru/structure',
-                  );
+                  final info = snapshot.data ??
+                      TeacherInfo(
+                        fullName: widget.teacher,
+                        post: widget.post ?? 'Преподаватель',
+                        profileUrl: 'https://www.rubinst.ru/structure',
+                      );
                   _loadedInfo = info;
 
                   return SingleChildScrollView(
@@ -119,7 +123,9 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                               child: Container(
                                 width: 76,
                                 height: 76,
-                                color: isDark ? const Color(0xFF2B3240) : const Color(0xFFF1F5F9),
+                                color: isDark
+                                    ? const Color(0xFF2B3240)
+                                    : const Color(0xFFF1F5F9),
                                 child: info.photoUrl.isNotEmpty
                                     ? Image.network(
                                         info.photoUrl,
@@ -127,13 +133,17 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                                         errorBuilder: (_, __, ___) => Icon(
                                           Icons.person,
                                           size: 40,
-                                          color: isDark ? Colors.grey[500] : Colors.grey[400],
+                                          color: isDark
+                                              ? Colors.grey[500]
+                                              : Colors.grey[400],
                                         ),
                                       )
                                     : Icon(
                                         Icons.person,
                                         size: 40,
-                                        color: isDark ? Colors.grey[500] : Colors.grey[400],
+                                        color: isDark
+                                            ? Colors.grey[500]
+                                            : Colors.grey[400],
                                       ),
                               ),
                             ),
@@ -143,7 +153,9 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    info.fullName.isNotEmpty ? info.fullName : widget.teacher,
+                                    info.fullName.isNotEmpty
+                                        ? info.fullName
+                                        : widget.teacher,
                                     style: const TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
@@ -155,23 +167,31 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                                       info.post,
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                       ),
                                     ),
                                   if (info.department.isNotEmpty) ...[
                                     const SizedBox(height: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF2563EB).withOpacity(0.12),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
                                         info.department,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
-                                          color: Color(0xFF2563EB),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
                                         ),
                                       ),
                                     ),
@@ -195,7 +215,9 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                           _buildDetailRow(
                             Icons.school_outlined,
                             'Степень и звание',
-                            [info.degree, info.title].where((s) => s.isNotEmpty).join(', '),
+                            [info.degree, info.title]
+                                .where((s) => s.isNotEmpty)
+                                .join(', '),
                             isDark,
                           ),
                         if (info.phones.isNotEmpty)
@@ -205,7 +227,8 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                                 p['display'] ?? '',
                                 isDark,
                                 onTap: (p['dial']?.isNotEmpty ?? false)
-                                    ? () => launchUrl(Uri.parse('tel:${p['dial']}'))
+                                    ? () =>
+                                        launchUrl(Uri.parse('tel:${p['dial']}'))
                                     : null,
                               ))
                         else if (info.phone.isNotEmpty)
@@ -214,7 +237,8 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                             'Телефон',
                             info.phone,
                             isDark,
-                            onTap: () => launchUrl(Uri.parse('tel:${info.dialPhone}')),
+                            onTap: () =>
+                                launchUrl(Uri.parse('tel:${info.dialPhone}')),
                           ),
                         if (info.email.isNotEmpty)
                           _buildDetailRow(
@@ -223,7 +247,8 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                             info.email,
                             isDark,
                             onTap: () {
-                              final first = info.email.split(RegExp(r'\s+')).first;
+                              final first =
+                                  info.email.split(RegExp(r'\s+')).first;
                               launchUrl(Uri.parse('mailto:$first'));
                             },
                           ),
@@ -246,7 +271,7 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: isDark ? const Color(0xFF2B3240) : const Color(0xFFE2E8F0),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                 ),
               ),
@@ -257,7 +282,8 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       child: const Text('Закрыть'),
                     ),
@@ -267,22 +293,25 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                     flex: 2,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        final url = (_loadedInfo?.profileUrl.isNotEmpty ?? false)
-                            ? _loadedInfo!.profileUrl
-                            : 'https://www.rubinst.ru/structure';
+                        final url =
+                            (_loadedInfo?.profileUrl.isNotEmpty ?? false)
+                                ? _loadedInfo!.profileUrl
+                                : 'https://www.rubinst.ru/structure';
                         launchUrl(
                           Uri.parse(url),
                           mode: LaunchMode.externalApplication,
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-                      label: const Text('На сайте РИИ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      label: const Text('На сайте РИИ',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -311,7 +340,8 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 18, color: const Color(0xFF2563EB)),
+              Icon(icon,
+                  size: 18, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -321,7 +351,7 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                       label,
                       style: TextStyle(
                         fontSize: 11.5,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -332,9 +362,10 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
                         color: onTap != null
-                            ? const Color(0xFF2563EB)
+                            ? Theme.of(context).colorScheme.primary
                             : (isDark ? Colors.white : Colors.black87),
-                        decoration: onTap != null ? TextDecoration.underline : null,
+                        decoration:
+                            onTap != null ? TextDecoration.underline : null,
                       ),
                     ),
                   ],
@@ -420,7 +451,7 @@ class _TeachersCatalogSheetState extends State<TeachersCatalogSheet> {
         maxHeight: screenHeight * 0.88,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E232D) : Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
       ),
       child: SafeArea(
@@ -453,7 +484,8 @@ class _TeachersCatalogSheetState extends State<TeachersCatalogSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.people_alt_rounded, color: Color(0xFF2563EB), size: 22),
+                  Icon(Icons.people_alt_rounded,
+                      color: Theme.of(context).colorScheme.primary, size: 22),
                   const SizedBox(width: 8),
                   Text(
                     'Преподаватели РИИ (${_allTeachers.length})',
@@ -486,7 +518,8 @@ class _TeachersCatalogSheetState extends State<TeachersCatalogSheet> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 ),
               ),
             ),
@@ -494,48 +527,62 @@ class _TeachersCatalogSheetState extends State<TeachersCatalogSheet> {
             // Список преподавателей
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: const CircularProgressIndicator())
                   : _filteredTeachers.isEmpty
                       ? Center(
                           child: Text(
                             'Преподаватели не найдены',
                             style: TextStyle(
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           itemCount: _filteredTeachers.length,
                           separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (context, idx) {
                             final t = _filteredTeachers[idx];
                             return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 4),
                               leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(24),
                                 child: Container(
                                   width: 46,
                                   height: 46,
-                                  color: isDark ? const Color(0xFF2B3240) : const Color(0xFFF1F5F9),
+                                  color: isDark
+                                      ? const Color(0xFF2B3240)
+                                      : const Color(0xFFF1F5F9),
                                   child: t.photoUrl.isNotEmpty
                                       ? Image.network(
                                           t.photoUrl,
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) => Icon(
                                             Icons.person,
-                                            color: isDark ? Colors.grey[500] : Colors.grey[400],
+                                            color: isDark
+                                                ? Colors.grey[500]
+                                                : Colors.grey[400],
                                           ),
                                         )
                                       : Icon(
                                           Icons.person,
-                                          color: isDark ? Colors.grey[500] : Colors.grey[400],
+                                          color: isDark
+                                              ? Colors.grey[500]
+                                              : Colors.grey[400],
                                         ),
                                 ),
                               ),
                               title: Text(
-                                t.fullName.isNotEmpty ? t.fullName : t.shortName,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5),
+                                t.fullName.isNotEmpty
+                                    ? t.fullName
+                                    : t.shortName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14.5),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,22 +592,28 @@ class _TeachersCatalogSheetState extends State<TeachersCatalogSheet> {
                                       t.post,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                       ),
                                     ),
                                   if (t.department.isNotEmpty)
                                     Text(
                                       t.department,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11.5,
-                                        color: Color(0xFF2563EB),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                 ],
                               ),
-                              trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                              onTap: () => widget.onTeacherSelected(t.fullName, t.post),
+                              trailing:
+                                  const Icon(Icons.chevron_right_rounded, size: 20),
+                              onTap: () =>
+                                  widget.onTeacherSelected(t.fullName, t.post),
                             );
                           },
                         ),

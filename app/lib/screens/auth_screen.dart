@@ -48,13 +48,16 @@ class _AuthScreenState extends State<AuthScreen> {
       // Открываем Telegram приложение напрямую (или браузер при отсутствии приложения)
       final uri = Uri.parse(deepLink);
       try {
-        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        final launched =
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (!launched) {
-          await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
+          await launchUrl(Uri.parse(authUrl),
+              mode: LaunchMode.externalApplication);
         }
       } catch (_) {
         try {
-          await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
+          await launchUrl(Uri.parse(authUrl),
+              mode: LaunchMode.externalApplication);
         } catch (_) {}
       }
 
@@ -112,7 +115,8 @@ class _AuthScreenState extends State<AuthScreen> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ScheduleScreen(storage: widget.storage, api: widget.api),
+                  builder: (_) =>
+                      ScheduleScreen(storage: widget.storage, api: widget.api),
                 ),
               );
             }
@@ -121,7 +125,9 @@ class _AuthScreenState extends State<AuthScreen> {
             if (mounted) {
               setState(() => _isWaitingConfirmation = false);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Время ожидания входа истекло. Попробуйте снова.')),
+                const SnackBar(
+                    content: const Text(
+                        'Время ожидания входа истекло. Попробуйте снова.')),
               );
             }
           }
@@ -131,7 +137,9 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         setState(() => _isWaitingConfirmation = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ошибка подключения к серверу. Попробуйте позже.')),
+          const SnackBar(
+              content: const Text(
+                  'Ошибка подключения к серверу. Попробуйте позже.')),
         );
       }
     }
@@ -150,7 +158,8 @@ class _AuthScreenState extends State<AuthScreen> {
           final selected = await Navigator.push<GroupItem>(
             context,
             MaterialPageRoute(
-              builder: (_) => GroupPickerScreen(storage: widget.storage, api: widget.api),
+              builder: (_) =>
+                  GroupPickerScreen(storage: widget.storage, api: widget.api),
             ),
           );
           if (selected != null && mounted) {
@@ -187,7 +196,8 @@ class _AuthScreenState extends State<AuthScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => ScheduleScreen(storage: widget.storage, api: widget.api),
+              builder: (_) =>
+                  ScheduleScreen(storage: widget.storage, api: widget.api),
             ),
           );
         }
@@ -198,7 +208,9 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         setState(() => _isYandexLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось войти через Яндекс ID. Попробуйте снова.')),
+          const SnackBar(
+              content: const Text(
+                  'Не удалось войти через Яндекс ID. Попробуйте снова.')),
         );
       }
     }
@@ -208,7 +220,8 @@ class _AuthScreenState extends State<AuthScreen> {
     final selected = await Navigator.push<GroupItem>(
       context,
       MaterialPageRoute(
-        builder: (_) => GroupPickerScreen(storage: widget.storage, api: widget.api),
+        builder: (_) =>
+            GroupPickerScreen(storage: widget.storage, api: widget.api),
       ),
     );
 
@@ -242,7 +255,8 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => ScheduleScreen(storage: widget.storage, api: widget.api),
+            builder: (_) =>
+                ScheduleScreen(storage: widget.storage, api: widget.api),
           ),
         );
       }
@@ -254,161 +268,188 @@ class _AuthScreenState extends State<AuthScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
-    final effectiveTheme = SeasonIconService.getEffectiveTheme(widget.storage.getSeasonIconPreference(), rTime);
+    final effectiveTheme = SeasonIconService.getEffectiveTheme(
+        widget.storage.getSeasonIconPreference(), rTime);
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
+        child: LayoutBuilder(builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+                child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxWidth: 440,
+                  minHeight:
+                      (constraints.maxHeight - 48).clamp(0, double.infinity)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 32),
 
-              // Логотип приложения
-              ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: Image.asset(
-                  effectiveTheme.assetPath,
-                  width: 110,
-                  height: 110,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              const Text(
-                'РИИ Расписание',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Рубцовский индустриальный институт',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                ),
-              ),
-
-              const Spacer(),
-
-              // Состояние ожидания подтверждения в Telegram
-              if (_isWaitingConfirmation) ...[
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                const Text(
-                  'Ожидание подтверждения в Telegram...',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Нажмите «Подтвердить вход» в диалоге с ботом @rubinst_bot',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () {
-                    _pollTimer?.cancel();
-                    setState(() => _isWaitingConfirmation = false);
-                  },
-                  child: const Text('Отмена'),
-                ),
-              ] else ...[
-                // Кнопка входа через Telegram в 1 клик
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton.icon(
-                    onPressed: _startTelegramAuth,
-                    icon: const Icon(Icons.send_rounded, color: Colors.white),
-                    label: const Text(
-                      'Войти через Telegram',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
+                  // Логотип приложения
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Image.asset(
+                      effectiveTheme.assetPath,
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 24),
 
-                // Кнопка входа через Яндекс ID
-                if (YandexAuthService.isSupported) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _isYandexLoading ? null : _startYandexAuth,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? const Color(0xFF262626) : Colors.black,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
-                      ),
-                      child: _isYandexLoading
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFFC3F1D),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    'Я',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text(
-                                  'Войти с Яндекс ID',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
+                  const Text(
+                    'Твой учебный день',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Расписание РИИ всегда под рукой',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                ],
 
-                // Кнопка продолжить без авторизации
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: TextButton(
-                    onPressed: _selectGroupManually,
-                    child: Text(
-                      'Выбрать группу без привязки',
+                  const SizedBox(height: 32),
+
+                  // Состояние ожидания подтверждения в Telegram
+                  if (_isWaitingConfirmation) ...[
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Ожидание подтверждения в Telegram...',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Нажмите «Подтвердить вход» в диалоге с ботом @rubinst_bot',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 15,
-                        color: isDark ? Colors.grey[300] : Colors.grey[700],
-                        fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed: () {
+                        _pollTimer?.cancel();
+                        setState(() => _isWaitingConfirmation = false);
+                      },
+                      child: const Text('Отмена'),
+                    ),
+                  ] else ...[
+                    // Кнопка входа через Telegram в 1 клик
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _startTelegramAuth,
+                        icon: Icon(Icons.send_rounded,
+                            color: Theme.of(context).colorScheme.onPrimary),
+                        label: Text(
+                          'Войти через Telegram',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onPrimary),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28)),
+                          elevation: 0,
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ],
+                    const SizedBox(height: 12),
 
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+                    // Кнопка входа через Яндекс ID
+                    if (YandexAuthService.isSupported) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isYandexLoading ? null : _startYandexAuth,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isDark ? const Color(0xFF262626) : Colors.black,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28)),
+                            elevation: 0,
+                          ),
+                          child: _isYandexLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: const CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: const BoxDecoration(
+                                        color: const Color(0xFFFC3F1D),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Text(
+                                        'Я',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'Войти с Яндекс ID',
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Кнопка продолжить без авторизации
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: TextButton(
+                        onPressed: _selectGroupManually,
+                        child: Text(
+                          'Выбрать группу без привязки',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: isDark ? Colors.grey[300] : Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+                ],
+              ),
+            )),
+          );
+        }),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'services/api_service.dart';
 import 'services/storage_service.dart';
 import 'services/season_icon_service.dart';
+import 'theme/app_theme.dart';
 import 'screens/auth_screen.dart';
 import 'screens/schedule_screen.dart';
 
@@ -23,7 +24,8 @@ void main() async {
 
   // Применить сезонную иконку на рабочем столе (автоматически по дате или по настройке)
   final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
-  final theme = SeasonIconService.getEffectiveTheme(storage.getSeasonIconPreference(), rTime);
+  final theme = SeasonIconService.getEffectiveTheme(
+      storage.getSeasonIconPreference(), rTime);
   await SeasonIconService.applyLauncherIcon(theme);
 
   runApp(RiiScheduleApp(storage: storage, api: api));
@@ -51,28 +53,8 @@ class RiiScheduleApp extends StatelessWidget {
           title: 'РИИ Расписание',
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.light,
-            colorSchemeSeed: const Color(0xFF2563EB),
-            scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.white,
-              foregroundColor: Color(0xFF0F172A),
-              elevation: 0,
-            ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            colorSchemeSeed: const Color(0xFF2563EB),
-            scaffoldBackgroundColor: const Color(0xFF11151C),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1E232D),
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-          ),
+          theme: AppTheme.create(Brightness.light),
+          darkTheme: AppTheme.create(Brightness.dark),
           home: hasGroup
               ? ScheduleScreen(storage: storage, api: api)
               : AuthScreen(storage: storage, api: api),

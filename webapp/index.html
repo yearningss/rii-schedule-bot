@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>РИИ Расписание | Рубцовский индустриальный институт</title>
   
   <!-- Manifest и PWA настройки -->
@@ -26,24 +26,26 @@
   <meta property="og:image" content="/favicon.png">
   <meta property="og:type" content="website">
 
-  <link rel="stylesheet" href="/style.css?v=5">
+  <link rel="stylesheet" href="/style.css?v=6">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if ('caches' in window) {
       caches.keys().then(function(names) {
         for (var name of names) {
-          if (name !== 'rii-schedule-pwa-v5') {
+          if (name !== 'rii-schedule-pwa-v6') {
             caches.delete(name);
           }
         }
       });
     }
   </script>
+  <link rel="stylesheet" href="/material.css?v=6">
 </head>
 <body>
   <div class="app-container">
     <!-- Шапка -->
     <header class="app-header">
+      <div class="brand-heading"><p class="brand-eyebrow">РИИ АлтГТУ · твой учебный день</p><h1>Расписание</h1></div>
       <div class="header-top">
         <button id="groupSelectBtn" class="group-btn">
           <span id="currentGroupName">Выбрать группу</span>
@@ -69,7 +71,7 @@
     </header>
 
     <!-- Информационная плашка статуса -->
-    <div id="liveStatusBar" class="live-status-bar hidden">
+    <div aria-live="polite" id="liveStatusBar" class="live-status-bar hidden">
       <span class="status-indicator"></span>
       <span id="liveStatusText" class="status-text">Загрузка...</span>
     </div>
@@ -116,10 +118,10 @@
     <div class="modal-sheet">
       <div class="modal-header">
         <h3>Выбор учебной группы</h3>
-        <button id="closeModalBtn" class="close-btn">&times;</button>
+        <button aria-label="Закрыть выбор группы" id="closeModalBtn" class="close-btn">&times;</button>
       </div>
       <div class="search-box">
-        <input type="text" id="groupSearchInput" placeholder="Поиск группы (например: ИВТ-61)..." autocomplete="off">
+        <input type="text" aria-label="Поиск учебной группы" id="groupSearchInput" placeholder="Поиск группы (например: ИВТ-61)..." autocomplete="off">
       </div>
       <div id="groupsListContainer" class="groups-list">
         <!-- Список курсов и групп -->
@@ -132,7 +134,7 @@
     <div class="modal-sheet teacher-modal-sheet">
       <div class="modal-header">
         <h3>Информация о преподавателе</h3>
-        <button id="closeTeacherModalBtn" class="close-btn">&times;</button>
+        <button aria-label="Закрыть сведения о преподавателе" id="closeTeacherModalBtn" class="close-btn">&times;</button>
       </div>
       <div id="teacherLoading" class="loading-state">
         <div class="spinner"></div>
@@ -187,6 +189,6 @@
     </div>
   </div>
 
-  <script src="/app.js?v=5"></script>
+  <script src="/app.js?v=6"></script>
 </body>
 </html>

@@ -10,6 +10,13 @@ if (tg) {
   } catch (e) {}
 }
 
+// Синхронизируем палитру Material с темой Telegram.
+function syncMaterialTheme() {
+  if (tg?.colorScheme) document.documentElement.dataset.theme = tg.colorScheme;
+}
+syncMaterialTheme();
+if (tg?.onEvent) tg.onEvent('themeChanged', syncMaterialTheme);
+
 const telegramUser = tg?.initDataUnsafe?.user || null;
 const telegramUserId = telegramUser?.id || null;
 

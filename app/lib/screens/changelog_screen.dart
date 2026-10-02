@@ -15,7 +15,7 @@ class ReleaseModel {
   final List<ReleaseAsset> assets;
   final bool isCurrent;
 
-  const ReleaseModel({
+  ReleaseModel({
     required this.tag,
     required this.title,
     required this.publishedAt,
@@ -25,12 +25,14 @@ class ReleaseModel {
     this.isCurrent = false,
   });
 
-  factory ReleaseModel.fromJson(Map<String, dynamic> json, {String currentVersion = '1.0.3'}) {
+  factory ReleaseModel.fromJson(Map<String, dynamic> json,
+      {String currentVersion = '1.0.3'}) {
     final tag = (json['tag_name'] ?? '').toString().replaceAll('v', '').trim();
     final title = json['name']?.toString() ?? 'Версия $tag';
     final published = json['published_at']?.toString() ?? '';
     final body = json['body']?.toString() ?? '';
-    final html = json['html_url']?.toString() ?? 'https://github.com/yearningss/rii-schedule-bot/releases';
+    final html = json['html_url']?.toString() ??
+        'https://github.com/yearningss/rii-schedule-bot/releases';
 
     final assetsList = <ReleaseAsset>[];
     if (json['assets'] is List) {
@@ -64,7 +66,7 @@ class ReleaseAsset {
   final int sizeBytes;
   final String downloadUrl;
 
-  const ReleaseAsset({
+  ReleaseAsset({
     required this.name,
     required this.sizeBytes,
     required this.downloadUrl,
@@ -130,7 +132,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       final rawList = await _api.getChangelog();
       if (rawList.isNotEmpty) {
         final parsed = rawList
-            .map((item) => ReleaseModel.fromJson(item, currentVersion: AppInfo.versionName))
+            .map((item) => ReleaseModel.fromJson(item,
+                currentVersion: AppInfo.versionName))
             .toList();
 
         await _saveCachedReleases(rawList);
@@ -166,7 +169,9 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
           return decoded
-              .map((item) => ReleaseModel.fromJson(Map<String, dynamic>.from(item as Map), currentVersion: AppInfo.versionName))
+              .map((item) => ReleaseModel.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                  currentVersion: AppInfo.versionName))
               .toList();
         }
       }
@@ -188,21 +193,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.21 (сборка 22)',
         publishedAt: '2026-09-17T08:10:00Z',
         isCurrent: true,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.21',
-        rawBody: '''* Улучшено модальное окно преподавателя: кнопка закрытия, закрепленный заголовок и подвал.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.21',
+        rawBody:
+            '''* Улучшено модальное окно преподавателя: кнопка закрытия, закрепленный заголовок и подвал.
 * Устранена повторная загрузка с сервера: кэширование профилей при касаниях и свайпах.
 * Интерактивный каталог преподавателей института с поиском.
 * Наглядные кнопки преподавателей в Telegram Mini App.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56500000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8380000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -211,21 +220,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.20 (сборка 21)',
         publishedAt: '2026-09-17T07:30:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.20',
-        rawBody: '''* Live-расписание занятий в реальном времени: закрепленное уведомление на Android со встроенным хронометром и Live Activities / Dynamic Island для iOS.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.20',
+        rawBody:
+            '''* Live-расписание занятий в реальном времени: закрепленное уведомление на Android со встроенным хронометром и Live Activities / Dynamic Island для iOS.
 * Нативная авторизация через Яндекс ID на Android для быстрого входа в один клик.
 * Интерактивная карточка преподавателя по клику на ФИО с фото, контактами, должностью и кафедрой.
 * Полный федеральный формат телефонных номеров +7 (38557) для звонков с мобильных устройств.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56500000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.20/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.20/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8380000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.20/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.20/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -234,21 +247,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.19 (сборка 20)',
         publishedAt: '2026-09-08T11:00:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.19',
-        rawBody: '''* Устранено бесконечное появление диалога и баннера обновления при уже установленной актуальной версии приложения.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.19',
+        rawBody:
+            '''* Устранено бесконечное появление диалога и баннера обновления при уже установленной актуальной версии приложения.
 * Синхронизация кода сборки и версии AppInfo (v1.0.19, сборка 20).
 * Ограничение частоты показа баннера обновлений: ненавязчивое однократное уведомление на релиз вместо показа при каждом открытии.
 * Автоматическая валидация авторов и контрибьюторов репозитория (@yearningss, @TheKalina, @MRYROKGG).''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56500000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.19/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.19/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8380000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.19/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.19/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -257,20 +274,24 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.18 (сборка 19)',
         publishedAt: '2026-09-08T10:15:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.18',
-        rawBody: '''* Динамическая смена иконки приложения прямо на рабочем столе смартфона: автоматическая смена по сезонам и праздникам или вручную через Настройки.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.18',
+        rawBody:
+            '''* Динамическая смена иконки приложения прямо на рабочем столе смартфона: автоматическая смена по сезонам и праздникам или вручную через Настройки.
 * Нативная поддержка Android: 12 activity-alias в AndroidManifest.xml со всеми плотностями экранов (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi).
 * Нативная поддержка iOS: регистрация CFBundleAlternateIcons с комплектами иконок высокого разрешения.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56500000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.18/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.18/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8380000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.18/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.18/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -279,21 +300,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.17 (сборка 18)',
         publishedAt: '2026-09-08T09:30:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.17',
-        rawBody: '''* Динамическая смена темы и иконки по сезонам и праздникам: День города Рубцовска (10 - 20 сентября), День машиностроителя/АТЗ (21 - 30 сентября), Золотая осень, С Новым Годом, День студента (Татьянин день), 23 февраля, 8 марта, День Победы, Выпускной и День молодежи, весна, лето.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.17',
+        rawBody:
+            '''* Динамическая смена темы и иконки по сезонам и праздникам: День города Рубцовска (10 - 20 сентября), День машиностроителя/АТЗ (21 - 30 сентября), Золотая осень, С Новым Годом, День студента (Татьянин день), 23 февраля, 8 марта, День Победы, Выпускной и День молодежи, весна, лето.
 * Интерактивный выбор темы оформления и иконки в Настройках приложения: авторежим по календарю Рубцовска (UTC+7) или выбор любого из 12 праздничных стилей.
 * Динамический favicon и значок веб-версии Telegram Mini App в зависимости от активного сезона и праздника.
 * Команда /pic в Telegram-боте для просмотра актуальной сезонной иконки и инструкций по установке аватарки через BotFather.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56500000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8380000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.17/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -302,22 +327,26 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.16 (сборка 17)',
         publishedAt: '2026-09-08T07:15:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.16',
-        rawBody: '''* Время в виджете рабочего стола обновляется в реальном времени каждую минуту (WidgetKit поминутный таймлайн на iOS и точный AlarmManager в Android).
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.16',
+        rawBody:
+            '''* Время в виджете рабочего стола обновляется в реальном времени каждую минуту (WidgetKit поминутный таймлайн на iOS и точный AlarmManager в Android).
 * Устранена задержка отправки уведомлений: прямое системное планирование напоминаний о парах и переменах через точные системные будильники ОС.
 * Динамический расчет оставшихся минут в тексте уведомлений без нестыковок и ложных таймингов.
 * Расширен выбор времени напоминания до начала пары (5, 10, 15, 20, 30, 45, 60 минут).
 * Автоматический учет и синхронизация пользователей мобильного приложения в базе данных SQLite без обязательной авторизации в Telegram.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56350000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8360000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.16/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -326,22 +355,26 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.15 (сборка 16)',
         publishedAt: '2026-09-07T09:20:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.15',
-        rawBody: '''* Модульная организация экрана настроек: параметры разделены по 6 удобным категориям.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.15',
+        rawBody:
+            '''* Модульная организация экрана настроек: параметры разделены по 6 удобным категориям.
 * Интерактивные карточки-кнопки категорий (Оформление, Уведомления, Обновления, Учебный профиль, Сеть, Справка).
 * Плавное раскрытие подкнопок при нажатии на категорию без визуального нагромождения экрана.
 * Быстрые бейджи статуса для каждой категории настроек.
 * Кнопка быстрого сворачивания и разворачивания всех категорий одновременно.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56210000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.15/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.15/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8350000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.15/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.15/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -350,22 +383,26 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.14 (сборка 15)',
         publishedAt: '2026-09-07T08:45:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.14',
-        rawBody: '''* Полноценная система системных push-уведомлений о парах, переменах и начале занятий на смартфоне.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.14',
+        rawBody:
+            '''* Полноценная система системных push-уведомлений о парах, переменах и начале занятий на смартфоне.
 * Высокоприоритетный канал уведомлений Android со всплывающими баннерами, звуком и вибрацией.
 * В Настройки добавлена кнопка мгновенной проверки уведомлений (тестовое уведомление) и открытие системных параметров.
 * В Telegram-бот добавлена кнопка 'Скачать приложение' в главное меню и команда /download для прямой загрузки приложения на Android и iOS.
 * Информация о мобильном приложении добавлена в справку и команду /about Telegram-бота.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56060000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.14/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.14/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8350000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.14/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.14/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -374,23 +411,27 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.13 (сборка 14)',
         publishedAt: '2026-09-07T08:00:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.13',
-        rawBody: '''* Исправлена критическая ошибка обработки дней недели в Telegram-боте: полностью восстановлена работа команд /today, /tomorrow и кнопок 'Сегодня', 'Завтра'.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.13',
+        rawBody:
+            '''* Исправлена критическая ошибка обработки дней недели в Telegram-боте: полностью восстановлена работа команд /today, /tomorrow и кнопок 'Сегодня', 'Завтра'.
 * Восстановлена работа интерактивных кнопок дней недели (Пн-Сб, переключение недели, обновление расписания).
 * Добавлена новая команда /now ('Сейчас') с оперативным расчетом текущей пары, времени до конца и информации о переменах.
 * Добавлены интерактивные кнопки навигации по неделям для полного расписания.
 * Добавлена нечувствительность к регистру ввода и поддержка русскоязычных псевдонимов команд.
 * Добавлена кнопка отмены при выборе группы и предотвращены сбои при удалении сообщений в Telegram.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56060000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.13/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.13/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8350000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.13/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.13/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -399,21 +440,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.12 (сборка 13)',
         publishedAt: '2026-09-06T09:10:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.12',
-        rawBody: '''* Фоновая проверка обновлений каждые 15 минут: периодическая проверка новых версий и отправка системных уведомлений.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.12',
+        rawBody:
+            '''* Фоновая проверка обновлений каждые 15 минут: периодическая проверка новых версий и отправка системных уведомлений.
 * Очистка интерфейса шапки расписания: удалена лишняя плашка статуса возле номера учебной группы для исключения наложений.
 * Полная история изменений: гарантированное отображение всех версий приложения от v1.0.1 до актуальной с локальным кэшированием для офлайн-режима.
 * Добавлен переключатель фоновой проверки обновлений в расширенные настройки уведомлений.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56050000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.12/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.12/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8350000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.12/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.12/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -422,22 +467,26 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.11 (сборка 12)',
         publishedAt: '2026-09-06T08:50:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.11',
-        rawBody: '''* Интеллектуальный офлайн-режим: при отсутствии интернет-соединения при запуске отображается локально сохраненное расписание с понятным уведомлением.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.11',
+        rawBody:
+            '''* Интеллектуальный офлайн-режим: при отсутствии интернет-соединения при запуске отображается локально сохраненное расписание с понятным уведомлением.
 * Отображение сетевого режима в Настройках: статус онлайн/офлайн с индикатором и кнопкой мгновенной проверки соединения.
 * Расширенная настройка уведомлений: выбор времени напоминания до пары (5, 10, 15, 30 минут), оповещения о начале пары, переменах и изменениях в расписании.
 * Полноценная синхронизация параметров уведомлений с Telegram-ботом и сервером РИИ.
 * Добавлена возможность обновления расписания жестом свайпа (pull-to-refresh) на пустых экранах выходных дней.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55750000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8290000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.11/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -446,20 +495,24 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.10 (сборка 11)',
         publishedAt: '2026-09-06T07:25:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.10',
-        rawBody: '''* Документирование кодовой базы: все комментарии в исходном коде переведены и стандартизированы на русском языке.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.10',
+        rawBody:
+            '''* Документирование кодовой базы: все комментарии в исходном коде переведены и стандартизированы на русском языке.
 * Подтверждена стабильная работа нативного виджета расписания для iOS (WidgetKit) и Android (RemoteViews).
 * Фиксация обновлений манифеста схем и оптимизация управления памятью.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55712671,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8284792,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.10/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -468,22 +521,26 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.9 (сборка 10)',
         publishedAt: '2026-09-06T07:20:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.9',
-        rawBody: '''* Исправлен критический баг сопоставления структуры данных в нативном виджете iOS (WidgetKit): восстановлено чтение расписания по номеру недели и дня.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.9',
+        rawBody:
+            '''* Исправлен критический баг сопоставления структуры данных в нативном виджете iOS (WidgetKit): восстановлено чтение расписания по номеру недели и дня.
 * Добавлена поддержка фона виджетов для iOS 17 и новее с использованием containerBackground.
 * В Info.plist добавлен белый список схем LSApplicationQueriesSchemes для бесперебойного открытия приложения Telegram.
 * Повышена отказоустойчивость авторизации: прямой вызов launchUrl с автоматическим резервным переходом в браузер.
 * Устранена утечка памяти контроллера поиска (TextEditingController.dispose) на экране выбора учебной группы.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55597479,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.9/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.9/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8196388,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.9/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.9/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -492,20 +549,24 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.8 (сборка 9)',
         publishedAt: '2026-09-06T07:10:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.8',
-        rawBody: '''* Устранена циклическая зависимость фаз сборки Xcode (Cycle inside Runner) при интеграции виджета WidgetKit.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.8',
+        rawBody:
+            '''* Устранена циклическая зависимость фаз сборки Xcode (Cycle inside Runner) при интеграции виджета WidgetKit.
 * Порядок фаз сборки Runner скорректирован: встраивание расширения Embed App Extensions перенесено перед скриптом Thin Binary.
 * Нативный виджет расписания для iOS (WidgetKit и SwiftUI) с поддержкой форматов systemSmall и systemMedium.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55597479,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.8/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.8/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8196388,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.8/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.8/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -514,20 +575,24 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.7 (сборка 8)',
         publishedAt: '2026-09-06T07:00:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.7',
-        rawBody: '''* Устранена ошибка компиляции нативного виджета iOS в Swift (заменен вызов TimelineProviderContext на вспомогательный метод defaultPlaceholder).
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.7',
+        rawBody:
+            '''* Устранена ошибка компиляции нативного виджета iOS в Swift (заменен вызов TimelineProviderContext на вспомогательный метод defaultPlaceholder).
 * Оптимизирована публикация релизов в GitHub Actions: описание релиза теперь формируется через единый файл release_body.md с параметром body_path.
 * Нативный виджет расписания для iOS (WidgetKit и SwiftUI) с поддержкой форматов systemSmall и systemMedium.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55597479,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.7/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.7/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8196388,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.7/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.7/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -536,21 +601,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.6 (сборка 7)',
         publishedAt: '2026-09-06T06:50:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.6',
-        rawBody: '''* Внедрен нативный виджет расписания для рабочего стола iOS (WidgetKit и SwiftUI).
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.6',
+        rawBody:
+            '''* Внедрен нативный виджет расписания для рабочего стола iOS (WidgetKit и SwiftUI).
 * Поддержка компактного (systemSmall) и расширенного (systemMedium) форматов виджета.
 * Синхронизация расписания между Flutter-приложением и расширением виджета через App Groups.
 * Автоматическая генерация описания изменений (Changelog) в GitHub Actions для каждого релиза.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55597479,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.6/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.6/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8196388,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.6/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.6/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -559,20 +628,24 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.5 (сборка 6)',
         publishedAt: '2026-09-06T06:30:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.5',
-        rawBody: '''* Исправлен отступ безопасной зоны (SafeArea) снизу экрана: переключатель подгрупп теперь корректно приподнят над системной полосой жестов iOS (Home Bar) и панелью Android.
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.5',
+        rawBody:
+            '''* Исправлен отступ безопасной зоны (SafeArea) снизу экрана: переключатель подгрупп теперь корректно приподнят над системной полосой жестов iOS (Home Bar) и панелью Android.
 * Устранены ошибки компиляции Flutter и добавлена поддержка сборки пакета iOS IPA без цифровой подписи.
 * Оптимизирована работа диалогов обновления и проверки дистрибутивов.''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55597479,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8196388,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.5/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -581,22 +654,26 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.4 (сборка 5)',
         publishedAt: '2026-09-06T06:10:00Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.4',
-        rawBody: '''* Автоматическое разделение загрузки обновлений: для Android скачивается APK (RiiSchedule.apk), для iOS предлагается пакет IPA (RiiSchedule.ipa).
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.4',
+        rawBody:
+            '''* Автоматическое разделение загрузки обновлений: для Android скачивается APK (RiiSchedule.apk), для iOS предлагается пакет IPA (RiiSchedule.ipa).
 * Устранена блокировка скачивания файлов через браузер (убран баг метода canLaunchUrl в Flutter).
 * Очищено меню настроек: удалены дублирующиеся пункты, оставлен удобный и понятный интерфейс.
 * Добавлена возможность принудительного повторного скачивания актуального дистрибутива в один клик.
 * Обновлена среда сборки мобильных приложений (переход на actions/setup-java@v5).''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55597479,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/RiiSchedule.apk',
           ),
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.ipa',
             sizeBytes: 8196388,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/RiiSchedule.ipa',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.4/RiiSchedule.ipa',
           ),
         ],
       ),
@@ -605,17 +682,20 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         title: 'Релиз v1.0.3 (сборка 4)',
         publishedAt: '2026-09-06T05:18:11Z',
         isCurrent: false,
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.3',
-        rawBody: '''* Исправлен расчет и отображение расписания в субботу и воскресенье в приложении и виджете
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.3',
+        rawBody:
+            '''* Исправлен расчет и отображение расписания в субботу и воскресенье в приложении и виджете
 * В выходные виджет и приложение автоматически рассчитывают пары на понедельник следующей недели
 * Запрос разрешения на отправку системных уведомлений при запуске (Android 13+)
 * Унификация версий в настройках и интеграция динамического Changelog
 * Официальная цифровая подпись разработчика для доверия Google Play Protect''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 55597479,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.3/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.3/RiiSchedule.apk',
           ),
         ],
       ),
@@ -623,16 +703,18 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         tag: '1.0.2',
         title: 'Релиз v1.0.2 (сборка 3)',
         publishedAt: '2026-09-05T10:21:51Z',
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.2',
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.2',
         rawBody: '''* Новый фирменный скругленный логотип приложения РИИ
 * Адаптивные векторные и растровые иконки высокой четкости для Android и iOS
 * Оптимизация памяти сборки Gradle и отключение устаревшего Jetifier
 * Подготовка графических карточек и баннеров для RuStore''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56199315,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.2/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.2/RiiSchedule.apk',
           ),
         ],
       ),
@@ -640,16 +722,19 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         tag: '1.0.1',
         title: 'Релиз v1.0.1 (сборка 2)',
         publishedAt: '2026-09-05T09:54:18Z',
-        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.1',
-        rawBody: '''* Нативный виджет расписания для рабочего стола Android (RemoteViews)
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.1',
+        rawBody:
+            '''* Нативный виджет расписания для рабочего стола Android (RemoteViews)
 * Отображение текущей и следующей пары, времени перемены и аудитории
 * Авторизация через Telegram-бота (@rubinst_bot) и синхронизация профиля
 * Проверка обновлений приложения через сервер института''',
         assets: [
-          const ReleaseAsset(
+          ReleaseAsset(
             name: 'RiiSchedule.apk',
             sizeBytes: 56199000,
-            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.1/RiiSchedule.apk',
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.1/RiiSchedule.apk',
           ),
         ],
       ),
@@ -672,7 +757,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   }
 
   List<String> _parseBodyLines(String raw) {
-    if (raw.trim().isEmpty) return ['Улучшения стабильности и исправления ошибок.'];
+    if (raw.trim().isEmpty)
+      return ['Улучшения стабильности и исправления ошибок.'];
     final lines = raw.split('\n');
     final result = <String>[];
     for (var line in lines) {
@@ -698,21 +784,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         result.add(clean);
       }
     }
-    return result.isEmpty ? ['Улучшения стабильности и исправления ошибок.'] : result;
+    return result.isEmpty
+        ? ['Улучшения стабильности и исправления ошибок.']
+        : result;
   }
 
   Future<void> _launchUrl(String url) async {
     if (url.isEmpty) return;
     try {
       final uri = Uri.parse(url);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched) {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (_) {
       try {
         await launchUrl(
-          Uri.parse('https://github.com/yearningss/rii-schedule-bot/releases/latest'),
+          Uri.parse(
+              'https://github.com/yearningss/rii-schedule-bot/releases/latest'),
           mode: LaunchMode.externalApplication,
         );
       } catch (_) {}
@@ -723,9 +813,9 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0);
-    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
+    final borderColor = Theme.of(context).colorScheme.outlineVariant;
+    final subColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Scaffold(
       appBar: AppBar(
@@ -735,23 +825,25 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
           IconButton(
             tooltip: 'Открыть GitHub',
             icon: const Icon(Icons.open_in_new_rounded),
-            onPressed: () => _launchUrl('https://github.com/yearningss/rii-schedule-bot/releases'),
+            onPressed: () => _launchUrl(
+                'https://github.com/yearningss/rii-schedule-bot/releases'),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () => _loadReleases(isRefresh: true),
-        color: const Color(0xFF2563EB),
+        color: Theme.of(context).colorScheme.primary,
         child: _isLoading
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: Color(0xFF2563EB)),
-                    SizedBox(height: 16),
-                    Text(
+                    CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(height: 16),
+                    const Text(
                       'Загрузка реальной истории с GitHub...',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ],
                 ),
@@ -760,20 +852,24 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                 ? ListView(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 80),
                         child: Column(
                           children: [
-                            const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
+                            const Icon(Icons.cloud_off_rounded,
+                                size: 48, color: Colors.grey),
                             const SizedBox(height: 16),
                             const Text(
                               'Не удалось загрузить историю изменений',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
                             const Text(
                               'Проверьте подключение к интернету и повторите попытку.',
-                              style: TextStyle(fontSize: 13, color: Colors.grey),
+                              style:
+                                  const TextStyle(fontSize: 13, color: Colors.grey),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 20),
@@ -788,23 +884,30 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                     ],
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     itemCount: _releases.length + 1,
                     itemBuilder: (context, idx) {
                       if (idx == 0) {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF19202C) : const Color(0xFFF1F5F9),
+                            color:
+                                isDark ? const Color(0xFF19202C) : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                _isFromCache ? Icons.storage_rounded : Icons.check_circle_outline_rounded,
+                                _isFromCache
+                                    ? Icons.storage_rounded
+                                    : Icons.check_circle_outline_rounded,
                                 size: 18,
-                                color: _isFromCache ? Colors.amber : const Color(0xFF10B981),
+                                color: _isFromCache
+                                    ? Colors.amber
+                                    : Theme.of(context).colorScheme.tertiary,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -812,7 +915,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                   _isFromCache
                                       ? 'Офлайн-режим (встроенная история). Потяните вниз для обновления.'
                                       : 'Данные синхронизированы в реальном времени с GitHub Releases.',
-                                  style: TextStyle(fontSize: 12, color: subColor),
+                                  style:
+                                      TextStyle(fontSize: 12, color: subColor),
                                 ),
                               ),
                             ],
@@ -827,7 +931,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                       final targetLabel = isIOS ? 'IPA' : 'APK';
                       ReleaseAsset? releaseAsset;
                       for (final a in item.assets) {
-                        if (a.name.endsWith(targetExt) && !a.name.contains('debug')) {
+                        if (a.name.endsWith(targetExt) &&
+                            !a.name.contains('debug')) {
                           releaseAsset = a;
                           break;
                         }
@@ -845,14 +950,17 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
                           color: cardBg,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: item.isCurrent ? const Color(0xFF2563EB) : borderColor,
+                            color: item.isCurrent
+                                ? Theme.of(context).colorScheme.primary
+                                : borderColor,
                             width: item.isCurrent ? 1.5 : 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                              color:
+                                  Colors.black.withOpacity(isDark ? 0.2 : 0.04),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -867,11 +975,16 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: item.isCurrent
-                                          ? const Color(0xFF2563EB)
-                                          : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : (Theme.of(context)
+                                              .colorScheme
+                                              .outlineVariant),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -881,24 +994,32 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                         fontWeight: FontWeight.bold,
                                         color: item.isCurrent
                                             ? Colors.white
-                                            : (isDark ? Colors.white : const Color(0xFF1E293B)),
+                                            : (isDark
+                                                ? Colors.white
+                                                : const Color(0xFF1E293B)),
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   if (item.isCurrent)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF10B981).withOpacity(0.12),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .tertiary
+                                            .withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'Установлена',
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF10B981),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .tertiary,
                                         ),
                                       ),
                                     ),
@@ -906,7 +1027,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                   if (item.publishedAt.isNotEmpty)
                                     Text(
                                       _formatDate(item.publishedAt),
-                                      style: TextStyle(fontSize: 12, color: subColor),
+                                      style: TextStyle(
+                                          fontSize: 12, color: subColor),
                                     ),
                                 ],
                               ),
@@ -921,15 +1043,19 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                               const SizedBox(height: 12),
                               ...lines.map((line) {
                                 if (line.startsWith('__HEADING__:')) {
-                                  final h = line.replaceFirst('__HEADING__:', '');
+                                  final h =
+                                      line.replaceFirst('__HEADING__:', '');
                                   return Padding(
-                                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                    padding: const EdgeInsets.only(
+                                        top: 8, bottom: 4),
                                     child: Text(
                                       h,
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
-                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                        color: isDark
+                                            ? Colors.white
+                                            : const Color(0xFF0F172A),
                                       ),
                                     ),
                                   );
@@ -937,16 +1063,20 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 6),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Container(
-                                        margin: const EdgeInsets.only(top: 6, right: 8),
+                                        margin: const EdgeInsets.only(
+                                            top: 6, right: 8),
                                         width: 6,
                                         height: 6,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: item.isCurrent
-                                              ? const Color(0xFF2563EB)
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
                                               : subColor,
                                         ),
                                       ),
@@ -971,8 +1101,10 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                   children: [
                                     Expanded(
                                       child: OutlinedButton.icon(
-                                        onPressed: () => _launchUrl(releaseAsset!.downloadUrl),
-                                        icon: const Icon(Icons.download_rounded, size: 18),
+                                        onPressed: () => _launchUrl(
+                                            releaseAsset!.downloadUrl),
+                                        icon: const Icon(Icons.download_rounded,
+                                            size: 18),
                                         label: Text(
                                           releaseAsset!.formattedSize.isNotEmpty
                                               ? 'Скачать $targetLabel (${releaseAsset!.formattedSize})'
@@ -980,9 +1112,11 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                           style: const TextStyle(fontSize: 12.5),
                                         ),
                                         style: OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 8),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
                                         ),
                                       ),
@@ -990,7 +1124,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
                                     const SizedBox(width: 8),
                                     IconButton(
                                       tooltip: 'Смотреть релиз на GitHub',
-                                      icon: const Icon(Icons.launch_rounded, size: 18),
+                                      icon:
+                                          const Icon(Icons.launch_rounded, size: 18),
                                       onPressed: () => _launchUrl(item.htmlUrl),
                                     ),
                                   ],

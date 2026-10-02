@@ -82,8 +82,6 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     // Группируем по курсам
     final Map<int, List<GroupItem>> byCourse = {};
@@ -94,7 +92,8 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Выбор группы', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('Выбор группы', style: const TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: Column(
@@ -118,8 +117,9 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -131,12 +131,15 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
           // Список групп
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: const CircularProgressIndicator())
                 : _filteredGroups.isEmpty
                     ? Center(
                         child: Text(
                           'Группы не найдены',
-                          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
                         ),
                       )
                     : ListView.builder(
@@ -149,32 +152,44 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 8),
                                 child: Text(
                                   '$course КУРС',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1.1,
-                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                                 child: Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
                                   children: groups.map((g) {
                                     return ActionChip(
                                       label: Text(g.name),
-                                      labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-                                      backgroundColor: isDark ? const Color(0xFF1E232D) : Colors.white,
+                                      labelStyle: const TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerLow,
                                       side: BorderSide(
-                                        color: isDark ? const Color(0xFF2C3340) : const Color(0xFFE2E8F0),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outlineVariant,
                                       ),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                      onPressed: () => Navigator.pop(context, g),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      onPressed: () =>
+                                          Navigator.pop(context, g),
                                     );
                                   }).toList(),
                                 ),

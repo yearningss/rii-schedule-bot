@@ -70,14 +70,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Список встроенных иконок для выбора аватара
   static const List<Map<String, dynamic>> _presetAvatars = [
-    {'id': 'school', 'name': 'Академик', 'icon': Icons.school_rounded, 'color': 0xFF2563EB},
-    {'id': 'code', 'name': 'Разработчик', 'icon': Icons.terminal_rounded, 'color': 0xFF059669},
-    {'id': 'engineer', 'name': 'Инженер', 'icon': Icons.precision_manufacturing_rounded, 'color': 0xFFD97706},
-    {'id': 'star', 'name': 'Отличник', 'icon': Icons.star_rounded, 'color': 0xFFEAB308},
-    {'id': 'book', 'name': 'Студент', 'icon': Icons.menu_book_rounded, 'color': 0xFF7C3AED},
-    {'id': 'science', 'name': 'Исследователь', 'icon': Icons.biotech_rounded, 'color': 0xFF0284C7},
-    {'id': 'energy', 'name': 'Энергетик', 'icon': Icons.bolt_rounded, 'color': 0xFFEA580C},
-    {'id': 'person', 'name': 'Профиль', 'icon': Icons.person_rounded, 'color': 0xFF64748B},
+    {
+      'id': 'school',
+      'name': 'Академик',
+      'icon': Icons.school_rounded,
+      'color': 0xFF2563EB
+    },
+    {
+      'id': 'code',
+      'name': 'Разработчик',
+      'icon': Icons.terminal_rounded,
+      'color': 0xFF059669
+    },
+    {
+      'id': 'engineer',
+      'name': 'Инженер',
+      'icon': Icons.precision_manufacturing_rounded,
+      'color': 0xFFD97706
+    },
+    {
+      'id': 'star',
+      'name': 'Отличник',
+      'icon': Icons.star_rounded,
+      'color': 0xFFEAB308
+    },
+    {
+      'id': 'book',
+      'name': 'Студент',
+      'icon': Icons.menu_book_rounded,
+      'color': 0xFF7C3AED
+    },
+    {
+      'id': 'science',
+      'name': 'Исследователь',
+      'icon': Icons.biotech_rounded,
+      'color': 0xFF0284C7
+    },
+    {
+      'id': 'energy',
+      'name': 'Энергетик',
+      'icon': Icons.bolt_rounded,
+      'color': 0xFFEA580C
+    },
+    {
+      'id': 'person',
+      'name': 'Профиль',
+      'icon': Icons.person_rounded,
+      'color': 0xFF64748B
+    },
   ];
 
   @override
@@ -88,7 +128,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _notifSettings = widget.storage.getNotificationSettings();
     _seasonIconPref = widget.storage.getSeasonIconPreference();
     final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
-    _currentSeasonTheme = SeasonIconService.getEffectiveTheme(_seasonIconPref, rTime);
+    _currentSeasonTheme =
+        SeasonIconService.getEffectiveTheme(_seasonIconPref, rTime);
     _checkNetworkConnection();
     _refreshProfileFromServer();
   }
@@ -159,7 +200,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // Сохранение и синхронизация параметров уведомлений
-  Future<void> _updateNotificationSettings(NotificationSettings newSettings) async {
+  Future<void> _updateNotificationSettings(
+      NotificationSettings newSettings) async {
     setState(() {
       _notifSettings = newSettings;
     });
@@ -178,10 +220,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (data != null && mounted) {
       setState(() {
         _profile = _profile.copyWith(
-          userId: data['user_id'] is int ? data['user_id'] : int.tryParse(data['user_id']?.toString() ?? ''),
-          groupId: data['group_id'] is int ? data['group_id'] : int.tryParse(data['group_id']?.toString() ?? ''),
+          userId: data['user_id'] is int
+              ? data['user_id']
+              : int.tryParse(data['user_id']?.toString() ?? ''),
+          groupId: data['group_id'] is int
+              ? data['group_id']
+              : int.tryParse(data['group_id']?.toString() ?? ''),
           groupName: data['group_name'],
-          subgroup: data['subgroup'] is int ? data['subgroup'] : int.tryParse(data['subgroup']?.toString() ?? '') ?? 0,
+          subgroup: data['subgroup'] is int
+              ? data['subgroup']
+              : int.tryParse(data['subgroup']?.toString() ?? '') ?? 0,
           firstName: data['first_name'],
           lastName: data['last_name'],
           username: data['username'],
@@ -189,19 +237,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
         if (data.containsKey('notifications_enabled')) {
           _notifSettings = _notifSettings.copyWith(
-            enabled: (data['notifications_enabled'] == 1 || data['notifications_enabled'] == true),
+            enabled: (data['notifications_enabled'] == 1 ||
+                data['notifications_enabled'] == true),
             beforeMins: data['notify_before_mins'] is int
                 ? data['notify_before_mins']
-                : int.tryParse(data['notify_before_mins']?.toString() ?? '') ?? _notifSettings.beforeMins,
+                : int.tryParse(data['notify_before_mins']?.toString() ?? '') ??
+                    _notifSettings.beforeMins,
             lessonStart: data['notify_lesson_start'] == null
                 ? _notifSettings.lessonStart
-                : (data['notify_lesson_start'] == 1 || data['notify_lesson_start'] == true),
+                : (data['notify_lesson_start'] == 1 ||
+                    data['notify_lesson_start'] == true),
             breaks: data['notify_breaks'] == null
                 ? _notifSettings.breaks
                 : (data['notify_breaks'] == 1 || data['notify_breaks'] == true),
             changes: data['notify_changes'] == null
                 ? _notifSettings.changes
-                : (data['notify_changes'] == 1 || data['notify_changes'] == true),
+                : (data['notify_changes'] == 1 ||
+                    data['notify_changes'] == true),
           );
         }
       });
@@ -244,15 +296,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     await NotificationService.showNotification(
       title: 'Тестовое уведомление РИИ',
-      message: 'Уведомления работают отлично! Вы будете получать напоминания о парах и переменах.',
+      message:
+          'Уведомления работают отлично! Вы будете получать напоминания о парах и переменах.',
     );
 
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Тестовое уведомление отправлено. Проверьте шторку уведомлений.'),
-          duration: Duration(seconds: 4),
+          content: const Text(
+              'Тестовое уведомление отправлено. Проверьте шторку уведомлений.'),
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -276,13 +330,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final selected = await Navigator.push<GroupItem>(
       context,
       MaterialPageRoute(
-        builder: (_) => GroupPickerScreen(storage: widget.storage, api: widget.api),
+        builder: (_) =>
+            GroupPickerScreen(storage: widget.storage, api: widget.api),
       ),
     );
 
     if (selected != null && mounted) {
       setState(() {
-        _profile = _profile.copyWith(groupId: selected.id, groupName: selected.name);
+        _profile =
+            _profile.copyWith(groupId: selected.id, groupName: selected.name);
       });
       await widget.storage.saveUserProfile(_profile);
       await _syncProfileToServer();
@@ -296,25 +352,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final extName = isIOS ? 'IPA (для iOS)' : 'APK (для Android)';
     try {
       final uri = Uri.parse(url);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched) {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Открыта страница скачивания $extName в браузере...')),
+          SnackBar(
+              content:
+                  Text('Открыта страница скачивания $extName в браузере...')),
         );
       }
     } catch (_) {
       try {
         await launchUrl(
-          Uri.parse('https://github.com/yearningss/rii-schedule-bot/releases/latest'),
+          Uri.parse(
+              'https://github.com/yearningss/rii-schedule-bot/releases/latest'),
           mode: LaunchMode.externalApplication,
         );
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Не удалось открыть браузер для загрузки $extName')),
+            SnackBar(
+                content:
+                    Text('Не удалось открыть браузер для загрузки $extName')),
           );
         }
       }
@@ -346,11 +408,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 const Text(
                   'Вышла новая версия приложения РИИ АлтГТУ.\n\nЧто нового:',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  update.releaseNotes ?? 'Исправления ошибок и улучшения производительности.',
+                  update.releaseNotes ??
+                      'Исправления ошибок и улучшения производительности.',
                   style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
               ],
@@ -376,12 +439,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Обновлений нет'),
-            content: Text('У вас установлена самая актуальная версия приложения (${AppInfo.fullVersionText}).'),
+            content: const Text(
+                'У вас установлена самая актуальная версия приложения (${AppInfo.fullVersionText}).'),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => ChangelogScreen()));
                 },
                 child: const Text('Что нового'),
               ),
@@ -408,7 +473,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         setState(() => _isCheckingUpdate = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось связаться с сервером для проверки обновлений')),
+          const SnackBar(
+              content: const Text(
+                  'Не удалось связаться с сервером для проверки обновлений')),
         );
       }
     }
@@ -418,10 +485,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: const Radius.circular(20)),
       ),
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -431,14 +497,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 const Text(
                   'Выбор аватара',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Выберите значок для отображения в профиле приложения:',
                   style: TextStyle(
                     fontSize: 14,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -472,13 +538,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }
                         if (ctx.mounted) Navigator.pop(ctx);
                       },
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(24),
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected
                               ? color.withOpacity(0.15)
-                              : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
-                          borderRadius: BorderRadius.circular(16),
+                              : (Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainer),
+                          borderRadius: BorderRadius.circular(24),
                           border: Border.all(
                             color: isSelected ? color : Colors.transparent,
                             width: 2,
@@ -490,14 +558,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             CircleAvatar(
                               radius: 22,
                               backgroundColor: color.withOpacity(0.2),
-                              child: Icon(item['icon'] as IconData, color: color, size: 24),
+                              child: Icon(item['icon'] as IconData,
+                                  color: color, size: 24),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               item['name'] as String,
                               style: TextStyle(
                                 fontSize: 11,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -520,11 +591,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: const Radius.circular(20)),
       ),
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        final subColor = Theme.of(context).colorScheme.onSurfaceVariant;
         final rTime = DateTime.now().toUtc().add(const Duration(hours: 7));
         final autoTheme = SeasonIconService.resolveAutoSeason(rTime);
 
@@ -543,7 +614,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           const Text(
                             'Иконка приложения',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           IconButton(
                             icon: const Icon(Icons.close_rounded),
@@ -566,13 +638,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           // Опция автоматического переключения
                           ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(
                                 color: _seasonIconPref == 'auto'
-                                    ? const Color(0xFF2563EB)
-                                    : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                                    ? Theme.of(context).colorScheme.primary
+                                    : (Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant),
                                 width: _seasonIconPref == 'auto' ? 2 : 1,
                               ),
                             ),
@@ -580,25 +655,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2563EB).withOpacity(0.12),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF2563EB)),
+                              child: Icon(Icons.auto_awesome_rounded,
+                                  color: Theme.of(context).colorScheme.primary),
                             ),
                             title: const Text(
                               'Авто (по календарю)',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                             subtitle: Text(
                               'Сейчас активно: ${autoTheme.title}',
                               style: TextStyle(fontSize: 13, color: subColor),
                             ),
                             trailing: _seasonIconPref == 'auto'
-                                ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB))
+                                ? Icon(Icons.check_circle_rounded,
+                                    color:
+                                        Theme.of(context).colorScheme.primary)
                                 : null,
                             onTap: () async {
-                              await widget.storage.saveSeasonIconPreference('auto');
-                              await SeasonIconService.applyLauncherIcon(autoTheme);
+                              await widget.storage
+                                  .saveSeasonIconPreference('auto');
+                              await SeasonIconService.applyLauncherIcon(
+                                  autoTheme);
                               if (mounted) {
                                 setState(() {
                                   _seasonIconPref = 'auto';
@@ -626,17 +710,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF1E232D) : Colors.grey.shade50,
+                                color: isDark
+                                    ? const Color(0xFF1E232D)
+                                    : Colors.grey.shade50,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
                                       ? themeItem.accentColor
-                                      : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                                      : (Theme.of(context)
+                                          .colorScheme
+                                          .outlineVariant),
                                   width: isSelected ? 2 : 1,
                                 ),
                               ),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 2),
                                 leading: ClipRRect(
                                   borderRadius: BorderRadius.circular(10),
                                   child: Image.asset(
@@ -648,18 +737,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                                 title: Text(
                                   themeItem.title,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14),
                                 ),
                                 subtitle: Text(
                                   themeItem.subtitle,
-                                  style: TextStyle(fontSize: 12, color: subColor),
+                                  style:
+                                      TextStyle(fontSize: 12, color: subColor),
                                 ),
                                 trailing: isSelected
-                                    ? Icon(Icons.check_circle_rounded, color: themeItem.accentColor)
+                                    ? Icon(Icons.check_circle_rounded,
+                                        color: themeItem.accentColor)
                                     : null,
                                 onTap: () async {
-                                  await widget.storage.saveSeasonIconPreference(themeItem.id);
-                                  await SeasonIconService.applyLauncherIcon(themeItem);
+                                  await widget.storage
+                                      .saveSeasonIconPreference(themeItem.id);
+                                  await SeasonIconService.applyLauncherIcon(
+                                      themeItem);
                                   if (mounted) {
                                     setState(() {
                                       _seasonIconPref = themeItem.id;
@@ -704,11 +799,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // 2. Если есть фото из Telegram
-    if (avatarUrl != null && avatarUrl.isNotEmpty && !avatarUrl.startsWith('custom:')) {
-      final fullUrl = avatarUrl.startsWith('http') ? avatarUrl : '${ApiService.baseUrl}$avatarUrl';
+    if (avatarUrl != null &&
+        avatarUrl.isNotEmpty &&
+        !avatarUrl.startsWith('custom:')) {
+      final fullUrl = avatarUrl.startsWith('http')
+          ? avatarUrl
+          : '${ApiService.baseUrl}$avatarUrl';
       return CircleAvatar(
         radius: 36,
-        backgroundColor: const Color(0xFF2563EB).withOpacity(0.15),
+        backgroundColor:
+            Theme.of(context).colorScheme.primary.withOpacity(0.15),
         backgroundImage: NetworkImage(fullUrl),
         onBackgroundImageError: (_, __) {},
         child: null,
@@ -716,13 +816,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // 3. По умолчанию инициалы или иконка
-    final initials = (_profile.firstName != null && _profile.firstName!.isNotEmpty)
-        ? _profile.firstName![0].toUpperCase()
-        : 'Р';
+    final initials =
+        (_profile.firstName != null && _profile.firstName!.isNotEmpty)
+            ? _profile.firstName![0].toUpperCase()
+            : 'Р';
 
     return CircleAvatar(
       radius: 36,
-      backgroundColor: const Color(0xFF2563EB),
+      backgroundColor: Theme.of(context).colorScheme.primary,
       child: Text(
         initials,
         style: const TextStyle(
@@ -739,7 +840,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Выход из аккаунта'),
-        content: const Text('Вы действительно хотите выйти? Расписание выбранной группы останется доступным.'),
+        content: const Text(
+            'Вы действительно хотите выйти? Расписание выбранной группы останется доступным.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -747,7 +849,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Выйти'),
           ),
         ],
@@ -775,7 +878,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } catch (_) {}
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Вы вышли из профиля Telegram')),
+        const SnackBar(content: const Text('Вы вышли из профиля Telegram')),
       );
     }
   }
@@ -784,14 +887,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
-    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
+    final subColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Настройки',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         elevation: 0,
       ),
@@ -805,7 +908,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: cardBg,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0),
+                color: Theme.of(context).colorScheme.outlineVariant,
               ),
             ),
             child: Column(
@@ -824,7 +927,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2563EB),
+                                color: Theme.of(context).colorScheme.primary,
                                 shape: BoxShape.circle,
                                 border: Border.all(color: cardBg, width: 2),
                               ),
@@ -863,20 +966,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: _profile.userId != null
-                                  ? const Color(0xFF059669).withOpacity(0.12)
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .tertiary
+                                      .withOpacity(0.12)
                                   : const Color(0xFF64748B).withOpacity(0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              _profile.userId != null ? 'Telegram привязан' : 'Без авторизации',
+                              _profile.userId != null
+                                  ? 'Telegram привязан'
+                                  : 'Без авторизации',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: _profile.userId != null
-                                    ? const Color(0xFF059669)
+                                    ? Theme.of(context).colorScheme.tertiary
                                     : const Color(0xFF64748B),
                               ),
                             ),
@@ -895,7 +1004,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => AuthScreen(storage: widget.storage, api: widget.api),
+                            builder: (_) => AuthScreen(
+                                storage: widget.storage, api: widget.api),
                           ),
                         );
                         if (mounted) {
@@ -907,7 +1017,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: const Icon(Icons.send_rounded, size: 18),
                       label: const Text('Привязать Telegram аккаунт'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -940,12 +1050,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 TextButton(
                   onPressed: _toggleAllCategories,
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text(
-                    _expandedCategories.length >= 6 ? 'Свернуть все' : 'Развернуть все',
+                    _expandedCategories.length >= 6
+                        ? 'Свернуть все'
+                        : 'Развернуть все',
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -959,17 +1072,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Оформление',
             subtitle: 'Светлая и тёмная темы, значок аватара',
             icon: Icons.palette_rounded,
-            iconColor: const Color(0xFF6366F1),
+            iconColor: Theme.of(context).colorScheme.tertiary,
             badgeText: _currentThemeMode == ThemeMode.dark
                 ? 'Тёмная'
-                : (_currentThemeMode == ThemeMode.light ? 'Светлая' : 'Системная'),
-            badgeColor: const Color(0xFF6366F1),
+                : (_currentThemeMode == ThemeMode.light
+                    ? 'Светлая'
+                    : 'Системная'),
+            badgeColor: Theme.of(context).colorScheme.tertiary,
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                 child: Text(
                   'Тема приложения:',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: subColor),
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: subColor),
                 ),
               ),
               Padding(
@@ -997,7 +1115,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               ListTile(
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -1008,7 +1128,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fit: BoxFit.cover,
                   ),
                 ),
-                title: const Text('Сезонная иконка и стиль', style: TextStyle(fontWeight: FontWeight.w600)),
+                title: const Text('Сезонная иконка и стиль',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text(
                   _seasonIconPref == 'auto'
                       ? 'Авто: ${_currentSeasonTheme.title}'
@@ -1017,10 +1138,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: _openSeasonIconPicker,
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               ListTile(
-                leading: const Icon(Icons.account_circle_rounded, color: Color(0xFF6366F1)),
-                title: const Text('Сменить значок профиля', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading: Icon(Icons.account_circle_rounded,
+                    color: Theme.of(context).colorScheme.tertiary),
+                title: const Text('Сменить значок профиля',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: const Text('Выбрать значок академической специальности'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: _openAvatarPicker,
@@ -1034,23 +1159,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Уведомления',
             subtitle: 'Напоминания о парах, звонках и переменах',
             icon: Icons.notifications_active_rounded,
-            iconColor: const Color(0xFF2563EB),
-            badgeText: _notifSettings.enabled ? 'Вкл (${_notifSettings.beforeMins} мин)' : 'Выкл',
-            badgeColor: _notifSettings.enabled ? const Color(0xFF059669) : const Color(0xFF64748B),
+            iconColor: Theme.of(context).colorScheme.primary,
+            badgeText: _notifSettings.enabled
+                ? 'Вкл (${_notifSettings.beforeMins} мин)'
+                : 'Выкл',
+            badgeColor: _notifSettings.enabled
+                ? Theme.of(context).colorScheme.tertiary
+                : const Color(0xFF64748B),
             children: [
               SwitchListTile(
                 value: _notifSettings.enabled,
                 onChanged: (val) {
-                  _updateNotificationSettings(_notifSettings.copyWith(enabled: val));
+                  _updateNotificationSettings(
+                      _notifSettings.copyWith(enabled: val));
                 },
-                secondary: const Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB)),
-                title: const Text('Уведомления о занятиях', style: TextStyle(fontWeight: FontWeight.w600)),
+                secondary: Icon(Icons.notifications_active_rounded,
+                    color: Theme.of(context).colorScheme.primary),
+                title: const Text('Уведомления о занятиях',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: const Text('Получать напоминания о парах и изменениях'),
               ),
               if (_notifSettings.enabled) ...[
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1059,11 +1194,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           Text(
                             'Напоминать до начала пары:',
-                            style: TextStyle(fontSize: 13, color: subColor, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: subColor,
+                                fontWeight: FontWeight.w500),
                           ),
                           Text(
                             '${_notifSettings.beforeMins} минут',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary),
                           ),
                         ],
                       ),
@@ -1075,26 +1216,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           final isSel = _notifSettings.beforeMins == mins;
                           return InkWell(
                             onTap: () {
-                              _updateNotificationSettings(_notifSettings.copyWith(beforeMins: mins));
+                              _updateNotificationSettings(
+                                  _notifSettings.copyWith(beforeMins: mins));
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 11, vertical: 8),
                               decoration: BoxDecoration(
                                 color: isSel
-                                    ? const Color(0xFF2563EB)
-                                    : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
+                                    ? Theme.of(context).colorScheme.primary
+                                    : (Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainer),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: isSel ? const Color(0xFF2563EB) : Colors.transparent,
+                                  color: isSel
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.transparent,
                                 ),
                               ),
                               child: Text(
                                 '$mins мин',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                  color: isSel ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[800]),
+                                  fontWeight: isSel
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isSel ? Theme.of(context).colorScheme.onPrimary
+                                      : (isDark
+                                          ? Colors.grey[300]
+                                          : Colors.grey[800]),
                                 ),
                               ),
                             ),
@@ -1104,60 +1256,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 SwitchListTile(
                   value: _notifSettings.lessonStart,
                   onChanged: (val) {
-                    _updateNotificationSettings(_notifSettings.copyWith(lessonStart: val));
+                    _updateNotificationSettings(
+                        _notifSettings.copyWith(lessonStart: val));
                   },
-                  secondary: const Icon(Icons.alarm_on_rounded, color: Color(0xFF059669)),
+                  secondary: Icon(Icons.alarm_on_rounded,
+                      color: Theme.of(context).colorScheme.tertiary),
                   title: const Text('Звонок на пару'),
                   subtitle: const Text('Оповещение в момент начала занятия'),
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 SwitchListTile(
                   value: _notifSettings.breaks,
                   onChanged: (val) {
-                    _updateNotificationSettings(_notifSettings.copyWith(breaks: val));
+                    _updateNotificationSettings(
+                        _notifSettings.copyWith(breaks: val));
                   },
-                  secondary: const Icon(Icons.coffee_rounded, color: Color(0xFFD97706)),
+                  secondary: Icon(Icons.coffee_rounded,
+                      color: Theme.of(context).colorScheme.tertiary),
                   title: const Text('Оповещения о переменах'),
-                  subtitle: const Text('Оповещение о завершении пары и времени перемены'),
+                  subtitle:
+                      const Text('Оповещение о завершении пары и времени перемены'),
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 SwitchListTile(
                   value: _notifSettings.changes,
                   onChanged: (val) {
-                    _updateNotificationSettings(_notifSettings.copyWith(changes: val));
+                    _updateNotificationSettings(
+                        _notifSettings.copyWith(changes: val));
                   },
-                  secondary: const Icon(Icons.sync_problem_rounded, color: Color(0xFF8B5CF6)),
+                  secondary: Icon(Icons.sync_problem_rounded,
+                      color: Theme.of(context).colorScheme.tertiary),
                   title: const Text('Изменения и замены'),
                   subtitle: const Text('Оповещение при публикации нового расписания'),
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 SwitchListTile(
                   value: LiveScheduleService.isLiveEnabled(widget.storage),
                   onChanged: (val) async {
-                    await LiveScheduleService.setLiveEnabled(widget.storage, val);
+                    await LiveScheduleService.setLiveEnabled(
+                        widget.storage, val);
                     setState(() {});
                   },
-                  secondary: const Icon(Icons.timer_outlined, color: Color(0xFF2563EB)),
+                  secondary: Icon(Icons.timer_outlined,
+                      color: Theme.of(context).colorScheme.primary),
                   title: const Text('Текущая пара на экране блокировки'),
-                  subtitle: const Text('Live-уведомление с живым обратным отсчетом до конца пары'),
+                  subtitle: const Text(
+                      'Live-уведомление с живым обратным отсчетом до конца пары'),
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 ListTile(
-                  leading: const Icon(Icons.mark_email_read_rounded, color: Color(0xFF059669)),
-                  title: const Text('Отправить тестовое уведомление', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Проверить всплывающие баннеры и звук на телефоне'),
+                  leading: Icon(Icons.mark_email_read_rounded,
+                      color: Theme.of(context).colorScheme.tertiary),
+                  title: const Text('Отправить тестовое уведомление',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle:
+                      const Text('Проверить всплывающие баннеры и звук на телефоне'),
                   trailing: const Icon(Icons.send_rounded, size: 20),
                   onTap: _sendTestNotification,
                 ),
-                Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 ListTile(
-                  leading: const Icon(Icons.app_settings_alt_rounded, color: Color(0xFF6366F1)),
-                  title: const Text('Системные настройки уведомлений', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Открыть параметры разрешений и звука в Android / iOS'),
+                  leading: Icon(Icons.app_settings_alt_rounded,
+                      color: Theme.of(context).colorScheme.tertiary),
+                  title: const Text('Системные настройки уведомлений',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text(
+                      'Открыть параметры разрешений и звука в Android / iOS'),
                   trailing: const Icon(Icons.chevron_right_rounded, size: 20),
                   onTap: () => NotificationService.openNotificationSettings(),
                 ),
@@ -1171,53 +1351,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Обновления',
             subtitle: 'Проверка новой версии, история и автообновление',
             icon: Icons.system_update_rounded,
-            iconColor: const Color(0xFF059669),
+            iconColor: Theme.of(context).colorScheme.tertiary,
             badgeText: 'v${AppInfo.versionName}',
-            badgeColor: const Color(0xFF059669),
+            badgeColor: Theme.of(context).colorScheme.tertiary,
             children: [
               ListTile(
-                leading: const Icon(Icons.refresh_rounded, color: Color(0xFF059669)),
-                title: const Text('Проверить обновления', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(_isCheckingUpdate ? 'Проверка...' : 'Текущая версия: ${AppInfo.fullVersionText}'),
+                leading: Icon(Icons.refresh_rounded,
+                    color: Theme.of(context).colorScheme.tertiary),
+                title: const Text('Проверить обновления',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(_isCheckingUpdate
+                    ? 'Проверка...'
+                    : 'Текущая версия: ${AppInfo.fullVersionText}'),
                 trailing: _isCheckingUpdate
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: const CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.chevron_right_rounded),
                 onTap: _isCheckingUpdate ? null : _checkForUpdate,
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               SwitchListTile(
                 value: _notifSettings.bgUpdateCheck,
                 onChanged: (val) {
-                  _updateNotificationSettings(_notifSettings.copyWith(bgUpdateCheck: val));
+                  _updateNotificationSettings(
+                      _notifSettings.copyWith(bgUpdateCheck: val));
                 },
-                secondary: const Icon(Icons.update_rounded, color: Color(0xFF0284C7)),
+                secondary: Icon(Icons.update_rounded,
+                    color: Theme.of(context).colorScheme.primary),
                 title: const Text('Фоновая проверка каждые 15 минут'),
-                subtitle: const Text('Автоматически проверять наличие новой версии и присылать уведомление'),
+                subtitle: const Text(
+                    'Автоматически проверять наличие новой версии и присылать уведомление'),
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               ListTile(
-                leading: const Icon(Icons.history_rounded, color: Color(0xFF8B5CF6)),
-                title: const Text('История изменений', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Список всех релизов с GitHub и описание новшеств'),
+                leading: Icon(Icons.history_rounded,
+                    color: Theme.of(context).colorScheme.tertiary),
+                title: const Text('История изменений',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle:
+                    const Text('Список всех релизов с GitHub и описание новшеств'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangelogScreen()));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => ChangelogScreen()));
                 },
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               ListTile(
-                leading: const Icon(Icons.download_rounded, color: Color(0xFF2563EB)),
-                title: const Text('Скачать установочный файл заново', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Прямая загрузка APK для Android или IPA для iOS'),
+                leading: Icon(Icons.download_rounded,
+                    color: Theme.of(context).colorScheme.primary),
+                title: const Text('Скачать установочный файл заново',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle:
+                    const Text('Прямая загрузка APK для Android или IPA для iOS'),
                 trailing: const Icon(Icons.open_in_new_rounded, size: 18),
                 onTap: () {
                   final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
                   final package = isIOS ? 'RiiSchedule.ipa' : 'RiiSchedule.apk';
-                  _openDownloadUrl('https://github.com/yearningss/rii-schedule-bot/releases/latest/download/$package');
+                  _openDownloadUrl(
+                      'https://github.com/yearningss/rii-schedule-bot/releases/latest/download/$package');
                 },
               ),
             ],
@@ -1229,9 +1430,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Учебный профиль',
             subtitle: 'Выбор учебной группы и фильтра подгруппы',
             icon: Icons.school_rounded,
-            iconColor: const Color(0xFFEA580C),
+            iconColor: Theme.of(context).colorScheme.tertiary,
             badgeText: _profile.groupName ?? 'Не выбрана',
-            badgeColor: const Color(0xFFEA580C),
+            badgeColor: Theme.of(context).colorScheme.tertiary,
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -1242,11 +1443,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Текущая учебная группа:', style: TextStyle(fontSize: 12, color: subColor)),
+                          Text('Текущая учебная группа:',
+                              style: TextStyle(fontSize: 12, color: subColor)),
                           const SizedBox(height: 4),
                           Text(
                             _profile.groupName ?? 'Группа не выбрана',
-                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 17, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -1259,13 +1462,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Подгруппа для фильтрации расписания:', style: TextStyle(fontSize: 12, color: subColor)),
+                    Text('Подгруппа для фильтрации расписания:',
+                        style: TextStyle(fontSize: 12, color: subColor)),
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -1287,10 +1493,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             id: 'network',
             title: 'Сеть и режим работы',
             subtitle: 'Связь с сервером РИИ и офлайн-кэш',
-            icon: _isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-            iconColor: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+            icon:
+                _isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+            iconColor: _isOnline
+                ? Theme.of(context).colorScheme.tertiary
+                : Theme.of(context).colorScheme.tertiary,
             badgeText: _isOnline ? 'Онлайн' : 'Офлайн',
-            badgeColor: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+            badgeColor: _isOnline
+                ? Theme.of(context).colorScheme.tertiary
+                : Theme.of(context).colorScheme.tertiary,
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -1300,12 +1511,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: (_isOnline ? const Color(0xFF059669) : const Color(0xFFD97706)).withOpacity(0.12),
+                        color: (_isOnline
+                                ? Theme.of(context).colorScheme.tertiary
+                                : Theme.of(context).colorScheme.tertiary)
+                            .withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        _isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                        color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+                        _isOnline
+                            ? Icons.cloud_done_rounded
+                            : Icons.cloud_off_rounded,
+                        color: _isOnline
+                            ? Theme.of(context).colorScheme.tertiary
+                            : Theme.of(context).colorScheme.tertiary,
                         size: 24,
                       ),
                     ),
@@ -1319,7 +1537,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
-                              color: _isOnline ? const Color(0xFF059669) : const Color(0xFFD97706),
+                              color: _isOnline
+                                  ? Theme.of(context).colorScheme.tertiary
+                                  : Theme.of(context).colorScheme.tertiary,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -1335,19 +1555,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               ListTile(
-                leading: const Icon(Icons.wifi_tethering_rounded, color: Color(0xFF0284C7)),
-                title: const Text('Проверить соединение с сервером', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading: Icon(Icons.wifi_tethering_rounded,
+                    color: Theme.of(context).colorScheme.primary),
+                title: const Text('Проверить соединение с сервером',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: const Text('Отправить запрос проверки доступности API РИИ'),
                 trailing: _isCheckingConnection
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: const CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.refresh_rounded),
-                onTap: _isCheckingConnection ? null : () => _checkNetworkConnection(showFeedback: true),
+                onTap: _isCheckingConnection
+                    ? null
+                    : () => _checkNetworkConnection(showFeedback: true),
               ),
             ],
           ),
@@ -1363,19 +1589,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             badgeColor: const Color(0xFF64748B),
             children: [
               ListTile(
-                leading: const Icon(Icons.access_time_rounded, color: Color(0xFF2563EB)),
-                title: const Text('Расписание звонков', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading: Icon(Icons.access_time_rounded,
+                    color: Theme.of(context).colorScheme.primary),
+                title: const Text('Расписание звонков',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: const Text('Длительность пар и перемен в РИИ'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BellsScreen()));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => BellsScreen()));
                 },
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               ListTile(
-                leading: const Icon(Icons.verified_user_rounded, color: Color(0xFF059669)),
-                title: const Text('Системные разрешения', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Проверить разрешение на показ уведомлений в ОС'),
+                leading: Icon(Icons.verified_user_rounded,
+                    color: Theme.of(context).colorScheme.tertiary),
+                title: const Text('Системные разрешения',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle:
+                    const Text('Проверить разрешение на показ уведомлений в ОС'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () async {
                   final granted = await NotificationService.requestPermission();
@@ -1391,18 +1625,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }
                 },
               ),
-              Divider(height: 1, color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               if (_profile.userId == null)
                 ListTile(
-                  leading: const Icon(Icons.send_rounded, color: Color(0xFF2563EB)),
-                  title: const Text('Привязать Telegram аккаунт', style: TextStyle(fontWeight: FontWeight.w600)),
+                  leading: Icon(Icons.send_rounded,
+                      color: Theme.of(context).colorScheme.primary),
+                  title: const Text('Привязать Telegram аккаунт',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Синхронизация профиля и уведомлений с ботом'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => AuthScreen(storage: widget.storage, api: widget.api),
+                        builder: (_) => AuthScreen(
+                            storage: widget.storage, api: widget.api),
                       ),
                     );
                     if (mounted) {
@@ -1414,9 +1653,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 )
               else
                 ListTile(
-                  leading: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626)),
-                  title: const Text('Выйти из Telegram аккаунта', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Отвязать текущий профиль Telegram от приложения'),
+                  leading: Icon(Icons.logout_rounded,
+                      color: Theme.of(context).colorScheme.error),
+                  title: Text('Выйти из Telegram аккаунта',
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontWeight: FontWeight.w600)),
+                  subtitle:
+                      const Text('Отвязать текущий профиль Telegram от приложения'),
                   onTap: _logout,
                 ),
             ],
@@ -1439,27 +1683,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required List<Widget> children,
   }) {
     final isExpanded = _expandedCategories.contains(id);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0);
-    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final cardBg = Theme.of(context).colorScheme.surfaceContainerLow;
+    final borderColor = Theme.of(context).colorScheme.outlineVariant;
+    final subColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isExpanded ? iconColor.withOpacity(0.55) : borderColor,
           width: isExpanded ? 1.5 : 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1505,7 +1741,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: badgeColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -1543,7 +1780,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ...children,
               ],
             ),
-            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 220),
           ),
         ],
@@ -1567,11 +1806,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF6366F1)
-                : (isDark ? const Color(0xFF1E232D) : const Color(0xFFF1F5F9)),
+                ? Theme.of(context).colorScheme.tertiary
+                : (Theme.of(context).colorScheme.surfaceContainer),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? const Color(0xFF6366F1) : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              color: isSelected
+                  ? Theme.of(context).colorScheme.tertiary
+                  : (Theme.of(context).colorScheme.outlineVariant),
             ),
           ),
           child: Column(
@@ -1579,7 +1820,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[700]),
+                color: isSelected ? Theme.of(context).colorScheme.onPrimary
+                    : (isDark ? Colors.grey[300] : Colors.grey[700]),
               ),
               const SizedBox(height: 4),
               Text(
@@ -1587,7 +1829,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey[700]),
+                  color: isSelected ? Theme.of(context).colorScheme.onPrimary
+                      : (isDark ? Colors.grey[300] : Colors.grey[700]),
                 ),
               ),
             ],
@@ -1599,7 +1842,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSubgroupBtn(int sg, String label) {
     final isSelected = _profile.subgroup == sg;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: InkWell(
         onTap: () => _setSubgroup(sg),
@@ -1608,13 +1850,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF2563EB)
-                : (isDark
-                    ? const Color(0xFF1E232D)
-                    : const Color(0xFFF1F5F9)),
+                ? Theme.of(context).colorScheme.primary
+                : (Theme.of(context).colorScheme.surfaceContainer),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? const Color(0xFF2563EB) : (isDark ? const Color(0xFF2D333F) : const Color(0xFFE2E8F0)),
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : (Theme.of(context).colorScheme.outlineVariant),
             ),
           ),
           child: Text(
@@ -1623,7 +1865,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.white : null,
+              color: isSelected ? Theme.of(context).colorScheme.onPrimary : null,
             ),
           ),
         ),

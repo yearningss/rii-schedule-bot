@@ -25,74 +25,73 @@ class ParaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    Color borderColor = Colors.transparent;
-    Color cardBg = isDark ? const Color(0xFF1E232D) : Colors.white;
-
-    if (isOngoing) {
-      borderColor = const Color(0xFF2563EB);
-      cardBg = isDark ? const Color(0xFF19253B) : const Color(0xFFEFF6FF);
-    } else if (isNext) {
-      borderColor = const Color(0xFF10B981);
-    }
+    final colors = theme.colorScheme;
+    final borderColor = isOngoing
+        ? colors.primary
+        : isNext
+            ? colors.tertiary
+            : colors.outlineVariant;
+    final cardBg =
+        isOngoing ? colors.primaryContainer : colors.surfaceContainerLow;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: borderColor != Colors.transparent ? borderColor : (isDark ? const Color(0xFF2C3340) : const Color(0xFFE2E8F0)),
+          color: borderColor,
           width: isOngoing || isNext ? 1.8 : 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Шапка пары: номер, время и статус
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       '${item.paraNum} пара',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '${timeInfo.startStr} - ${timeInfo.endStr}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
                 if (isOngoing)
-                  _buildBadge('Идет сейчас', const Color(0xFF2563EB), Colors.white)
+                  _buildBadge('Идёт сейчас', colors.primary, colors.onPrimary)
                 else if (isNext)
-                  _buildBadge('Следующая', const Color(0xFF10B981), Colors.white)
+                  _buildBadge('Следующая', colors.tertiaryContainer,
+                      colors.onTertiaryContainer)
                 else if (isCompleted)
-                  _buildBadge('Завершена', Colors.grey[600]!, Colors.grey[300]!),
+                  _buildBadge('Завершена', colors.surfaceContainerHighest,
+                      colors.onSurfaceVariant),
               ],
             ),
             const SizedBox(height: 10),
 
             // Контент пары
             if (item.isDouble) ...[
-              if ((activeSubgroup == 0 || activeSubgroup == 1) && (item.subj1 != null || item.aud1 != null))
+              if ((activeSubgroup == 0 || activeSubgroup == 1) &&
+                  (item.subj1 != null || item.aud1 != null))
                 _buildSubgroupSection(
                   context,
                   title: '1 подгруппа',
@@ -102,9 +101,12 @@ class ParaCard extends StatelessWidget {
                   teacher: item.teacher1,
                   post: item.teachPost1,
                 ),
-              if (activeSubgroup == 0 && (item.subj1 != null) && (item.subj2 != null))
+              if (activeSubgroup == 0 &&
+                  (item.subj1 != null) &&
+                  (item.subj2 != null))
                 const Divider(height: 16),
-              if ((activeSubgroup == 0 || activeSubgroup == 2) && (item.subj2 != null || item.aud2 != null))
+              if ((activeSubgroup == 0 || activeSubgroup == 2) &&
+                  (item.subj2 != null || item.aud2 != null))
                 _buildSubgroupSection(
                   context,
                   title: '2 подгруппа',
@@ -135,11 +137,12 @@ class ParaCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Text(
         text,
-        style: TextStyle(color: textCol, fontSize: 11, fontWeight: FontWeight.w600),
+        style: TextStyle(
+            color: textCol, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -159,16 +162,24 @@ class ParaCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF2563EB).withOpacity(0.12),
+            color: Theme.of(context).colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
             title,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSecondaryContainer),
           ),
         ),
         const SizedBox(height: 4),
-        _buildSubjectContent(context, subject: subject, type: type, aud: aud, teacher: teacher, post: post),
+        _buildSubjectContent(context,
+            subject: subject,
+            type: type,
+            aud: aud,
+            teacher: teacher,
+            post: post),
       ],
     );
   }
@@ -190,7 +201,7 @@ class ParaCard extends StatelessWidget {
             Expanded(
               child: Text(
                 subject ?? 'Предмет',
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             if (type != null && type.isNotEmpty)
@@ -198,7 +209,7 @@ class ParaCard extends StatelessWidget {
                 margin: const EdgeInsets.only(left: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2B3240) : const Color(0xFFE2E8F0),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -219,15 +230,15 @@ class ParaCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.15),
+                  color: Theme.of(context).colorScheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   'ауд. $aud',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF059669),
+                    color: Theme.of(context).colorScheme.onTertiaryContainer,
                   ),
                 ),
               ),
@@ -236,15 +247,18 @@ class ParaCard extends StatelessWidget {
             if (teacher != null && teacher.isNotEmpty)
               Expanded(
                 child: InkWell(
-                  onTap: onTeacherTap != null ? () => onTeacherTap!(teacher, post) : null,
-                  borderRadius: BorderRadius.circular(8),
+                  onTap: onTeacherTap != null
+                      ? () => onTeacherTap!(teacher, post)
+                      : null,
+                  borderRadius: BorderRadius.circular(24),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 14),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2563EB).withOpacity(0.18) : const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF3B82F6).withOpacity(0.35) : const Color(0xFFBFDBFE),
+                        color: Theme.of(context).colorScheme.outlineVariant,
                         width: 0.8,
                       ),
                     ),
@@ -254,7 +268,7 @@ class ParaCard extends StatelessWidget {
                         Icon(
                           Icons.person_rounded,
                           size: 14,
-                          color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
                         ),
                         const SizedBox(width: 5),
                         Flexible(
@@ -263,7 +277,7 @@ class ParaCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -272,7 +286,7 @@ class ParaCard extends StatelessWidget {
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 14,
-                          color: isDark ? const Color(0xFF93C5FD).withOpacity(0.7) : const Color(0xFF1D4ED8).withOpacity(0.7),
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
                         ),
                       ],
                     ),
