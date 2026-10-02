@@ -32,6 +32,37 @@ jobs:
         with:
           name: material-3-debug-apk
           path: app/build/app/outputs/flutter-apk/app-debug.apk
+  ios:
+    name: Сборка iOS и виджета
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Установка зависимостей Flutter
+        run: flutter pub get
+        working-directory: app
+      - name: Сборка iOS без подписи
+        run: flutter build ios --release --no-codesign
+        working-directory: app
+        env:
+          CODE_SIGNING_ALLOWED: 'NO'
+          CODE_SIGNING_REQUIRED: 'NO'
+          CODE_SIGN_IDENTITY: ''
+      - name: Упаковка приложения для проверки
+        run: |
+          mkdir -p dist/Payload
+          cp -R app/build/ios/iphoneos/Runner.app dist/Payload/
+          cd dist
+          zip -r RiiSchedule-design-unsigned.ipa Payload
+      - name: Сохранение сборки iOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: material-3-ios-unsigned
+          path: dist/RiiSchedule-design-unsigned.ipa
+          if-no-files-found: error
   web:
     runs-on: ubuntu-latest
     steps:
