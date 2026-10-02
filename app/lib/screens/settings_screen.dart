@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../widgets/sliding_selector.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import 'bells_screen.dart';
@@ -485,7 +486,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: const BorderRadius.vertical(top: const Radius.circular(20)),
+        borderRadius:
+            const BorderRadius.vertical(top: const Radius.circular(20)),
       ),
       builder: (ctx) {
         return SafeArea(
@@ -497,7 +499,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 const Text(
                   'Выбор аватара',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -591,7 +594,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: const BorderRadius.vertical(top: const Radius.circular(20)),
+        borderRadius:
+            const BorderRadius.vertical(top: const Radius.circular(20)),
       ),
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
@@ -1059,7 +1063,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _expandedCategories.length >= 6
                         ? 'Свернуть все'
                         : 'Развернуть все',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -1146,7 +1151,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.tertiary),
                 title: const Text('Сменить значок профиля',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Выбрать значок академической специальности'),
+                subtitle:
+                    const Text('Выбрать значок академической специальности'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: _openAvatarPicker,
               ),
@@ -1177,7 +1183,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.primary),
                 title: const Text('Уведомления о занятиях',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Получать напоминания о парах и изменениях'),
+                subtitle:
+                    const Text('Получать напоминания о парах и изменениях'),
               ),
               if (_notifSettings.enabled) ...[
                 Divider(
@@ -1243,7 +1250,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   fontWeight: isSel
                                       ? FontWeight.bold
                                       : FontWeight.normal,
-                                  color: isSel ? Theme.of(context).colorScheme.onPrimary
+                                  color: isSel
+                                      ? Theme.of(context).colorScheme.onPrimary
                                       : (isDark
                                           ? Colors.grey[300]
                                           : Colors.grey[800]),
@@ -1282,8 +1290,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   secondary: Icon(Icons.coffee_rounded,
                       color: Theme.of(context).colorScheme.tertiary),
                   title: const Text('Оповещения о переменах'),
-                  subtitle:
-                      const Text('Оповещение о завершении пары и времени перемены'),
+                  subtitle: const Text(
+                      'Оповещение о завершении пары и времени перемены'),
                 ),
                 Divider(
                     height: 1,
@@ -1297,7 +1305,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   secondary: Icon(Icons.sync_problem_rounded,
                       color: Theme.of(context).colorScheme.tertiary),
                   title: const Text('Изменения и замены'),
-                  subtitle: const Text('Оповещение при публикации нового расписания'),
+                  subtitle:
+                      const Text('Оповещение при публикации нового расписания'),
                 ),
                 Divider(
                     height: 1,
@@ -1323,8 +1332,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Theme.of(context).colorScheme.tertiary),
                   title: const Text('Отправить тестовое уведомление',
                       style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle:
-                      const Text('Проверить всплывающие баннеры и звук на телефоне'),
+                  subtitle: const Text(
+                      'Проверить всплывающие баннеры и звук на телефоне'),
                   trailing: const Icon(Icons.send_rounded, size: 20),
                   onTap: _sendTestNotification,
                 ),
@@ -1395,8 +1404,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.tertiary),
                 title: const Text('История изменений',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle:
-                    const Text('Список всех релизов с GitHub и описание новшеств'),
+                subtitle: const Text(
+                    'Список всех релизов с GitHub и описание новшеств'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () {
                   Navigator.push(context,
@@ -1411,8 +1420,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.primary),
                 title: const Text('Скачать установочный файл заново',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle:
-                    const Text('Прямая загрузка APK для Android или IPA для iOS'),
+                subtitle: const Text(
+                    'Прямая загрузка APK для Android или IPA для iOS'),
                 trailing: const Icon(Icons.open_in_new_rounded, size: 18),
                 onTap: () {
                   final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
@@ -1473,14 +1482,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text('Подгруппа для фильтрации расписания:',
                         style: TextStyle(fontSize: 12, color: subColor)),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _buildSubgroupBtn(0, 'Все'),
-                        const SizedBox(width: 8),
-                        _buildSubgroupBtn(1, '1-я подгруппа'),
-                        const SizedBox(width: 8),
-                        _buildSubgroupBtn(2, '2-я подгруппа'),
-                      ],
+                    SlidingSelector(
+                      labels: const ['Все', '1-я подгруппа', '2-я подгруппа'],
+                      selectedIndex: _profile.subgroup,
+                      onSelected: _setSubgroup,
                     ),
                   ],
                 ),
@@ -1563,7 +1568,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.primary),
                 title: const Text('Проверить соединение с сервером',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Отправить запрос проверки доступности API РИИ'),
+                subtitle:
+                    const Text('Отправить запрос проверки доступности API РИИ'),
                 trailing: _isCheckingConnection
                     ? const SizedBox(
                         width: 18,
@@ -1608,8 +1614,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Theme.of(context).colorScheme.tertiary),
                 title: const Text('Системные разрешения',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle:
-                    const Text('Проверить разрешение на показ уведомлений в ОС'),
+                subtitle: const Text(
+                    'Проверить разрешение на показ уведомлений в ОС'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () async {
                   final granted = await NotificationService.requestPermission();
@@ -1634,7 +1640,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary),
                   title: const Text('Привязать Telegram аккаунт',
                       style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Синхронизация профиля и уведомлений с ботом'),
+                  subtitle:
+                      const Text('Синхронизация профиля и уведомлений с ботом'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
                     await Navigator.push(
@@ -1659,8 +1666,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                           fontWeight: FontWeight.w600)),
-                  subtitle:
-                      const Text('Отвязать текущий профиль Telegram от приложения'),
+                  subtitle: const Text(
+                      'Отвязать текущий профиль Telegram от приложения'),
                   onTap: _logout,
                 ),
             ],
@@ -1820,7 +1827,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? Theme.of(context).colorScheme.onPrimary
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimary
                     : (isDark ? Colors.grey[300] : Colors.grey[700]),
               ),
               const SizedBox(height: 4),
@@ -1829,44 +1837,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Theme.of(context).colorScheme.onPrimary
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
                       : (isDark ? Colors.grey[300] : Colors.grey[700]),
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubgroupBtn(int sg, String label) {
-    final isSelected = _profile.subgroup == sg;
-    return Expanded(
-      child: InkWell(
-        onTap: () => _setSubgroup(sg),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : (Theme.of(context).colorScheme.surfaceContainer),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : (Theme.of(context).colorScheme.outlineVariant),
-            ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Theme.of(context).colorScheme.onPrimary : null,
-            ),
           ),
         ),
       ),

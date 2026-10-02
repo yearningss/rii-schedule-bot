@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../services/widget_service.dart';
 import '../widgets/para_card.dart';
+import '../widgets/sliding_selector.dart';
 import '../widgets/teacher_modal_sheet.dart';
 import 'bells_screen.dart';
 import 'group_picker_screen.dart';
@@ -669,11 +670,12 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(child:
-Text(
+                Flexible(
+                    child: Text(
                   _profile.groupName ?? 'Выбрать группу',
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 18),
                 )),
                 const SizedBox(width: 4),
                 const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
@@ -689,15 +691,13 @@ Text(
                 alignment: Alignment.centerLeft,
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E232D) : const Color(0xFFE2E8F0),
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildWeekBtn(1, 'I нед'),
-                      _buildWeekBtn(2, 'II нед'),
-                    ],
+                  child: SlidingSelector(
+                    labels: const ['I нед', 'II нед'],
+                    selectedIndex: _selectedWeek - 1,
+                    onSelected: (index) => setState(() {
+                      _selectedWeek = index + 1;
+                      _userSelectedManually = true;
+                    }),
                   ),
                 )),
           ),
@@ -797,7 +797,10 @@ Text(
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
-                                    color: isSelected ? Theme.of(context).colorScheme.onPrimary
+                                    color: isSelected
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onPrimary
                                         : (isDark
                                             ? Colors.grey[300]
                                             : Colors.grey[800]),
@@ -810,7 +813,10 @@ Text(
                                     height: 4,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: isSelected ? Theme.of(context).colorScheme.onPrimary
+                                      color: isSelected
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary
                                           : Theme.of(context)
                                               .colorScheme
                                               .primary,
@@ -870,7 +876,8 @@ Text(
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: const Text('Повторить',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -1023,7 +1030,8 @@ Text(
                                             icon: const Icon(
                                                 Icons.calendar_today_rounded,
                                                 size: 16),
-                                            label: const Text('Открыть понедельник'),
+                                            label: const Text(
+                                                'Открыть понедельник'),
                                           ),
                                         ],
                                       ],
@@ -1100,82 +1108,15 @@ Text(
                         ),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        _buildSubgroupBtn(0, 'Все подгруппы'),
-                        const SizedBox(width: 8),
-                        _buildSubgroupBtn(1, '1 п/г'),
-                        const SizedBox(width: 8),
-                        _buildSubgroupBtn(2, '2 п/г'),
-                      ],
+                    child: SlidingSelector(
+                      labels: const ['Все подгруппы', '1 п/г', '2 п/г'],
+                      selectedIndex: _profile.subgroup,
+                      onSelected: _setSubgroup,
                     ),
                   ),
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeekBtn(int week, String label) {
-    final isActive = _selectedWeek == week;
-    return GestureDetector(
-      onTap: () => setState(() {
-        _selectedWeek = week;
-        _userSelectedManually = true;
-      }),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isActive
-              ? Theme.of(context).colorScheme.primary
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(28),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubgroupBtn(int sg, String title) {
-    final isSelected = _profile.subgroup == sg;
-    return Expanded(
-      child: InkWell(
-        onTap: () => _setSubgroup(sg),
-        borderRadius: BorderRadius.circular(28),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.withOpacity(0.3),
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Theme.of(context).colorScheme.onPrimary
-                  : (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[300]
-                      : Colors.grey[700]),
-            ),
           ),
         ),
       ),

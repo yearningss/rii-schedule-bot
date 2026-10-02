@@ -254,6 +254,24 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   transition: color 180ms var(--md-sys-motion-easing);
 }
 .has-sliding-indicator > button.active { background: transparent; }
+.kiosk-week-toggle.has-sliding-indicator,
+.kiosk-subgroups-strip.has-sliding-indicator {
+  gap: 0;
+  padding: 4px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container);
+}
+.kiosk-week-toggle.has-sliding-indicator > button,
+.kiosk-subgroups-strip.has-sliding-indicator > button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.kiosk-week-toggle.has-sliding-indicator > button.active,
+.kiosk-subgroups-strip.has-sliding-indicator > button.active {
+  color: var(--md-sys-color-on-secondary-container);
+}
 @media (prefers-reduced-motion: reduce) {
   .has-sliding-indicator.indicator-ready::before,
   .has-sliding-indicator > button { transition: none; }

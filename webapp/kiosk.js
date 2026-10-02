@@ -592,6 +592,8 @@
       btn.classList.toggle('active', sg === state.selectedSubgroup);
     });
 
+    document.querySelectorAll('.has-sliding-indicator').forEach(moveSelectionIndicator);
+
     // Даты на кнопках дней
     calculateAndSetDayDates();
   }
@@ -956,6 +958,7 @@
 
   function init() {
     initDom();
+    setupSlidingIndicators();
     initEventListeners();
     updateLiveClock();
     liveClockInterval = setInterval(updateLiveClock, 1000);
