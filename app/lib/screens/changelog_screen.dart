@@ -189,10 +189,33 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.22',
+        title: 'Релиз v1.0.22 (сборка 23)',
+        publishedAt: '2026-10-02T00:00:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.22',
+        rawBody: '''* Обновлён дизайн приложения и веб-интерфейсов по Material 3.
+* Добавлено плавное переключение недели и подгруппы.
+* Исправлены переполнения на небольших экранах.
+* Устранены повторные серверные загрузки и задержки уведомлений.''',
+        assets: [
+          ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 0,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.22/RiiSchedule.apk',
+          ),
+          ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 0,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.22/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.21',
         title: 'Релиз v1.0.21 (сборка 22)',
         publishedAt: '2026-09-17T08:10:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl:
             'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.21',
         rawBody:

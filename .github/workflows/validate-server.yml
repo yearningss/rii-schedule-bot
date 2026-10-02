@@ -1,7 +1,7 @@
 name: Проверка серверной логики
 on:
   push:
-    branches: ['design/material-3-redesign']
+    branches: ['main', 'design/material-3-redesign']
     paths: ['services/**', 'handlers/**', 'database.py', 'main.py', 'requirements.txt', 'tests/**', '.github/workflows/validate-server.yml']
   pull_request:
     paths: ['services/**', 'handlers/**', 'database.py', 'main.py', 'requirements.txt', 'tests/**', '.github/workflows/validate-server.yml']

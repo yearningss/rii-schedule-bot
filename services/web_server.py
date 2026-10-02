@@ -411,10 +411,10 @@ async def get_latest_app_version_data(platform: str = "android") -> dict:
 
     return {
         "status": "ok",
-        "latest_version": "1.0.21",
-        "latest_build": 22,
-        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.21/{target_ext}",
-        "release_notes": "Обновление v1.0.21 (сборка 22):\n- Улучшено модальное окно преподавателя (кнопка закрытия, закрепленный заголовок)\n- Устранена повторная загрузка с сервера при свайпах и касаниях\n- Интерактивный каталог преподавателей с поиском\n- Кнопки преподавателей в Telegram Mini App",
+        "latest_version": "1.0.22",
+        "latest_build": 23,
+        "download_url": f"https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.22/{target_ext}",
+        "release_notes": "Обновление v1.0.22 (сборка 23): новый дизайн Material 3, плавное переключение недели и подгруппы, оптимизация серверных загрузок и уведомлений.",
         "is_required": False
     }
 

@@ -9,10 +9,16 @@ on:
       - 'app/**'
       - 'CHANGELOG.md'
       - '.github/workflows/build-mobile.yml'
+      - 'scripts/upload_to_rustore.py'
+      - 'scripts/prepare_release_body.py'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: мобильный-релиз-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-android:
@@ -48,13 +54,18 @@ jobs:
             echo "Использование сертификата certs/release.jks..."
             echo "KEYSTORE_FILE=$(pwd)/certs/release.jks" >> $GITHUB_ENV
           else
-            echo "Сертификат не найден, будет использована отладочная подпись"
+            echo "::error::Сертификат релизной подписи не найден"
+            exit 1
           fi
 
       - name: Установка зависимостей Flutter
         run: |
           cd app
           flutter pub get
+
+      - name: Проверки приложения
+        run: flutter test
+        working-directory: app
 
       - name: Сборка релизного APK
         env:
@@ -131,7 +142,7 @@ jobs:
     name: Публикация релиза в GitHub Releases
     needs: [build-android, build-ios]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() && needs.build-android.result == 'success' && github.ref == 'refs/heads/main' }}
+    if: ${{ !cancelled() && needs.build-android.result == 'success' && needs.build-ios.result == 'success' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Клонирование репозитория
         uses: actions/checkout@v4
@@ -157,7 +168,6 @@ jobs:
 
       - name: Скачивание пакета iOS
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: ios-package
           path: release-assets
@@ -176,28 +186,40 @@ jobs:
           generate_release_notes: false
           body_path: release_body.md
           files: release-assets/*
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
           draft: false
           prerelease: false
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Установка библиотек для публикации в RuStore
-        if: ${{ env.RUSTORE_KEY_ID != '' && env.RUSTORE_PRIVATE_KEY != '' }}
-        env:
-          RUSTORE_KEY_ID: ${{ secrets.RUSTORE_KEY_ID }}
-          RUSTORE_PRIVATE_KEY: ${{ secrets.RUSTORE_PRIVATE_KEY }}
-        run: |
-          pip install requests cryptography
 
-      - name: Автодеплой приложения в RuStore
-        if: ${{ env.RUSTORE_KEY_ID != '' && env.RUSTORE_PRIVATE_KEY != '' }}
-        env:
-          RUSTORE_KEY_ID: ${{ secrets.RUSTORE_KEY_ID }}
-          RUSTORE_PRIVATE_KEY: ${{ secrets.RUSTORE_PRIVATE_KEY }}
-          RUSTORE_PACKAGE_NAME: "com.yearnings.rii"
-          RUSTORE_PUBLISH_TYPE: "MANUALLY"
-          APK_PATH: "release-assets/RiiSchedule.apk"
+  publish-rustore:
+    name: Публикация Android в RuStore
+    needs: [build-android, publish-release]
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    env:
+      RUSTORE_KEY_ID: ${{ secrets.RUSTORE_KEY_ID }}
+      RUSTORE_PRIVATE_KEY: ${{ secrets.RUSTORE_PRIVATE_KEY }}
+      RUSTORE_PACKAGE_NAME: "com.yearnings.rii"
+      RUSTORE_PUBLISH_TYPE: "INSTANTLY"
+      APK_PATH: "release-assets/RiiSchedule.apk"
+    steps:
+      - name: Клонирование репозитория
+        uses: actions/checkout@v4
+      - name: Проверка настроек RuStore
         run: |
-          python3 scripts/upload_to_rustore.py
+          if [ -z "$RUSTORE_KEY_ID" ] || [ -z "$RUSTORE_PRIVATE_KEY" ]; then
+            echo "::error::Не настроены ключи публикации RuStore"
+            exit 1
+          fi
+      - name: Скачивание подписанного Android
+        uses: actions/download-artifact@v4
+        with:
+          name: android-packages
+          path: release-assets
+      - name: Установка библиотек публикации
+        run: python3 -m pip install requests cryptography
+      - name: Отправка обновления на модерацию с автоматической публикацией
+        run: python3 scripts/upload_to_rustore.py

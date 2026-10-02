@@ -1,7 +1,7 @@
 name: Проверка дизайна Material 3
 on:
   push:
-    branches: ['design/material-3-redesign']
+    branches: ['main', 'design/material-3-redesign']
   pull_request:
     paths: ['app/**', 'webapp/**', 'scripts/test_material_web.cjs', '.github/workflows/validate-design.yml']
   workflow_dispatch:
