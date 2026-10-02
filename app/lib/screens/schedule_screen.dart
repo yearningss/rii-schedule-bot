@@ -669,11 +669,12 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                Flexible(child:
+Text(
                   _profile.groupName ?? 'Выбрать группу',
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
+                )),
                 const SizedBox(width: 4),
                 const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
               ],
