@@ -63,7 +63,7 @@ class SlidingSelector extends StatelessWidget {
                           foregroundColor: selected
                               ? colors.onSecondaryContainer
                               : colors.onSurfaceVariant,
-                          minimumSize: const Size(0, 48),
+                          minimumSize: const Size(0, 44),
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           textStyle: const TextStyle(
                             fontSize: 12,

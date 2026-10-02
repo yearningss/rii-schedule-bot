@@ -35,23 +35,23 @@ class ParaCard extends StatelessWidget {
         isOngoing ? colors.primaryContainer : colors.surfaceContainerLow;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: borderColor,
           width: isOngoing || isNext ? 1.8 : 1.0,
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Шапка пары: номер, время и статус
             Wrap(
-              spacing: 12,
+              spacing: 8,
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
@@ -86,7 +86,7 @@ class ParaCard extends StatelessWidget {
                       colors.onSurfaceVariant),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
             // Контент пары
             if (item.isDouble) ...[
@@ -137,7 +137,7 @@ class ParaCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
@@ -201,7 +201,8 @@ class ParaCard extends StatelessWidget {
             Expanded(
               child: Text(
                 subject ?? 'Предмет',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: 16, fontWeight: FontWeight.w700, height: 1.3),
               ),
             ),
             if (type != null && type.isNotEmpty)
@@ -250,13 +251,13 @@ class ParaCard extends StatelessWidget {
                   onTap: onTeacherTap != null
                       ? () => onTeacherTap!(teacher, post)
                       : null,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(20),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 14),
+                        horizontal: 10, vertical: 10),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: Theme.of(context).colorScheme.outlineVariant,
                         width: 0.8,
@@ -273,7 +274,7 @@ class ParaCard extends StatelessWidget {
                         const SizedBox(width: 5),
                         Flexible(
                           child: Text(
-                            '$teacher${post != null && post.isNotEmpty ? ' ($post)' : ''}',
+                            teacher,
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,

@@ -189,10 +189,31 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.24',
+        title: 'Релиз v1.0.24 (сборка 25)',
+        publishedAt: '2026-10-02T00:00:00Z',
+        isCurrent: true,
+        htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.24',
+        rawBody: '''* Уменьшены текст и отступы карточек пар.
+* Исправлены расчёт высоты и тема Android-виджета.''',
+        assets: [
+          ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 0,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.24/RiiSchedule.apk',
+          ),
+          ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 0,
+            downloadUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.24/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.23',
         title: 'Релиз v1.0.23 (сборка 24)',
         publishedAt: '2026-10-02T00:00:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl: 'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.23',
         rawBody: '''* Обновлён Android-виджет по Material 3.
 * Добавлены светлая и тёмная темы и компактное отображение.

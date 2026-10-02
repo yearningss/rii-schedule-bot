@@ -684,13 +684,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(52),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  margin: const EdgeInsets.symmetric(vertical: 4),
                   child: SlidingSelector(
                     labels: const ['I нед', 'II нед'],
                     selectedIndex: _selectedWeek - 1,
@@ -756,7 +756,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               // Полоса выбора дней недели
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(6, (idx) {
@@ -837,7 +837,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               if (_isOffline)
                 Container(
                   margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
@@ -887,7 +887,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               if (isToday)
                 Container(
                   margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
@@ -922,7 +922,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               else if (isSunday && _selectedDay == 1)
                 Container(
                   margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
@@ -954,7 +954,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               else if (isSaturday && _selectedDay == 6 && sortedKeys.isEmpty)
                 Container(
                   margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
@@ -1100,7 +1100,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   top: false,
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       border: Border(
                         top: BorderSide(

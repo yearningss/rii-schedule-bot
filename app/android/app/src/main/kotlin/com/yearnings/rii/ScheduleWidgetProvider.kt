@@ -7,6 +7,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -198,17 +199,38 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.schedule_widget)
         // На маленьком виджете оставляем статус и название ближайшей пары.
         val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-        val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 140)
+        val portrait = context.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
+        val heightKey = if (portrait) AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT else AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT
+        val height = options.getInt(heightKey).takeIf { it > 0 }
+            ?: options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 140)
         val width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250)
         val density = context.resources.displayMetrics.density
         val outerPadding = ((if (height < 140) 8 else 16) * density).toInt()
         val cardPadding = ((if (height < 140) 8 else 12) * density).toInt()
         views.setViewPadding(R.id.widget_root, outerPadding, outerPadding, outerPadding, outerPadding)
         views.setViewPadding(R.id.widget_card_main, cardPadding, cardPadding, cardPadding, cardPadding)
-        views.setViewVisibility(R.id.widget_next_container, if (height >= 200) View.VISIBLE else View.GONE)
-        views.setViewVisibility(R.id.widget_details_text, if (height >= 160) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_next_container, if (height >= 140) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_details_text, if (height >= 120) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_date_week, if (width >= 220) View.VISIBLE else View.GONE)
 
+
+        // Тема виджета повторяет выбранную тему приложения.
+        val themePrefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val dark = when (themePrefs.getString("flutter.theme_mode", "system")) {
+            "dark" -> true
+            "light" -> false
+            else -> (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        }
+        views.setInt(R.id.widget_root, "setBackgroundResource", if (dark) R.drawable.widget_background_dark else R.drawable.widget_background_light)
+        views.setInt(R.id.widget_card_main, "setBackgroundResource", if (dark) R.drawable.widget_card_dark else R.drawable.widget_card_light)
+        val foreground = android.graphics.Color.parseColor(if (dark) "#DFE4DD" else "#181D19")
+        val secondary = android.graphics.Color.parseColor(if (dark) "#C1C9C0" else "#414942")
+        views.setTextColor(R.id.widget_group_name, foreground)
+        views.setTextColor(R.id.widget_subject_text, foreground)
+        views.setTextColor(R.id.widget_date_week, secondary)
+        views.setTextColor(R.id.widget_details_text, secondary)
+        views.setTextColor(R.id.widget_next_text, secondary)
+        views.setTextColor(R.id.widget_status_text, android.graphics.Color.parseColor(if (dark) "#9DD3B5" else "#386A52"))
 
         // Клик по виджету открывает главное приложение
         val intent = Intent(context, MainActivity::class.java)

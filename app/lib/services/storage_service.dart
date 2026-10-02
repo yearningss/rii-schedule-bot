@@ -1,5 +1,6 @@
 // Сервис локального хранения настроек и офлайн-кэша
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
@@ -71,6 +72,12 @@ class StorageService {
     if (mode == ThemeMode.light) val = 'light';
     await prefs.setString(_keyThemeMode, val);
     themeModeNotifier.value = mode;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await const MethodChannel('com.yearnings.rii/widget').invokeMethod('updateWidget');
+      } catch (_) {}
+    }
+
   }
 
   String getSeasonIconPreference() {
