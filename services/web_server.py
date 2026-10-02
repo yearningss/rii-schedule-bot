@@ -12,6 +12,7 @@ from pathlib import Path
 import aiohttp
 from aiohttp import web
 from services.api import api_client
+from services.singleflight import SingleFlight
 from services.teacher_service import find_teacher_info, get_all_teachers_list
 from services.kiosk_service import get_live_board_data, BELLS_SCHEDULE, get_teacher_full_schedule
 from database import get_user, set_user_group, set_user_subgroup, update_user_notifications
@@ -49,6 +50,11 @@ async def handle_api_schedule(request: web.Request) -> web.Response:
         return web.json_response({"error": "Missing group_id"}, status=400)
     try:
         group_id = int(group_id_str)
+        if group_id <= 0:
+            raise ValueError
+    except ValueError:
+        return web.json_response({"error": "Некорректный group_id"}, status=400)
+    try:
         sched = await api_client.get_schedule(group_id)
         return web.json_response(sched)
     except Exception as e:
@@ -309,8 +315,17 @@ _changelog_cache = {
     "data": []
 }
 
+_loads = SingleFlight()
+_changelog_retry_at = 0.0
+
 async def get_app_changelog_data() -> list:
-    now = time.time()
+    return await _loads.run("changelog", _load_app_changelog)
+
+async def _load_app_changelog() -> list:
+    global _changelog_retry_at
+    now = time.monotonic()
+    if now < _changelog_retry_at:
+        return _changelog_cache["data"]
     if now - _changelog_cache["timestamp"] < 300 and _changelog_cache["data"]:
         return _changelog_cache["data"]
 
@@ -370,11 +385,12 @@ async def get_app_changelog_data() -> list:
                         })
                     if parsed_releases:
                         _changelog_cache["data"] = parsed_releases
-                        _changelog_cache["timestamp"] = now
+                        _changelog_cache["timestamp"] = time.monotonic()
                         return _changelog_cache["data"]
     except Exception as e:
         logger.warning("Не удалось получить releases.atom: %s", e)
 
+    _changelog_retry_at = time.monotonic() + 60
     return _changelog_cache["data"]
 
 async def get_latest_app_version_data(platform: str = "android") -> dict:
@@ -481,8 +497,25 @@ async def handle_api_kiosk_teacher_schedule(request: web.Request) -> web.Respons
         logger.error("Ошибка API kiosk teacher-schedule для %s: %s", name, e)
         return web.json_response({"error": "Failed to fetch teacher schedule"}, status=500)
 
+async def cleanup_upstream_clients(app):
+    from services.kiosk_service import _loads as kiosk_loads
+    await _loads.close()
+    await kiosk_loads.close()
+    await api_client.close()
+
+@web.middleware
+async def timing_middleware(request, handler):
+    started = time.monotonic()
+    try:
+        return await handler(request)
+    finally:
+        elapsed = time.monotonic() - started
+        if request.path.startswith("/api/") and elapsed >= 1:
+            logger.warning("Медленный запрос %s %s: %.3f с", request.method, request.path, elapsed)
+
 def create_web_app() -> web.Application:
-    app = web.Application()
+    app = web.Application(middlewares=[timing_middleware])
+    app.on_cleanup.append(cleanup_upstream_clients)
     app.router.add_get("/", handle_index)
     app.router.add_get("/tv", handle_tv)
     app.router.add_get("/tv.html", handle_tv)

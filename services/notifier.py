@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from typing import Set, Dict, Any, List
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
@@ -33,7 +32,6 @@ class ScheduleNotifier:
         self.bot = bot
         self._sent_keys: Set[str] = set()
         self._last_day_cleaned: str = ""
-        self._last_change_check_time: float = 0
 
     def _cleanup_keys_if_new_day(self, current_day_str: str):
         if self._last_day_cleaned != current_day_str:
@@ -62,11 +60,18 @@ class ScheduleNotifier:
             if gid:
                 users_by_group.setdefault(gid, []).append(u)
 
-        for group_id, group_users in users_by_group.items():
-            try:
-                sched = await api_client.get_schedule(group_id)
-            except Exception as e:
-                logger.warning("Ошибка получения расписания для группы %s: %s", group_id, e)
+        # Расписания запрашиваются параллельно вместо последовательного ожидания.
+        schedules = await asyncio.gather(
+            *(api_client.get_schedule(gid) for gid in users_by_group),
+            return_exceptions=True,
+        )
+        now = get_rubtsovsk_now()
+        if now.strftime("%Y-%m-%d") != today_str:
+            return
+        cur_mins = now.hour * 60 + now.minute
+        for (group_id, group_users), sched in zip(users_by_group.items(), schedules):
+            if isinstance(sched, Exception):
+                logger.warning("Ошибка получения расписания для группы %s: %s", group_id, sched)
                 continue
 
             if not sched:
@@ -196,26 +201,30 @@ class ScheduleNotifier:
 
     async def _send_message(self, user_id: int, text: str):
         try:
-            await self.bot.send_message(chat_id=user_id, text=text)
+            await self.bot.send_message(chat_id=user_id, text=text, parse_mode=None)
         except (TelegramForbiddenError, TelegramBadRequest):
             pass
         except Exception as e:
             logger.warning("Ошибка отправки сообщения пользователю %s: %s", user_id, e)
 
+    async def _change_loop(self):
+        while True:
+            try:
+                await self.check_tomorrow_schedule_changes()
+            except Exception as e:
+                logger.error("Ошибка при отслеживании правок на завтра: %s", e, exc_info=True)
+            await asyncio.sleep(CHANGE_CHECK_INTERVAL_SECONDS)
+
     async def start_loop(self):
         logger.info("Фоновый процесс уведомлений запущен")
-        while True:
-            now_ts = time.time()
-            try:
-                await self.check_and_notify_lessons()
-            except Exception as e:
-                logger.error("Ошибка при проверке уроков: %s", e, exc_info=True)
-
-            if now_ts - self._last_change_check_time >= CHANGE_CHECK_INTERVAL_SECONDS:
+        change_task = asyncio.create_task(self._change_loop())
+        try:
+            while True:
                 try:
-                    await self.check_tomorrow_schedule_changes()
-                    self._last_change_check_time = now_ts
+                    await self.check_and_notify_lessons()
                 except Exception as e:
-                    logger.error("Ошибка при отслеживании правок на завтра: %s", e, exc_info=True)
-
-            await asyncio.sleep(20)
+                    logger.error("Ошибка при проверке уроков: %s", e, exc_info=True)
+                await asyncio.sleep(20)
+        finally:
+            change_task.cancel()
+            await asyncio.gather(change_task, return_exceptions=True)

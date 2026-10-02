@@ -221,7 +221,8 @@ async def init_db() -> None:
         indexes_to_ensure = [
             "CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id)",
             "CREATE INDEX IF NOT EXISTS idx_users_client_user_id ON users(client_user_id)",
-            "CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id)"
+            "CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id)",
+            "CREATE INDEX IF NOT EXISTS idx_users_group_notifications ON users(group_id, notifications_enabled, notify_changes)"
         ]
 
         for idx_sql in indexes_to_ensure:
@@ -376,9 +377,9 @@ async def get_users_for_group_changes(group_id: int) -> List[Dict[str, Any]]:
 
 async def get_all_active_group_ids() -> List[Dict[str, Any]]:
     async with async_session_maker() as session:
-        stmt = select(User.group_id, User.group_name).where(
+        stmt = select(User.group_id, func.max(User.group_name)).where(
             User.group_id.is_not(None)
-        ).distinct()
+        ).group_by(User.group_id)
         result = await session.execute(stmt)
         rows = result.all()
         return [{"group_id": r[0], "group_name": r[1]} for r in rows if r[0] is not None]

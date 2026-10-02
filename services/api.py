@@ -10,11 +10,13 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Dict, List, Optional, Any, Tuple
 from config import API_BASE_URL, CACHE_TTL_SECONDS
+from services.singleflight import SingleFlight
 
 RUBTSOVSK_TZ = ZoneInfo("Asia/Barnaul")
 
 class RiiApiClient:
     def __init__(self):
+        self._loads = SingleFlight()
         self._session: Optional[aiohttp.ClientSession] = None
         self._groups_cache: Optional[List[Dict[str, Any]]] = None
         self._groups_cache_time: float = 0
@@ -23,8 +25,8 @@ class RiiApiClient:
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
-            connector = aiohttp.TCPConnector(ssl=False)
-            timeout = aiohttp.ClientTimeout(total=15)
+            connector = aiohttp.TCPConnector(ssl=False, limit_per_host=12)
+            timeout = aiohttp.ClientTimeout(total=15, sock_connect=5, sock_read=10)
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "Referer": "https://www.rubinst.ru/schedule"
@@ -33,6 +35,7 @@ class RiiApiClient:
         return self._session
 
     async def close(self):
+        await self._loads.close()
         if self._session and not self._session.closed:
             await self._session.close()
 
@@ -43,29 +46,29 @@ class RiiApiClient:
             return await response.json()
 
     async def get_groups(self, force_refresh: bool = False) -> List[Dict[str, Any]]:
-        now = time.time()
-        if not force_refresh and self._groups_cache and (now - self._groups_cache_time < CACHE_TTL_SECONDS):
+        if not force_refresh and self._groups_cache is not None and (time.monotonic() - self._groups_cache_time < CACHE_TTL_SECONDS):
             return self._groups_cache
+        return await self._loads.run("groups", self._load_groups)
 
+    async def _load_groups(self) -> List[Dict[str, Any]]:
         data = await self._fetch_json()
-        raw_groups = data.get("groups", [])
-        
+        raw_groups = data.get("groups")
+        if not isinstance(raw_groups, list):
+            raise ValueError("Сайт института вернул некорректный список групп")
         valid_groups = []
         for g in raw_groups:
-            sem = g.get("sem", 0)
-            if sem == 0:
+            sem = int(g.get("sem", 0))
+            if sem <= 0:
                 continue
-            course = (sem + 1) // 2
             valid_groups.append({
                 "id": int(g["id"]),
                 "name": str(g["name"]).strip(),
                 "sem": sem,
-                "course": course
+                "course": (sem + 1) // 2,
             })
-        
         valid_groups.sort(key=lambda x: (x["course"], x["name"]))
         self._groups_cache = valid_groups
-        self._groups_cache_time = now
+        self._groups_cache_time = time.monotonic()
         return valid_groups
 
     async def get_courses_map(self, force_refresh: bool = False) -> Dict[int, List[Dict[str, Any]]]:
@@ -111,15 +114,18 @@ class RiiApiClient:
         return None
 
     async def get_schedule(self, group_id: int, force_refresh: bool = False) -> Dict[str, Any]:
-        now = time.time()
         if not force_refresh and group_id in self._schedule_cache:
-            if now - self._schedule_cache_time.get(group_id, 0) < CACHE_TTL_SECONDS:
+            if time.monotonic() - self._schedule_cache_time.get(group_id, 0) < CACHE_TTL_SECONDS:
                 return self._schedule_cache[group_id]
+        return await self._loads.run(("schedule", group_id), lambda: self._load_schedule(group_id))
 
+    async def _load_schedule(self, group_id: int) -> Dict[str, Any]:
         data = await self._fetch_json(params={"Group": group_id})
-        schedule_payload = data.get("schedule", {})
+        schedule_payload = data.get("schedule")
+        if not isinstance(schedule_payload, dict):
+            raise ValueError("Сайт института вернул некорректное расписание")
         self._schedule_cache[group_id] = schedule_payload
-        self._schedule_cache_time[group_id] = now
+        self._schedule_cache_time[group_id] = time.monotonic()
         return schedule_payload
 
 def clean_time(time_str: Optional[str]) -> str:
@@ -136,7 +142,8 @@ def parse_para_time_range(time_str: Optional[str], default_para_num: int = 1) ->
         3: (12 * 60 + 10, 13 * 60 + 40, "12:10", "13:40"),
         4: (13 * 60 + 50, 15 * 60 + 20, "13:50", "15:20"),
         5: (15 * 60 + 30, 17 * 60 + 0, "15:30", "17:00"),
-        6: (17 * 60 + 10, 18 * 60 + 40, "17:10", "18:40")
+        6: (17 * 60 + 10, 18 * 60 + 40, "17:10", "18:40"),
+        7: (18 * 60 + 50, 20 * 60 + 20, "18:50", "20:20")
     }
 
     if not time_str:
@@ -217,7 +224,8 @@ def format_time_whatqt(time_str: Optional[str], default_para_num: int = 1) -> st
         3: "12:10-13:40",
         4: "13:50-15:20",
         5: "15:30-17:00",
-        6: "17:10-18:40"
+        6: "17:10-18:40",
+        7: "18:50-20:20"
     }
     if not time_str:
         return default_times.get(default_para_num, "")

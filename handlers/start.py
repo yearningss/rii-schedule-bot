@@ -393,7 +393,7 @@ async def cmd_choose_group(message: Message):
         await message.answer("Только администратор чата может менять учебную группу.")
         return
 
-    courses_map = await api_client.get_courses_map(force_refresh=True)
+    courses_map = await api_client.get_courses_map()
     if not courses_map:
         await message.answer("Не удалось получить список групп. Попробуй позже.")
         return

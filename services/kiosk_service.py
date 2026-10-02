@@ -6,6 +6,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Dict, List, Optional, Any, Tuple
 
+from services.singleflight import SingleFlight
+
 from services.api import api_client, parse_para_time_range
 
 logger = logging.getLogger("rii_schedule_bot.kiosk")
@@ -69,17 +71,25 @@ WMO_WEATHER_RU = {
 _weather_cache: Dict[str, Any] = {
     "timestamp": 0.0,
     "data": {
-        "temp": "+12°C",
-        "description": "Ясно",
-        "wind": "8 км/ч",
-        "icon": "sun"
+        "temp": "—",
+        "description": "Недоступно",
+        "wind": "—",
+        "icon": "cloud"
     }
 }
 
+_loads = SingleFlight()
+_weather_retry_at = 0.0
+
 async def get_rubtsovsk_weather() -> Dict[str, Any]:
-    global _weather_cache
-    now = time.time()
-    if now - _weather_cache["timestamp"] < 900 and _weather_cache["data"]:
+    return await _loads.run("weather", _load_weather)
+
+async def _load_weather() -> Dict[str, Any]:
+    global _weather_cache, _weather_retry_at
+    now = time.monotonic()
+    if now < _weather_retry_at:
+        return _weather_cache["data"]
+    if _weather_cache["timestamp"] > 0 and now - _weather_cache["timestamp"] < 900 and _weather_cache["data"]:
         return _weather_cache["data"]
 
     try:
@@ -105,12 +115,13 @@ async def get_rubtsovsk_weather() -> Dict[str, Any]:
                         "wind": f"{wind_speed} км/ч",
                         "icon": icon
                     }
-                    _weather_cache["timestamp"] = now
+                    _weather_cache["timestamp"] = time.monotonic()
                     _weather_cache["data"] = result
                     return result
     except Exception as e:
         logger.warning("Не удалось получить погоду в Рубцовске: %s", e)
 
+    _weather_retry_at = time.monotonic() + 60
     return _weather_cache["data"]
 
 _live_board_cache: Dict[str, Any] = {
@@ -274,8 +285,11 @@ def normalize_lesson_dict(raw_item: Optional[Dict[str, Any]], para_num: int, cus
     }
 
 async def get_live_board_data(force_refresh: bool = False) -> Dict[str, Any]:
+    return await _loads.run("live-board", lambda: _load_live_board(force_refresh))
+
+async def _load_live_board(force_refresh: bool = False) -> Dict[str, Any]:
     global _live_board_cache
-    now = time.time()
+    now = time.monotonic()
     if not force_refresh and _live_board_cache["data"] and (now - _live_board_cache["timestamp"] < 10):
         # Быстрое динамическое обновление секунд
         cached = _live_board_cache["data"].copy()
@@ -302,7 +316,13 @@ async def get_live_board_data(force_refresh: bool = False) -> Dict[str, Any]:
             return {}
 
     sched_tasks = [fetch_sched(g["id"]) for g in groups]
-    schedules = await asyncio.gather(*sched_tasks)
+    schedules, weather = await asyncio.gather(
+        asyncio.gather(*sched_tasks), get_rubtsovsk_weather()
+    )
+    now_dt = get_rubtsovsk_now()
+    day_of_week = now_dt.isoweekday()
+    cur_mins = now_dt.hour * 60 + now_dt.minute
+    bell_status = calculate_bell_status(now_dt)
 
     # Определяем текущую неделю института
     week_number = 1
@@ -372,7 +392,11 @@ async def get_live_board_data(force_refresh: bool = False) -> Dict[str, Any]:
         card_status_label = "Нет пар"
         card_status_badge = "gray"
 
-        if day_of_week == 7 or not today_lessons:
+        if not sched_obj:
+            card_status = "unavailable"
+            card_status_label = "Расписание недоступно"
+            card_status_badge = "gray"
+        elif day_of_week == 7 or not today_lessons:
             card_status = "free"
             card_status_label = "Выходной"
             card_status_badge = "gray"
@@ -426,8 +450,6 @@ async def get_live_board_data(force_refresh: bool = False) -> Dict[str, Any]:
     }
     group_cards.sort(key=lambda x: (status_priority.get(x["status"], 99), x["course"], x["group_name"]))
 
-    weather = await get_rubtsovsk_weather()
-
     result = {
         "status": "ok",
         "date": date_str,
@@ -442,7 +464,7 @@ async def get_live_board_data(force_refresh: bool = False) -> Dict[str, Any]:
         "groups": group_cards
     }
 
-    _live_board_cache["timestamp"] = now
+    _live_board_cache["timestamp"] = time.monotonic()
     _live_board_cache["data"] = result
     return result
 

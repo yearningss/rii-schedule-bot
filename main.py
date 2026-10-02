@@ -80,6 +80,7 @@ async def main():
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         notifier_task.cancel()
+        await asyncio.gather(notifier_task, return_exceptions=True)
         await web_runner.cleanup()
         await api_client.close()
         await bot.session.close()
