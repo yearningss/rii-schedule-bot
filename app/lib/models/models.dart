@@ -269,8 +269,8 @@ class NotificationSettings {
 
 // Данные о текущей версии мобильного приложения РИИ
 class AppInfo {
-  static const String versionName = '1.0.24';
-  static const int versionCode = 25;
+  static const String versionName = '1.0.25';
+  static const int versionCode = 26;
   static const String fullVersionText = 'v$versionName (сборка $versionCode)';
 }
 
