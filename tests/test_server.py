@@ -172,6 +172,27 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 response = await client.get("/api/schedule", params={"group_id": value})
                 self.assertEqual(response.status, 400)
 
+    async def test_домен_авторизации_разрешает_запросы_только_с_нашего_сайта(self):
+        async with TestClient(TestServer(web_server.create_web_app())) as client:
+            response = await client.options("/api/user/sync", headers={
+                "Origin": "https://myrii.ru",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            })
+            self.assertEqual(response.status, 204)
+            self.assertEqual(response.headers["Access-Control-Allow-Origin"], "https://myrii.ru")
+            self.assertIn("no-store", response.headers["Cache-Control"])
+            response = await client.options("/api/user/sync", headers={"Origin": "https://example.com"})
+            self.assertEqual(response.status, 403)
+            self.assertNotIn("Access-Control-Allow-Origin", response.headers)
+
+    async def test_личный_профиль_не_кешируется_даже_при_ошибке(self):
+        async with TestClient(TestServer(web_server.create_web_app())) as client:
+            response = await client.get("/api/app/profile", headers={"Origin": "https://myrii.ru"})
+            self.assertEqual(response.status, 401)
+            self.assertIn("no-store", response.headers["Cache-Control"])
+            self.assertEqual(response.headers["Access-Control-Allow-Origin"], "https://myrii.ru")
+
     async def test_текст_уведомления_не_разбирается_как_HTML(self):
         bot = SimpleNamespace(send_message=AsyncMock())
         notifier = ScheduleNotifier(bot)

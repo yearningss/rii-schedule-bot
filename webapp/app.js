@@ -17,6 +17,9 @@ function syncMaterialTheme() {
 syncMaterialTheme();
 if (tg?.onEvent) tg.onEvent('themeChanged', syncMaterialTheme);
 
+// Персональные запросы идут через отдельный домен без общего кеша CDN.
+const authBaseUrl = location.hostname === 'myrii.ru' ? 'https://auth.myrii.ru' : '';
+
 const telegramUser = tg?.initDataUnsafe?.user || null;
 const telegramUserId = telegramUser?.id || null;
 
@@ -119,7 +122,7 @@ function parseParaTime(timeStr, defaultParaNum = 1) {
 async function syncUserWithBot(groupId, groupName, subgroup) {
   if (!telegramUserId) return;
   try {
-    await fetch('/api/user/sync', {
+    await fetch(`${authBaseUrl}/api/user/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -138,7 +141,7 @@ async function syncUserWithBot(groupId, groupName, subgroup) {
 async function fetchUserBotSettings() {
   if (!telegramUserId) return null;
   try {
-    const res = await fetch(`/api/user?user_id=${telegramUserId}`);
+    const res = await fetch(`${authBaseUrl}/api/user?user_id=${telegramUserId}`);
     if (res.ok) {
       const data = await res.json();
       if (data.group_id) {

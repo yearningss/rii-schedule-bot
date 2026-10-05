@@ -183,7 +183,7 @@ API_BASE_URL=https://www.rubinst.ru/schedule.php
 CACHE_TTL_SECONDS=300
 CHANGE_CHECK_INTERVAL_SECONDS=900
 
-WEBAPP_URL=https://rii-bot.yearnings.ru
+WEBAPP_URL=https://myrii.ru
 WEB_HOST=127.0.0.1
 WEB_PORT=8080
 ```
@@ -237,6 +237,14 @@ flutter build ios --release --no-codesign
 Собранные файлы автоматически публикуются на странице [GitHub Releases](https://github.com/yearningss/rii-schedule-bot/releases).
 
 ---
+
+## Домены и CDN
+
+Сайт и публичные запросы приложения используют `https://myrii.ru` через Яндекс CDN. Авторизация, личный профиль, синхронизация устройств и настройки пользователя используют `https://auth.myrii.ru` через Cloudflare Tunnel. Старый адрес `rii-bot.yearnings.ru` сохраняется для установленных версий приложения и служит источником CDN.
+
+Основная DNS-запись `myrii.ru` должна указывать на адрес CDN с режимом DNS only. `auth.myrii.ru` подключается к туннелю `rii-bot` с включённым проксированием Cloudflare. Для сертификата Яндекса нужна отдельная CNAME-запись `_acme-challenge`, также в режиме DNS only.
+
+CDN должен соблюдать заголовки источника и учитывать все query-параметры. API, HTML и сервис-воркер возвращают `no-store`; статические файлы кешируются на час. Перевод меню бота и публикация новой версии приложения выполняются после проверки HTTPS обоих новых доменов.
 
 ## Разработчики
 

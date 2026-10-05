@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import '../models/models.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://rii-bot.yearnings.ru';
+  static const String baseUrl = 'https://myrii.ru';
+  static const String authBaseUrl = 'https://auth.myrii.ru';
 
   // Загрузка списка всех групп института
   Future<List<GroupItem>> getGroups() async {
@@ -71,7 +72,7 @@ class ApiService {
 
   // Инициализация сессии авторизации через Telegram
   Future<Map<String, dynamic>> createAuthSession() async {
-    final res = await http.post(Uri.parse('$baseUrl/api/app/auth/session'));
+    final res = await http.post(Uri.parse('$authBaseUrl/api/app/auth/session'));
     if (res.statusCode == 200) {
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     }
@@ -80,7 +81,7 @@ class ApiService {
 
   // Проверка статуса авторизации сессии (poll)
   Future<Map<String, dynamic>> checkAuthSession(String sessionToken) async {
-    final res = await http.get(Uri.parse('$baseUrl/api/app/auth/check?session_token=$sessionToken'));
+    final res = await http.get(Uri.parse('$authBaseUrl/api/app/auth/check?session_token=$sessionToken'));
     if (res.statusCode == 200) {
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     }
@@ -98,7 +99,7 @@ class ApiService {
     String? avatarUrl,
   }) async {
     final res = await http.post(
-      Uri.parse('$baseUrl/api/app/auth/yandex'),
+      Uri.parse('$authBaseUrl/api/app/auth/yandex'),
       headers: {'Content-Type': 'application/json; charset=utf-8'},
       body: jsonEncode({
         'access_token': token,
@@ -120,7 +121,7 @@ class ApiService {
   Future<Map<String, dynamic>?> getProfile(String authToken) async {
     try {
       final res = await http.get(
-        Uri.parse('$baseUrl/api/app/profile'),
+        Uri.parse('$authBaseUrl/api/app/profile'),
         headers: {
           'Authorization': 'Bearer $authToken',
         },
@@ -160,7 +161,7 @@ class ApiService {
 
     try {
       final res = await http.post(
-        Uri.parse('$baseUrl/api/app/profile'),
+        Uri.parse('$authBaseUrl/api/app/profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
@@ -209,7 +210,7 @@ class ApiService {
 
     try {
       final res = await http.post(
-        Uri.parse('$baseUrl/api/app/device/sync'),
+        Uri.parse('$authBaseUrl/api/app/device/sync'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       ).timeout(const Duration(seconds: 6));
@@ -234,7 +235,7 @@ class ApiService {
     };
     try {
       final res = await http.post(
-        Uri.parse('$baseUrl/api/app/device/unlink'),
+        Uri.parse('$authBaseUrl/api/app/device/unlink'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       ).timeout(const Duration(seconds: 5));

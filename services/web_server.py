@@ -20,11 +20,28 @@ from database import get_user, set_user_group, set_user_subgroup, update_user_no
 logger = logging.getLogger("rii_schedule_bot.web")
 
 WEBAPP_DIR = Path(__file__).resolve().parent.parent / "webapp"
+WEB_ORIGINS = {"https://myrii.ru", "https://rii-bot.yearnings.ru"}
 
 async def prevent_stale_pages(request: web.Request, response: web.StreamResponse) -> None:
-    # Страница и загрузчик офлайн-кэша всегда проверяются на сервере.
-    if request.path in {"/", "/index.html", "/kiosk", "/kiosk.html", "/tv", "/tv.html", "/sw.js"}:
+    origin = request.headers.get("Origin")
+    if request.path.startswith("/api/") and origin in WEB_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = ", ".join(filter(None, [response.headers.get("Vary"), "Origin"]))
+    # Личные данные и страницы не должны попадать в общий кэш CDN.
+    if request.path.startswith("/api/") or request.path in {"/", "/index.html", "/kiosk", "/kiosk.html", "/tv", "/tv.html", "/sw.js"}:
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    elif request.method in {"GET", "HEAD"} and response.status == 200 and Path(request.path).suffix.lower() in {".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".woff", ".woff2"}:
+        response.headers["Cache-Control"] = "public, max-age=3600"
+
+
+async def handle_api_preflight(request: web.Request) -> web.Response:
+    # Разрешаем веб-приложению обращаться к отдельному домену авторизации.
+    if request.headers.get("Origin") not in WEB_ORIGINS:
+        return web.Response(status=403)
+    return web.Response(status=204, headers={
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    })
 
 
 async def handle_index(request: web.Request) -> web.FileResponse:
@@ -523,6 +540,7 @@ def create_web_app() -> web.Application:
     app = web.Application(middlewares=[timing_middleware])
     app.on_cleanup.append(cleanup_upstream_clients)
     app.on_response_prepare.append(prevent_stale_pages)
+    app.router.add_options("/api/{path:.*}", handle_api_preflight)
     app.router.add_get("/", handle_index)
     app.router.add_get("/tv", handle_tv)
     app.router.add_get("/tv.html", handle_tv)
