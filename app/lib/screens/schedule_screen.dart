@@ -772,8 +772,11 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                             _selectedDay = dayNum;
                             _userSelectedManually = true;
                           }),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
+                          borderRadius: BorderRadius.circular(isSelected ? 12 : 24),
+                          child: AnimatedContainer(
+                            duration: MediaQuery.disableAnimationsOf(context)
+                                ? Duration.zero : const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
                               color: isSelected
@@ -781,7 +784,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                                   : (Theme.of(context)
                                       .colorScheme
                                       .surfaceContainerLow),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(isSelected ? 12 : 24),
                               border: Border.all(
                                 color: isSelected
                                     ? Theme.of(context).colorScheme.primary

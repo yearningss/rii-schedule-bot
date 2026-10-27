@@ -9,6 +9,23 @@ import WidgetKit
 import SwiftUI
 import UIKit
 
+// Тональные роли общей темы с адаптацией к системной яркости.
+private enum WidgetPalette {
+    static let primary = adaptive(light: 0x386A52, dark: 0x9DD3B5)
+    static let onPrimary = adaptive(light: 0xFFFFFF, dark: 0x003824)
+    static let surface = adaptive(light: 0xF0F5EF, dark: 0x181D19)
+    static let tertiary = adaptive(light: 0x3C6472, dark: 0xA4CDDD)
+    static let corner: CGFloat = 20
+    private static func adaptive(light: UInt32, dark: UInt32) -> Color {
+        Color(UIColor { traits in
+            let value = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: CGFloat((value >> 16) & 255) / 255,
+                           green: CGFloat((value >> 8) & 255) / 255,
+                           blue: CGFloat(value & 255) / 255, alpha: 1)
+        })
+    }
+}
+
 // Модель элемента расписания для виджета
 struct ParaModel {
     let num: Int
@@ -528,11 +545,11 @@ struct ScheduleSmallView: View {
             HStack {
                 Text(entry.groupName)
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(WidgetPalette.onPrimary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.blue)
-                    .cornerRadius(6)
+                    .background(WidgetPalette.primary)
+                    .cornerRadius(WidgetPalette.corner)
                 
                 Spacer()
                 
@@ -543,7 +560,7 @@ struct ScheduleSmallView: View {
             
             Text(entry.statusText)
                 .font(.system(size: 10.5, weight: .semibold))
-                .foregroundColor(entry.isLive ? .green : .blue)
+                .foregroundColor(entry.isLive ? WidgetPalette.primary : WidgetPalette.tertiary)
                 .lineLimit(1)
                 .padding(.top, 2)
             
@@ -560,7 +577,7 @@ struct ScheduleSmallView: View {
                 if !entry.currentAud.isEmpty {
                     Text(entry.currentAud)
                         .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundColor(.blue)
+                        .foregroundColor(WidgetPalette.primary)
                 }
             } else if let nextNum = entry.nextNum, !entry.nextSubject.isEmpty {
                 Text("След: \(nextNum) пара")
@@ -575,7 +592,7 @@ struct ScheduleSmallView: View {
                 if !entry.nextAud.isEmpty {
                     Text(entry.nextAud)
                         .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundColor(.blue)
+                        .foregroundColor(WidgetPalette.primary)
                 }
             } else {
                 Spacer()
@@ -601,11 +618,11 @@ struct ScheduleMediumView: View {
             HStack {
                 Text(entry.groupName)
                     .font(.system(size: 12.5, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(WidgetPalette.onPrimary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(Color.blue)
-                    .cornerRadius(6)
+                    .background(WidgetPalette.primary)
+                    .cornerRadius(WidgetPalette.corner)
                 
                 Text("\(entry.dayOfWeek), \(entry.dateFormatted)")
                     .font(.system(size: 12, weight: .medium))
@@ -618,8 +635,8 @@ struct ScheduleMediumView: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.12))
-                    .cornerRadius(4)
+                    .background(WidgetPalette.primary.opacity(0.12))
+                    .cornerRadius(WidgetPalette.corner)
             }
             
             Divider()
@@ -634,7 +651,7 @@ struct ScheduleMediumView: View {
                             .frame(width: 6, height: 6)
                         Text(entry.statusText)
                             .font(.system(size: 10.5, weight: .bold))
-                            .foregroundColor(entry.isLive ? .green : .blue)
+                            .foregroundColor(entry.isLive ? WidgetPalette.primary : WidgetPalette.tertiary)
                             .lineLimit(1)
                     }
                     
@@ -652,7 +669,7 @@ struct ScheduleMediumView: View {
                             if !entry.currentAud.isEmpty {
                                 Text(entry.currentAud)
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(WidgetPalette.primary)
                             }
                             if !entry.currentTeacher.isEmpty {
                                 Text("• \(entry.currentTeacher)")
@@ -692,7 +709,7 @@ struct ScheduleMediumView: View {
                         if !entry.nextAud.isEmpty {
                             Text(entry.nextAud)
                                 .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.blue)
+                                .foregroundColor(WidgetPalette.primary)
                         }
                     } else {
                         Text(entry.nextStatus.isEmpty ? "Больше пар нет" : entry.nextStatus)
@@ -738,7 +755,7 @@ struct ScheduleWidgetEntryView: View {
                 ScheduleMediumView(entry: entry)
             }
         }
-        .widgetBackground(Color(UIColor.systemBackground))
+        .widgetBackground(WidgetPalette.surface)
     }
 }
 
@@ -782,11 +799,11 @@ struct ScheduleLiveActivity: Widget {
                     HStack {
                         Text(context.state.statusTitle)
                             .font(.caption.bold())
-                            .foregroundColor(.white)
+                            .foregroundColor(WidgetPalette.onPrimary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(context.state.isBreak ? Color.orange : Color(red: 0.15, green: 0.39, blue: 0.92))
-                            .cornerRadius(6)
+                            .background(context.state.isBreak ? WidgetPalette.tertiary : WidgetPalette.primary)
+                            .cornerRadius(WidgetPalette.corner)
 
                         if !context.state.room.isEmpty {
                             Text(context.state.room)
@@ -824,19 +841,19 @@ struct ScheduleLiveActivity: Widget {
 
                     let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
                     Text(timerInterval: Date()...endDate, countsDown: true)
-                        .font(.title2.bold().monospacedDigit())
-                        .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                        .font(.system(.title2, design: .rounded).bold().monospacedDigit())
+                        .foregroundColor(context.state.isBreak ? WidgetPalette.tertiary : WidgetPalette.primary)
                 }
             }
             .padding(14)
-            .activityBackgroundTint(Color(UIColor.secondarySystemBackground))
+            .activityBackgroundTint(WidgetPalette.surface)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(context.state.statusTitle)
                             .font(.caption.bold())
-                            .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                            .foregroundColor(context.state.isBreak ? WidgetPalette.tertiary : WidgetPalette.primary)
                         if !context.state.room.isEmpty {
                             Text(context.state.room)
                                 .font(.caption2)
@@ -848,8 +865,8 @@ struct ScheduleLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
                     Text(timerInterval: Date()...endDate, countsDown: true)
-                        .font(.title3.bold().monospacedDigit())
-                        .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                        .font(.system(.title3, design: .rounded).bold().monospacedDigit())
+                        .foregroundColor(context.state.isBreak ? WidgetPalette.tertiary : WidgetPalette.primary)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -870,17 +887,17 @@ struct ScheduleLiveActivity: Widget {
             } compactLeading: {
                 Text(context.state.statusTitle.prefix(4))
                     .font(.caption2.bold())
-                    .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                    .foregroundColor(context.state.isBreak ? WidgetPalette.tertiary : WidgetPalette.primary)
             } compactTrailing: {
                 let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
                 Text(timerInterval: Date()...endDate, countsDown: true)
                     .font(.caption2.bold().monospacedDigit())
-                    .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                    .foregroundColor(context.state.isBreak ? WidgetPalette.tertiary : WidgetPalette.primary)
             } minimal: {
                 let endDate = Date(timeIntervalSince1970: context.state.endTimeEpoch / 1000.0)
                 Text(timerInterval: Date()...endDate, countsDown: true)
                     .font(.caption2.bold().monospacedDigit())
-                    .foregroundColor(context.state.isBreak ? .orange : Color(red: 0.15, green: 0.39, blue: 0.92))
+                    .foregroundColor(context.state.isBreak ? WidgetPalette.tertiary : WidgetPalette.primary)
             }
         }
     }

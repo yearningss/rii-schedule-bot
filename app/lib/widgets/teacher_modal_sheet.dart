@@ -131,7 +131,7 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                                         info.photoUrl,
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => Icon(
-                                          Icons.person,
+                                          Icons.person_rounded,
                                           size: 40,
                                           color: isDark
                                               ? Colors.grey[500]
@@ -139,7 +139,7 @@ class _TeacherModalSheetState extends State<TeacherModalSheet> {
                                         ),
                                       )
                                     : Icon(
-                                        Icons.person,
+                                        Icons.person_rounded,
                                         size: 40,
                                         color: isDark
                                             ? Colors.grey[500]
@@ -562,14 +562,14 @@ class _TeachersCatalogSheetState extends State<TeachersCatalogSheet> {
                                           t.photoUrl,
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) => Icon(
-                                            Icons.person,
+                                            Icons.person_rounded,
                                             color: isDark
                                                 ? Colors.grey[500]
                                                 : Colors.grey[400],
                                           ),
                                         )
                                       : Icon(
-                                          Icons.person,
+                                          Icons.person_rounded,
                                           color: isDark
                                               ? Colors.grey[500]
                                               : Colors.grey[400],

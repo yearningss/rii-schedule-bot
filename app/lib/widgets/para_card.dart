@@ -34,11 +34,14 @@ class ParaCard extends StatelessWidget {
     final cardBg =
         isOngoing ? colors.primaryContainer : colors.surfaceContainerLow;
 
-    return Container(
+    return AnimatedContainer(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero : const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(isOngoing ? 28 : 20),
         border: Border.all(
           color: borderColor,
           width: isOngoing || isNext ? 1.8 : 1.0,

@@ -324,9 +324,9 @@ function renderTeacherHtml(teacher, post) {
   const cleanPost = (post || '').trim();
   const postDisplay = cleanPost ? ` (${cleanPost})` : '';
   return `<button type="button" class="teacher-btn-chip" data-teacher="${escapeAttr(cleanTeacher)}" data-post="${escapeAttr(cleanPost)}" title="Профиль преподавателя">
-    <svg class="teacher-icon" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    <span class="material-symbols-rounded teacher-icon" aria-hidden="true">person</span>
     <span class="teacher-name">${escapeHtml(cleanTeacher)}</span>${postDisplay ? `<span class="teacher-post-hint">${escapeHtml(postDisplay)}</span>` : ''}
-    <svg class="teacher-arrow" viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+    <span class="material-symbols-rounded teacher-arrow" aria-hidden="true">chevron_right</span>
   </button>`;
 }
 

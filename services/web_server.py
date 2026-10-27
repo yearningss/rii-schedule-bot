@@ -30,7 +30,7 @@ async def prevent_stale_pages(request: web.Request, response: web.StreamResponse
     # Личные данные и страницы не должны попадать в общий кэш CDN.
     if request.path.startswith("/api/") or request.path in {"/", "/index.html", "/kiosk", "/kiosk.html", "/tv", "/tv.html", "/sw.js"}:
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
-    elif request.method in {"GET", "HEAD"} and response.status == 200 and Path(request.path).suffix.lower() in {".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".woff", ".woff2"}:
+    elif request.method in {"GET", "HEAD"} and response.status == 200 and Path(request.path).suffix.lower() in {".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".woff", ".woff2", ".ttf"}:
         response.headers["Cache-Control"] = "public, max-age=3600"
 
 

@@ -106,7 +106,7 @@ class _GroupPickerScreenState extends State<GroupPickerScreen> {
               onChanged: _filterGroups,
               decoration: InputDecoration(
                 hintText: 'Поиск группы (например: ИВТ-61)...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),

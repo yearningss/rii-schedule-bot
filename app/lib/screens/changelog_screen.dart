@@ -189,10 +189,35 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<ReleaseModel> _fallbackHistory() {
     return [
       ReleaseModel(
+        tag: '1.0.26',
+        title: 'Релиз v1.0.26 (сборка 27)',
+        publishedAt: '2026-10-27T00:00:00Z',
+        isCurrent: true,
+        htmlUrl:
+            'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.26',
+        rawBody: '''* Material 3 Expressive: формы, тональные поверхности и анимации.
+* Локальный Roboto Flex и округлённые значки.
+* Обновлены виджеты Android, iOS и Live Activity.''',
+        assets: [
+          ReleaseAsset(
+            name: 'RiiSchedule.apk',
+            sizeBytes: 0,
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.26/RiiSchedule.apk',
+          ),
+          ReleaseAsset(
+            name: 'RiiSchedule.ipa',
+            sizeBytes: 0,
+            downloadUrl:
+                'https://github.com/yearningss/rii-schedule-bot/releases/download/v1.0.26/RiiSchedule.ipa',
+          ),
+        ],
+      ),
+      ReleaseModel(
         tag: '1.0.25',
         title: 'Релиз v1.0.25 (сборка 26)',
         publishedAt: '2026-10-05T00:00:00Z',
-        isCurrent: true,
+        isCurrent: false,
         htmlUrl:
             'https://github.com/yearningss/rii-schedule-bot/releases/tag/v1.0.25',
         rawBody: '''* Расписание переведено на myrii.ru через Яндекс CDN.

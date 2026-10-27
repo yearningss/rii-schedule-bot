@@ -1,4 +1,25 @@
-/* Общие семантические токены Material 3. Шрифты работают без внешних зависимостей. */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  src: url('/fonts/MaterialSymbolsRounded.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+}
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded'; font-weight: 500; font-style: normal;
+  font-size: 20px; line-height: 1; letter-spacing: normal; text-transform: none;
+  display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr;
+  font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased;
+}
+/* Локальный вариативный шрифт с кириллицей, без запросов к Google Fonts. */
+@font-face {
+  font-family: 'Roboto Flex';
+  src: url('/fonts/RobotoFlex.ttf') format('truetype');
+  font-weight: 100 1000;
+  font-style: normal;
+  font-display: swap;
+}
+/* Общие семантические токены Material 3. Типографика и формы Expressive. */
 :root {
   --md-sys-color-primary: #386a52;
   --md-sys-color-on-primary: #ffffff;
@@ -25,10 +46,15 @@
   --md-sys-color-error-container: #ffdad6;
   --md-sys-color-on-error-container: #410002;
   --md-sys-shape-corner-small: 12px;
-  --md-sys-shape-corner-large: 24px;
-  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-large: 28px;
+  --md-sys-shape-corner-extra-large: 32px;
   --md-sys-shape-corner-full: 9999px;
-  --md-sys-motion-duration: 250ms;
+  --md-sys-motion-duration: 300ms;
+  --md-sys-motion-spatial: cubic-bezier(.2, .85, .25, 1.1);
+  --md-sys-spacing-unit: 8px;
+  --md-sys-typescale-title-medium-size: 1rem;
+  --md-sys-typescale-label-large-size: .875rem;
+  --md-sys-typescale-body-medium-size: .875rem;
   --md-sys-motion-easing: cubic-bezier(.2, 0, 0, 1);
 }
 @media (prefers-color-scheme: dark) { :root {
@@ -136,7 +162,7 @@
   --accent-green: var(--md-sys-color-primary);
   --accent-purple: var(--md-sys-color-tertiary);
 }
-body, button, input { font-family: Roboto, "Segoe UI", sans-serif; }
+body, button, input { font-family: "Roboto Flex", Roboto, "Segoe UI", sans-serif; font-optical-sizing: auto; }
 button, input, a { touch-action: manipulation; }
 button:focus-visible, a:focus-visible, input:focus-visible {
   outline: 3px solid var(--md-sys-color-primary); outline-offset: 3px;
@@ -145,19 +171,19 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .app-header { padding: calc(24px + env(safe-area-inset-top, 0px)) 24px 16px; border: 0; backdrop-filter: none; }
 .brand-heading { margin-bottom: 24px; }
 .brand-eyebrow { color: var(--hint-color); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; }
-.brand-heading h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.15; font-weight: 700; margin-top: 8px; }
+.brand-heading h1 { font-size: clamp(28px, 6vw, 40px); font-variation-settings: "wdth" 110; letter-spacing: -.8px; line-height: 1.15; font-weight: 700; margin-top: 8px; }
 .header-top { flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .group-btn { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); border: 0; min-height: 48px; border-radius: var(--md-sys-shape-corner-full); padding: 12px 20px; }
 .week-toggle, .subgroup-selector { border: 1px solid var(--border-color); padding: 4px; border-radius: var(--md-sys-shape-corner-full); background: var(--secondary-bg); }
 .week-btn, .sg-btn { min-height: 48px; border-radius: var(--md-sys-shape-corner-full); }
 .week-btn.active, .sg-btn.active { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); box-shadow: none; }
 .days-nav { gap: 8px; }
-.day-chip { min-height: 52px; border-radius: var(--md-sys-shape-corner-full); background: var(--secondary-bg); color: var(--text-color); }
-.day-chip.active { background: var(--btn-color); color: var(--btn-text-color); }
+.day-chip { min-height: 52px; border-radius: var(--md-sys-shape-corner-large); background: var(--secondary-bg); color: var(--text-color); }
+.day-chip.active { background: var(--btn-color); color: var(--btn-text-color); border-radius: var(--md-sys-shape-corner-small); font-weight: 750; }
 .schedule-container { padding: 16px 24px calc(112px + env(safe-area-inset-bottom, 0px)); }
 .cards-list { gap: 16px; }
-.para-card { padding: 24px; border-radius: var(--md-sys-shape-corner-large); box-shadow: none; }
-.para-card.is-ongoing { background: var(--ongoing-bg); color: var(--md-sys-color-on-primary-container); border-color: var(--ongoing-color); }
+.para-card { transition: background var(--md-sys-motion-duration) var(--md-sys-motion-easing), border-radius var(--md-sys-motion-duration) var(--md-sys-motion-spatial); padding: 24px; border-radius: var(--md-sys-shape-corner-large); box-shadow: none; }
+.para-card.is-ongoing { border-radius: var(--md-sys-shape-corner-extra-large); background: var(--ongoing-bg); color: var(--md-sys-color-on-primary-container); border-color: var(--ongoing-color); }
 .para-card.is-next { background: var(--card-bg); border-color: var(--next-color); }
 .para-header, .para-num-time { flex-wrap: wrap; gap: 8px; }
 .para-subject { font-size: 20px; line-height: 1.4; margin: 16px 0; overflow-wrap: anywhere; }
@@ -245,8 +271,8 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   pointer-events: none;
 }
 .has-sliding-indicator.indicator-ready::before {
-  transition: transform 380ms cubic-bezier(.22, 1, .36, 1),
-              width 380ms cubic-bezier(.22, 1, .36, 1);
+  transition: transform 380ms var(--md-sys-motion-spatial),
+              width 380ms var(--md-sys-motion-spatial);
 }
 .has-sliding-indicator > button {
   position: relative;
@@ -301,4 +327,14 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .teacher-btn-chip { min-height: 44px; padding: 8px 10px; }
   .teacher-btn-chip .teacher-post-hint { display: none; }
   .app-footer { padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Нажатие меняет форму, сохраняя размеры и положение элементов. */
+button { transition: border-radius var(--md-sys-motion-duration) var(--md-sys-motion-spatial), background-color 180ms var(--md-sys-motion-easing), color 180ms var(--md-sys-motion-easing); }
+button:active { border-radius: var(--md-sys-shape-corner-small); }
+.group-item-btn { background: var(--md-sys-color-surface-container); border: 0; margin-block: 4px; }
+.group-item-btn:hover { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.tv-card-group-pill, .kiosk-group-card .group-name { font-weight: 750; font-variation-settings: 'wdth' 105; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Общая скользящая плашка для выбора недели и подгруппы на всех платформах.
+/// РћР±С‰Р°СЏ СЃРєРѕР»СЊР·СЏС‰Р°СЏ РїР»Р°С€РєР° РґР»СЏ РІС‹Р±РѕСЂР° РЅРµРґРµР»Рё Рё РїРѕРґРіСЂСѓРїРїС‹ РЅР° РІСЃРµС… РїР»Р°С‚С„РѕСЂРјР°С….
 class SlidingSelector extends StatelessWidget {
   final List<String> labels;
   final int selectedIndex;
@@ -22,8 +22,7 @@ class SlidingSelector extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Padding(
         padding: const EdgeInsets.all(4),
@@ -34,7 +33,7 @@ class SlidingSelector extends StatelessWidget {
               Positioned.fill(
                 child: AnimatedAlign(
                   duration: duration,
-                  curve: Curves.easeOutCubic,
+                  curve: Curves.easeOutBack,
                   alignment: AlignmentDirectional(
                     -1 + 2 * selectedIndex / (labels.length - 1),
                     0,
@@ -44,8 +43,8 @@ class SlidingSelector extends StatelessWidget {
                     height: double.infinity,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: colors.secondaryContainer,
-                        borderRadius: BorderRadius.circular(28),
+                        color: colors.primaryContainer,
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                   ),
@@ -61,9 +60,9 @@ class SlidingSelector extends StatelessWidget {
                         onPressed: () => onSelected(index),
                         style: TextButton.styleFrom(
                           foregroundColor: selected
-                              ? colors.onSecondaryContainer
+                              ? colors.onPrimaryContainer
                               : colors.onSurfaceVariant,
-                          minimumSize: const Size(0, 44),
+                          minimumSize: const Size(0, 48),
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           textStyle: const TextStyle(
                             fontSize: 12,
