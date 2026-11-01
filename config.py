@@ -18,6 +18,8 @@ if not DB_PATH.is_absolute():
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://www.rubinst.ru/schedule.php")
+# Необязательный локальный IPv4 для исходящих запросов расписания.
+API_SOURCE_IP = os.getenv("API_SOURCE_IP", "").strip()
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "300"))
 CHANGE_CHECK_INTERVAL_SECONDS = int(os.getenv("CHANGE_CHECK_INTERVAL_SECONDS", "900"))
 

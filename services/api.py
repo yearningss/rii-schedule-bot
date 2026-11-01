@@ -1,5 +1,6 @@
 # Клиент для работы с API расписания РИИ, форматирование и сравнение изменений на завтра
 import asyncio
+import socket
 import time
 import re
 import json
@@ -9,7 +10,7 @@ import aiohttp
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Dict, List, Optional, Any, Tuple
-from config import API_BASE_URL, CACHE_TTL_SECONDS
+from config import API_BASE_URL, API_SOURCE_IP, CACHE_TTL_SECONDS
 from services.singleflight import SingleFlight
 
 RUBTSOVSK_TZ = ZoneInfo("Asia/Barnaul")
@@ -25,7 +26,12 @@ class RiiApiClient:
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
-            connector = aiohttp.TCPConnector(ssl=False, limit_per_host=12)
+            connector = aiohttp.TCPConnector(
+                ssl=False,
+                limit_per_host=12,
+                local_addr=(API_SOURCE_IP, 0) if API_SOURCE_IP else None,
+                family=socket.AF_INET if API_SOURCE_IP else socket.AF_UNSPEC,
+            )
             timeout = aiohttp.ClientTimeout(total=15, sock_connect=5, sock_read=10)
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
