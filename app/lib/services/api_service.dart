@@ -15,12 +15,14 @@ class ApiService {
       final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
       return data.map((json) => GroupItem.fromJson(json)).toList();
     }
-    throw Exception('Не удалось загрузить список групп (код ${res.statusCode})');
+    throw Exception(
+        'Не удалось загрузить список групп (код ${res.statusCode})');
   }
 
   // Загрузка расписания конкретной группы
   Future<Map<String, dynamic>> getSchedule(int groupId) async {
-    final res = await http.get(Uri.parse('$baseUrl/api/schedule?group_id=$groupId'));
+    final res =
+        await http.get(Uri.parse('$baseUrl/api/schedule?group_id=$groupId'));
     if (res.statusCode == 200) {
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     }
@@ -42,7 +44,8 @@ class ApiService {
       });
       final res = await http.get(uri).timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
+        final Map<String, dynamic> data =
+            jsonDecode(utf8.decode(res.bodyBytes));
         final info = TeacherInfo.fromJson(data);
         _teacherCache[cacheKey] = info;
         return info;
@@ -62,7 +65,9 @@ class ApiService {
       final res = await http.get(uri).timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
-        return data.map((json) => TeacherInfo.fromJson(json as Map<String, dynamic>)).toList();
+        return data
+            .map((json) => TeacherInfo.fromJson(json as Map<String, dynamic>))
+            .toList();
       }
     } catch (e) {
       debugPrint('Ошибка загрузки списка преподавателей: $e');
@@ -80,8 +85,15 @@ class ApiService {
   }
 
   // Проверка статуса авторизации сессии (poll)
-  Future<Map<String, dynamic>> checkAuthSession(String sessionToken) async {
-    final res = await http.get(Uri.parse('$authBaseUrl/api/app/auth/check?session_token=$sessionToken'));
+  Future<Map<String, dynamic>> checkAuthSession(
+      String sessionToken, String code) async {
+    final res = await http
+        .post(
+          Uri.parse('$authBaseUrl/api/app/auth/check'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'session_token': sessionToken, 'code': code}),
+        )
+        .timeout(const Duration(seconds: 10));
     if (res.statusCode == 200) {
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     }
@@ -89,28 +101,14 @@ class ApiService {
   }
 
   // Авторизация / регистрация через Яндекс ID
-  Future<Map<String, dynamic>> authWithYandex({
-    required String token,
-    required String yandexId,
-    String? firstName,
-    String? lastName,
-    String? displayName,
-    String? email,
-    String? avatarUrl,
-  }) async {
-    final res = await http.post(
-      Uri.parse('$authBaseUrl/api/app/auth/yandex'),
-      headers: {'Content-Type': 'application/json; charset=utf-8'},
-      body: jsonEncode({
-        'access_token': token,
-        'yandex_id': yandexId,
-        'first_name': firstName,
-        'last_name': lastName,
-        'display_name': displayName,
-        'email': email,
-        'avatar_url': avatarUrl,
-      }),
-    );
+  Future<Map<String, dynamic>> authWithYandex({required String token}) async {
+    final res = await http
+        .post(
+          Uri.parse('$authBaseUrl/api/app/auth/yandex'),
+          headers: {'Content-Type': 'application/json; charset=utf-8'},
+          body: jsonEncode({'access_token': token}),
+        )
+        .timeout(const Duration(seconds: 12));
     if (res.statusCode == 200) {
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     }
@@ -140,7 +138,6 @@ class ApiService {
     String? groupName,
     int? subgroup,
     String? avatarUrl,
-    String? avatarBase64,
     bool? notificationsEnabled,
     int? notifyBeforeMins,
     bool? notifyLessonStart,
@@ -152,10 +149,11 @@ class ApiService {
     if (groupName != null) body['group_name'] = groupName;
     if (subgroup != null) body['subgroup'] = subgroup;
     if (avatarUrl != null) body['avatar_url'] = avatarUrl;
-    if (avatarBase64 != null) body['avatar_base64'] = avatarBase64;
-    if (notificationsEnabled != null) body['notifications_enabled'] = notificationsEnabled ? 1 : 0;
+    if (notificationsEnabled != null)
+      body['notifications_enabled'] = notificationsEnabled ? 1 : 0;
     if (notifyBeforeMins != null) body['notify_before_mins'] = notifyBeforeMins;
-    if (notifyLessonStart != null) body['notify_lesson_start'] = notifyLessonStart ? 1 : 0;
+    if (notifyLessonStart != null)
+      body['notify_lesson_start'] = notifyLessonStart ? 1 : 0;
     if (notifyBreaks != null) body['notify_breaks'] = notifyBreaks ? 1 : 0;
     if (notifyChanges != null) body['notify_changes'] = notifyChanges ? 1 : 0;
 
@@ -194,26 +192,33 @@ class ApiService {
   }) async {
     final body = <String, dynamic>{
       'device_id': deviceId,
-      'platform': platform ?? (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android'),
+      'platform': platform ??
+          (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android'),
     };
-    if (clientUserId != null && clientUserId.isNotEmpty) body['client_user_id'] = clientUserId;
+    if (clientUserId != null && clientUserId.isNotEmpty)
+      body['client_user_id'] = clientUserId;
     if (groupId != null) body['group_id'] = groupId;
     if (groupName != null) body['group_name'] = groupName;
     if (subgroup != null) body['subgroup'] = subgroup;
-    if (notificationsEnabled != null) body['notifications_enabled'] = notificationsEnabled ? 1 : 0;
+    if (notificationsEnabled != null)
+      body['notifications_enabled'] = notificationsEnabled ? 1 : 0;
     if (notifyBeforeMins != null) body['notify_before_mins'] = notifyBeforeMins;
-    if (notifyLessonStart != null) body['notify_lesson_start'] = notifyLessonStart ? 1 : 0;
+    if (notifyLessonStart != null)
+      body['notify_lesson_start'] = notifyLessonStart ? 1 : 0;
     if (notifyBreaks != null) body['notify_breaks'] = notifyBreaks ? 1 : 0;
     if (notifyChanges != null) body['notify_changes'] = notifyChanges ? 1 : 0;
     if (appVersion != null) body['app_version'] = appVersion;
-    if (authToken != null && authToken.isNotEmpty) body['auth_token'] = authToken;
+    if (authToken != null && authToken.isNotEmpty)
+      body['auth_token'] = authToken;
 
     try {
-      final res = await http.post(
-        Uri.parse('$authBaseUrl/api/app/device/sync'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 6));
+      final res = await http
+          .post(
+            Uri.parse('$authBaseUrl/api/app/device/sync'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -230,15 +235,18 @@ class ApiService {
   }) async {
     final body = <String, dynamic>{
       'device_id': deviceId,
-      if (clientUserId != null && clientUserId.isNotEmpty) 'client_user_id': clientUserId,
+      if (clientUserId != null && clientUserId.isNotEmpty)
+        'client_user_id': clientUserId,
       if (authToken != null && authToken.isNotEmpty) 'auth_token': authToken,
     };
     try {
-      final res = await http.post(
-        Uri.parse('$authBaseUrl/api/app/device/unlink'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 5));
+      final res = await http
+          .post(
+            Uri.parse('$authBaseUrl/api/app/device/unlink'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 5));
       return res.statusCode == 200;
     } catch (_) {
       return false;
@@ -249,8 +257,8 @@ class ApiService {
   Future<bool> checkConnection() async {
     try {
       final res = await http.get(Uri.parse('$baseUrl/api/groups')).timeout(
-        const Duration(seconds: 4),
-      );
+            const Duration(seconds: 4),
+          );
       return res.statusCode == 200;
     } catch (_) {
       return false;
@@ -268,11 +276,14 @@ class ApiService {
     final targetAsset = isIOS ? 'RiiSchedule.ipa' : 'RiiSchedule.apk';
 
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/app/version$platformParam')).timeout(
-        const Duration(seconds: 5),
-      );
+      final res = await http
+          .get(Uri.parse('$baseUrl/api/app/version$platformParam'))
+          .timeout(
+            const Duration(seconds: 5),
+          );
       if (res.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+        final data =
+            jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
         serverUpdate = AppUpdateInfo.fromJson(
           data,
           currentBuild: currentBuild,
@@ -285,17 +296,22 @@ class ApiService {
     // Резервная проверка напрямую через GitHub Releases
     try {
       final res = await http.get(
-        Uri.parse('https://api.github.com/repos/yearningss/rii-schedule-bot/releases/latest'),
+        Uri.parse(
+            'https://api.github.com/repos/yearningss/rii-schedule-bot/releases/latest'),
         headers: {'Accept': 'application/vnd.github.v3+json'},
       ).timeout(const Duration(seconds: 5));
       if (res.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-        final tagName = (data['tag_name'] ?? '').toString().replaceAll('v', '').trim();
+        final data =
+            jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+        final tagName =
+            (data['tag_name'] ?? '').toString().replaceAll('v', '').trim();
         final name = (data['name'] ?? '').toString();
-        final match = RegExp(r'(?:сборка|\+)\s*(\d+)', caseSensitive: false).firstMatch(name);
+        final match = RegExp(r'(?:сборка|\+)\s*(\d+)', caseSensitive: false)
+            .firstMatch(name);
         final buildNum = match != null ? int.tryParse(match.group(1)!) ?? 1 : 1;
         final notes = data['body']?.toString();
-        var downloadUrl = 'https://github.com/yearningss/rii-schedule-bot/releases/latest';
+        var downloadUrl =
+            'https://github.com/yearningss/rii-schedule-bot/releases/latest';
         if (data['assets'] is List) {
           for (final asset in data['assets']) {
             if (asset is Map && asset['name'] == targetAsset) {
@@ -304,7 +320,8 @@ class ApiService {
             }
           }
         }
-        final hasNewer = (buildNum > currentBuild) || (AppUpdateInfo.compareVersions(tagName, currentVersion) > 0);
+        final hasNewer = (buildNum > currentBuild) ||
+            (AppUpdateInfo.compareVersions(tagName, currentVersion) > 0);
         return AppUpdateInfo(
           latestVersion: tagName.isNotEmpty ? tagName : '1.0.0',
           latestBuild: buildNum,
@@ -322,9 +339,10 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getChangelog() async {
     // 1. Попытка запроса через наш бэкенд
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/app/changelog')).timeout(
-        const Duration(seconds: 4),
-      );
+      final res =
+          await http.get(Uri.parse('$baseUrl/api/app/changelog')).timeout(
+                const Duration(seconds: 4),
+              );
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
         if (data is List && data.isNotEmpty) {
@@ -338,7 +356,8 @@ class ApiService {
     // 2. Резервный запрос напрямую к GitHub Releases API
     try {
       final res = await http.get(
-        Uri.parse('https://api.github.com/repos/yearningss/rii-schedule-bot/releases'),
+        Uri.parse(
+            'https://api.github.com/repos/yearningss/rii-schedule-bot/releases'),
         headers: {'Accept': 'application/vnd.github.v3+json'},
       ).timeout(const Duration(seconds: 5));
       if (res.statusCode == 200) {
@@ -360,7 +379,10 @@ class ApiService {
               }
             }
             list.add({
-              'tag_name': (item['tag_name'] ?? '').toString().replaceAll('v', '').trim(),
+              'tag_name': (item['tag_name'] ?? '')
+                  .toString()
+                  .replaceAll('v', '')
+                  .trim(),
               'name': item['name'] ?? '',
               'published_at': item['published_at'] ?? '',
               'body': item['body'] ?? '',

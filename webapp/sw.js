@@ -1,10 +1,10 @@
 // Service Worker для поддержки PWA и офлайн-режима мобильного приложения
-const CACHE_NAME = 'rii-schedule-pwa-v13';
+const CACHE_NAME = 'rii-schedule-pwa-v14';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.css?v=13',
-  '/app.js?v=13',
+  '/app.js?v=14',
   '/sliding-selector.js?v=13',
   '/material.css?v=13',
   '/fonts/RobotoFlex.ttf',
@@ -28,7 +28,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(k => k.startsWith("rii-schedule-pwa-") && k !== CACHE_NAME).map(k => caches.delete(k))
       );
     })
   );
@@ -63,7 +63,10 @@ self.addEventListener('fetch', event => {
   }
 
   // Для API запросов: Network-First (свежие данные с сервера, при отсутствии связи - кэш)
-  if (url.pathname.startsWith('/api/')) {
+  const publicApi = new Set(['/api/groups', '/api/schedule', '/api/teacher',
+    '/api/teachers', '/api/season/theme']);
+  if (url.pathname.startsWith('/api/') && !publicApi.has(url.pathname)) return;
+  if (publicApi.has(url.pathname)) {
     event.respondWith(
       fetch(event.request)
         .then(response => {

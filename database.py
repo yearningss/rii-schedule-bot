@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import hmac
+import re
 import logging
 import os
 import secrets
@@ -435,10 +438,12 @@ async def get_stats() -> Dict[str, int]:
 
 
 # 7. Авторизация приложения и токены сессий
-async def create_auth_session(session_token: str, expires_in_mins: int = 15) -> bool:
+async def create_auth_session(session_token: str, expires_in_mins: int = 5) -> bool:
     async with async_session_maker() as session:
         async with session.begin():
-            expires_at = datetime.utcnow() + timedelta(minutes=expires_in_mins)
+            now = datetime.utcnow()
+            await session.execute(delete(AppAuthSession).where(AppAuthSession.expires_at <= now))
+            expires_at = now + timedelta(minutes=expires_in_mins)
             sess = AppAuthSession(
                 session_token=session_token,
                 status="pending",
@@ -460,28 +465,15 @@ async def confirm_auth_session(
     async with async_session_maker() as session:
         async with session.begin():
             now = datetime.utcnow()
-            stmt = select(AppAuthSession).where(
-                AppAuthSession.session_token == session_token,
-                AppAuthSession.expires_at > now,
-                AppAuthSession.status == "pending"
+            result = await session.execute(
+                update(AppAuthSession).where(
+                    AppAuthSession.session_token == session_token,
+                    AppAuthSession.expires_at > now,
+                    AppAuthSession.status == "pending",
+                ).values(user_id=user_id, status="confirmed", auth_token=auth_token)
             )
-            result = await session.execute(stmt)
-            auth_sess = result.scalar_one_or_none()
-            if not auth_sess:
+            if not result.rowcount:
                 return None
-
-            auth_sess.user_id = user_id
-            auth_sess.status = "confirmed"
-            auth_sess.auth_token = auth_token
-
-            # Создаем или обновляем связь токена в app_users
-            app_user_stmt = select(AppUser).where(AppUser.auth_token == auth_token)
-            app_user = (await session.execute(app_user_stmt)).scalar_one_or_none()
-            if app_user:
-                app_user.user_id = user_id
-                app_user.last_active = now
-            else:
-                session.add(AppUser(auth_token=auth_token, user_id=user_id, last_active=now))
 
             # Создаем или обновляем профиль в users
             user_stmt = select(User).where(User.user_id == user_id)
@@ -535,17 +527,59 @@ async def get_auth_session(session_token: str) -> Optional[Dict[str, Any]]:
         now = datetime.utcnow()
         is_expired = sess.expires_at is not None and sess.expires_at <= now
         data["is_expired"] = 1 if is_expired else 0
-        if is_expired and data["status"] == "pending":
+        if is_expired:
             data["status"] = "expired"
         return data
 
 
+def auth_verification_code(secret: str) -> str:
+    return hmac.new(secret.encode(), b"rii-app-login-v2", hashlib.sha256).hexdigest()[:12]
+
+
+async def redeem_auth_session(session_token: str, code: str) -> Optional[Dict[str, Any]]:
+    async with async_session_maker() as session:
+        async with session.begin():
+            row = (await session.execute(select(AppAuthSession).where(
+                AppAuthSession.session_token == session_token,
+                AppAuthSession.status == "confirmed",
+                AppAuthSession.expires_at > datetime.utcnow(),
+            ))).scalar_one_or_none()
+            if not row or not row.user_id or not row.auth_token:
+                return None
+            if not hmac.compare_digest(auth_verification_code(row.auth_token), code):
+                return None
+            result = await session.execute(update(AppAuthSession).where(
+                AppAuthSession.session_token == session_token,
+                AppAuthSession.status == "confirmed",
+                AppAuthSession.expires_at > datetime.utcnow(),
+            ).values(status="consumed", auth_token=None))
+            if not result.rowcount:
+                return None
+            token = f"tg2_{secrets.token_hex(32)}"
+            session.add(AppUser(auth_token=app_token_digest(token), user_id=row.user_id))
+            return {"status": "confirmed", "user_id": row.user_id, "auth_token": token}
+
+
+def is_secure_app_token(token: str) -> bool:
+    return bool(re.fullmatch(r"(?:tg2_[0-9a-f]{64}|ya2_[0-9a-f]{48})", token))
+
+
+def app_token_digest(token: str) -> str:
+    return "sha256:" + hashlib.sha256(token.encode()).hexdigest()
+
+
+def app_token_is_current():
+    return AppUser.created_at > datetime.utcnow() - timedelta(days=30)
+
+
 async def get_user_by_auth_token(auth_token: str) -> Optional[Dict[str, Any]]:
+    if not is_secure_app_token(auth_token):
+        return None
     async with async_session_maker() as session:
         stmt = (
             select(User)
             .join(AppUser, User.user_id == AppUser.user_id)
-            .where(AppUser.auth_token == auth_token)
+            .where(AppUser.auth_token == app_token_digest(auth_token), app_token_is_current())
         )
         user = (await session.execute(stmt)).scalar_one_or_none()
         return user.to_dict() if user else None
@@ -573,38 +607,17 @@ async def register_or_update_device_user(
             target_user_id = None
 
             # 1. Если передан действующий auth_token, ищем пользователя
-            if auth_token:
-                app_u_stmt = select(AppUser).where(AppUser.auth_token == auth_token)
+            if auth_token and is_secure_app_token(auth_token):
+                app_u_stmt = select(AppUser).where(AppUser.auth_token == app_token_digest(auth_token), app_token_is_current())
                 app_u = (await session.execute(app_u_stmt)).scalar_one_or_none()
                 if app_u:
                     target_user_id = app_u.user_id
 
+            if auth_token and target_user_id is None:
+                raise PermissionError("Недействительный токен приложения")
+
             # 2. Если пользователь найден по auth_token
             if target_user_id is not None:
-                # Отвязываем этот device_id и client_user_id от других пользователей
-                unbind_cond = (User.device_id == device_id)
-                if client_user_id:
-                    unbind_cond = unbind_cond | (User.client_user_id == client_user_id)
-
-                await session.execute(
-                    update(User)
-                    .where(User.user_id != target_user_id, User.user_id > 0, unbind_cond)
-                    .values(device_id=None, client_user_id=None, updated_at=now)
-                )
-
-                # Удаляем временные гостевые записи (user_id < 0)
-                await session.execute(
-                    delete(User).where(User.user_id < 0, unbind_cond)
-                )
-
-                # Удаляем временные dev токены
-                tokens_to_del = [f"dev_{device_id}"]
-                if client_user_id:
-                    tokens_to_del.append(f"dev_{client_user_id}")
-                await session.execute(
-                    delete(AppUser).where(AppUser.auth_token.in_(tokens_to_del))
-                )
-
                 # Обновляем целевого пользователя
                 t_user = (await session.execute(select(User).where(User.user_id == target_user_id))).scalar_one_or_none()
                 if t_user:
@@ -684,14 +697,6 @@ async def register_or_update_device_user(
                     delete(User).where(User.user_id < 0, User.user_id != guest_uid, del_cond)
                 )
 
-                synthetic_token = f"dev_{effective_client_id or device_id}"
-                dev_app_u = (await session.execute(select(AppUser).where(AppUser.auth_token == synthetic_token))).scalar_one_or_none()
-                if dev_app_u:
-                    dev_app_u.user_id = guest_uid
-                    dev_app_u.last_active = now
-                else:
-                    session.add(AppUser(auth_token=synthetic_token, user_id=guest_uid, last_active=now))
-
                 return existing_guest.to_dict()
 
             # 4. Новый гость устройства: вычисляем уникальный отрицательный ID
@@ -722,9 +727,6 @@ async def register_or_update_device_user(
             )
             session.add(new_guest)
 
-            synthetic_token = f"dev_{client_user_id or device_id}"
-            session.add(AppUser(auth_token=synthetic_token, user_id=new_user_id, last_active=now))
-
             await session.flush()
             return new_guest.to_dict()
 
@@ -736,31 +738,16 @@ async def unlink_device_user(
 ) -> bool:
     async with async_session_maker() as session:
         async with session.begin():
-            user_ids = set()
-
-            if auth_token:
-                app_u = (await session.execute(select(AppUser).where(AppUser.auth_token == auth_token))).scalar_one_or_none()
-                if app_u:
-                    user_ids.add(app_u.user_id)
-                await session.execute(delete(AppUser).where(AppUser.auth_token == auth_token))
-
-            if device_id:
-                u_res = await session.execute(select(User.user_id).where(User.device_id == device_id, User.user_id > 0))
-                for r in u_res.scalars().all():
-                    user_ids.add(r)
-
-            if client_user_id:
-                u_res = await session.execute(select(User.user_id).where(User.client_user_id == client_user_id, User.user_id > 0))
-                for r in u_res.scalars().all():
-                    user_ids.add(r)
-
-            if user_ids:
-                await session.execute(
-                    update(User)
-                    .where(User.user_id.in_(list(user_ids)))
-                    .values(device_id=None, client_user_id=None, updated_at=datetime.utcnow())
-                )
-
+            if not auth_token or not is_secure_app_token(auth_token):
+                return False
+            app_user = (await session.execute(select(AppUser).where(
+                AppUser.auth_token == app_token_digest(auth_token), app_token_is_current()
+            ))).scalar_one_or_none()
+            if not app_user:
+                return False
+            await session.execute(update(User).where(User.user_id == app_user.user_id)
+                                  .values(device_id=None, client_user_id=None, updated_at=datetime.utcnow()))
+            await session.delete(app_user)
             return True
 
 
@@ -788,9 +775,9 @@ async def register_or_login_yandex_user(
             if user:
                 uid = user.user_id
                 user.first_name = effective_name or user.first_name
-                user.last_name = last_name or user.last_name
-                user.username = effective_login or user.username
-                user.avatar_url = avatar_url or user.avatar_url
+                user.last_name = last_name
+                user.username = effective_login
+                user.avatar_url = avatar_url
                 user.updated_at = now
                 user.last_active = now
             else:
@@ -813,13 +800,8 @@ async def register_or_login_yandex_user(
                 )
                 session.add(user)
 
-            token = f"ya_{secrets.token_hex(24)}"
-            app_u = (await session.execute(select(AppUser).where(AppUser.auth_token == token))).scalar_one_or_none()
-            if app_u:
-                app_u.user_id = uid
-                app_u.last_active = now
-            else:
-                session.add(AppUser(auth_token=token, user_id=uid, last_active=now))
+            token = f"ya2_{secrets.token_hex(24)}"
+            session.add(AppUser(auth_token=app_token_digest(token), user_id=uid, last_active=now))
 
             await session.flush()
             res = user.to_dict()

@@ -27,7 +27,6 @@ class RiiApiClient:
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
             connector = aiohttp.TCPConnector(
-                ssl=False,
                 limit_per_host=12,
                 local_addr=(API_SOURCE_IP, 0) if API_SOURCE_IP else None,
                 family=socket.AF_INET if API_SOURCE_IP else socket.AF_UNSPEC,

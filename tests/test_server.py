@@ -1,4 +1,8 @@
 import asyncio
+import hashlib
+import hmac
+import json
+from urllib.parse import urlencode
 import os
 import tempfile
 import time
@@ -216,6 +220,107 @@ class DatabaseTests(unittest.IsolatedAsyncioTestCase):
             rows = (await connection.execute(database.text("PRAGMA index_list(users)"))).all()
             self.assertIn("idx_users_group_notifications", [row[1] for row in rows])
         await database.engine.dispose()
+
+
+class SecurityTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        await database.init_db()
+        self.client = TestClient(TestServer(web_server.create_web_app()))
+        await self.client.start_server()
+
+    async def asyncTearDown(self):
+        await self.client.close()
+        await database.engine.dispose()
+
+    def telegram_headers(self, user_id, age=0):
+        fields = {"auth_date": str(int(time.time()) - age), "user": json.dumps({"id": user_id})}
+        key = hmac.digest(b"WebAppData", web_server.BOT_TOKEN.encode(), "sha256")
+        fields["hash"] = hmac.new(key, "\n".join(
+            f"{k}={v}" for k, v in sorted(fields.items())
+        ).encode(), hashlib.sha256).hexdigest()
+        return {"X-Telegram-Init-Data": urlencode(fields)}
+
+    async def test_профиль_только_из_проверенной_подписи(self):
+        path = "/api/user?user_id=88202"
+        self.assertEqual((await self.client.get(path)).status, 401)
+        self.assertEqual((await self.client.post("/api/user/sync", json={"user_id": 88202})).status, 401)
+        self.assertEqual((await self.client.get(path, headers=self.telegram_headers(88201, 3700))).status, 401)
+        headers = self.telegram_headers(88201)
+        self.assertEqual((await self.client.get(path, headers={
+            "X-Telegram-Init-Data": headers["X-Telegram-Init-Data"].replace("88201", "88202")
+        })).status, 401)
+        result = await self.client.get(path, headers=headers)
+        self.assertEqual((await result.json())["user_id"], 88201)
+        with patch.object(web_server.api_client, "get_group_by_id", AsyncMock(return_value={"name": "ИВТ-61"})):
+            result = await self.client.post("/api/user/sync", headers=headers, json={
+                "user_id": 88202, "group_id": 1041, "group_name": "Подмена", "subgroup": 1,
+            })
+        self.assertEqual(result.status, 200)
+        self.assertIsNone(await database.get_user(88202))
+        self.assertEqual((await database.get_user(88201))["group_name"], "ИВТ-61")
+
+    async def test_яндекс_проверяет_токен_и_приложение(self):
+        path = "/api/app/auth/yandex"
+        self.assertEqual((await self.client.post(path, json={"yandex_id": "чужой"})).status, 400)
+        with patch.object(web_server, "fetch_yandex_identity", AsyncMock(return_value={
+            "client_id": "чужое приложение", "id": "123",
+        })):
+            self.assertEqual((await self.client.post(path, json={"access_token": "test"})).status, 401)
+        with patch.object(web_server, "fetch_yandex_identity", AsyncMock(return_value={
+            "client_id": web_server.YANDEX_CLIENT_ID, "id": "123456", "first_name": "Проверенное имя",
+        })):
+            res = await self.client.post(path, json={"access_token": "test", "yandex_id": "765",
+                                                    "first_name": "Подмена"})
+        self.assertEqual(res.status, 200)
+        payload = await res.json()
+        self.assertEqual(payload["user"]["first_name"], "Проверенное имя")
+        self.assertEqual(payload["user"]["yandex_id"], "123456")
+        self.assertTrue(payload["auth_token"].startswith("ya2_"))
+
+    async def test_код_входа_необходим_и_одноразовый(self):
+        start = await self.client.post("/api/app/auth/session")
+        token = (await start.json())["session_token"]
+        secret = await database.confirm_auth_session(token, 88203)
+        check = "/api/app/auth/check"
+        legacy = await self.client.get(check, params={"session_token": token})
+        self.assertNotIn("auth_token", await legacy.json())
+        invalid = await self.client.post(check, json={"session_token": token, "code": "f" * 12})
+        self.assertEqual((await invalid.json())["status"], "invalid_code")
+        body = {"session_token": token, "code": database.auth_verification_code(secret)}
+        results = await asyncio.gather(*(self.client.post(check, json=body) for _ in range(5)))
+        payloads = [await response.json() for response in results]
+        self.assertEqual(sum("auth_token" in item for item in payloads), 1)
+        auth = next(item["auth_token"] for item in payloads if "auth_token" in item)
+        self.assertEqual((await database.get_user_by_auth_token(auth))["user_id"], 88203)
+        self.assertIsNone(await database.get_user_by_auth_token(secret))
+
+    async def test_просроченный_подтверждённый_вход_не_выдаёт_токен(self):
+        from datetime import datetime, timedelta
+        token = "a" * 22
+        await database.create_auth_session(token)
+        secret = await database.confirm_auth_session(token, 88204)
+        async with database.async_session_maker.begin() as db:
+            await db.execute(database.update(database.AppAuthSession).where(
+                database.AppAuthSession.session_token == token
+            ).values(expires_at=datetime.utcnow() - timedelta(seconds=1)))
+        res = await self.client.post("/api/app/auth/check", json={
+            "session_token": token, "code": database.auth_verification_code(secret)
+        })
+        self.assertEqual(await res.json(), {"status": "expired"})
+
+    async def test_чужое_устройство_не_отвязывается(self):
+        token = "tg2_" + "c" * 64
+        async with database.async_session_maker.begin() as db:
+            db.add_all([
+                database.User(user_id=88205, device_id="своё"),
+                database.User(user_id=88206, device_id="чужое"),
+                database.AppUser(auth_token=database.app_token_digest(token), user_id=88205),
+            ])
+        path = "/api/app/device/unlink"
+        self.assertEqual((await self.client.post(path, json={"device_id": "чужое"})).status, 401)
+        self.assertEqual((await self.client.post(path, json={"device_id": "чужое", "auth_token": token})).status, 200)
+        self.assertEqual((await database.get_user(88206))["device_id"], "чужое")
+        self.assertIsNone((await database.get_user(88205))["device_id"])
 
 
 if __name__ == "__main__":

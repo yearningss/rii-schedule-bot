@@ -72,9 +72,9 @@ android {
             }
             if (keyFile != null && keyFile.exists()) {
                 storeFile keyFile
-                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword'] ?: "Goll7535"
-                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias'] ?: "yearnings"
-                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword'] ?: "Goll7535"
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword']
+                keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias']
+                keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword']
             }
         }
     }

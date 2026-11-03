@@ -1,5 +1,4 @@
 // Экран авторизации через Telegram и выбора группы
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
@@ -27,21 +26,13 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool _isWaitingConfirmation = false;
   bool _isYandexLoading = false;
-  Timer? _pollTimer;
-  String? _sessionToken;
-
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
-  }
 
   Future<void> _startTelegramAuth() async {
     setState(() => _isWaitingConfirmation = true);
 
     try {
       final sessionData = await widget.api.createAuthSession();
-      _sessionToken = sessionData['session_token'] as String;
+      final sessionToken = sessionData['session_token'] as String;
       final deepLink = sessionData['deep_link'] as String;
       final authUrl = sessionData['auth_url'] as String;
 
@@ -61,87 +52,111 @@ class _AuthScreenState extends State<AuthScreen> {
         } catch (_) {}
       }
 
-      // Запускаем фоновый опрос сервера на подтверждение
-      _pollTimer?.cancel();
-      _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-        if (!mounted || _sessionToken == null) {
-          timer.cancel();
-          return;
-        }
+      if (!mounted) return;
+      final code = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          String entered = '';
+          return AlertDialog(
+            title: const Text('Код входа из Telegram'),
+            content: TextField(
+              autofocus: true,
+              maxLength: 12,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                labelText: 'Код из личного чата с ботом',
+                helperText: 'Подтвердите запрос в @rubinst_bot',
+              ),
+              onChanged: (value) => entered = value.trim(),
+              onSubmitted: (value) =>
+                  Navigator.pop(dialogContext, value.trim()),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Отмена'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, entered),
+                child: const Text('Войти'),
+              ),
+            ],
+          );
+        },
+      );
+      if (!mounted || code == null) return;
+      if (!RegExp(r'^[a-fA-F0-9]{12}$').hasMatch(code)) {
+        throw const FormatException('Некорректный код');
+      }
+      final res = await widget.api.checkAuthSession(sessionToken, code);
+      final status = res['status'] as String?;
+      if (status == 'confirmed') {
+        final authToken = res['auth_token'] as String?;
+        final userMap = res['user'] as Map<String, dynamic>?;
+
+        final profile = UserProfile(
+          authToken: authToken,
+          userId: userMap?['user_id'],
+          groupId: userMap?['group_id'],
+          groupName: userMap?['group_name'],
+          subgroup: userMap?['subgroup'] ?? 0,
+          firstName: userMap?['first_name'],
+          lastName: userMap?['last_name'],
+          username: userMap?['username'],
+          avatarUrl: userMap?['avatar_url'],
+        );
+
+        await widget.storage.saveUserProfile(profile);
+
         try {
-          final res = await widget.api.checkAuthSession(_sessionToken!);
-          final status = res['status'] as String?;
-
-          if (status == 'confirmed') {
-            timer.cancel();
-            final authToken = res['auth_token'] as String?;
-            final userMap = res['user'] as Map<String, dynamic>?;
-
-            final profile = UserProfile(
-              authToken: authToken,
-              userId: userMap?['user_id'],
-              groupId: userMap?['group_id'],
-              groupName: userMap?['group_name'],
-              subgroup: userMap?['subgroup'] ?? 0,
-              firstName: userMap?['first_name'],
-              lastName: userMap?['last_name'],
-              username: userMap?['username'],
-              avatarUrl: userMap?['avatar_url'],
-            );
-
-            await widget.storage.saveUserProfile(profile);
-
-            try {
-              final deviceId = widget.storage.getDeviceId();
-              final clientUserId = widget.storage.getClientUserId();
-              final notif = widget.storage.getNotificationSettings();
-              await widget.api.syncDeviceUser(
-                deviceId: deviceId,
-                clientUserId: clientUserId,
-                authToken: authToken,
-                groupId: profile.groupId,
-                groupName: profile.groupName,
-                subgroup: profile.subgroup,
-                notificationsEnabled: notif.enabled,
-                notifyBeforeMins: notif.beforeMins,
-                notifyLessonStart: notif.lessonStart,
-                notifyBreaks: notif.breaks,
-                notifyChanges: notif.changes,
-                appVersion: AppInfo.versionName,
-              );
-            } catch (_) {}
-
-            if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ScheduleScreen(storage: widget.storage, api: widget.api),
-                ),
-              );
-            }
-          } else if (status == 'expired') {
-            timer.cancel();
-            if (mounted) {
-              setState(() => _isWaitingConfirmation = false);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: const Text(
-                        'Время ожидания входа истекло. Попробуйте снова.')),
-              );
-            }
-          }
+          final deviceId = widget.storage.getDeviceId();
+          final clientUserId = widget.storage.getClientUserId();
+          final notif = widget.storage.getNotificationSettings();
+          await widget.api.syncDeviceUser(
+            deviceId: deviceId,
+            clientUserId: clientUserId,
+            authToken: authToken,
+            groupId: profile.groupId,
+            groupName: profile.groupName,
+            subgroup: profile.subgroup,
+            notificationsEnabled: notif.enabled,
+            notifyBeforeMins: notif.beforeMins,
+            notifyLessonStart: notif.lessonStart,
+            notifyBreaks: notif.breaks,
+            notifyChanges: notif.changes,
+            appVersion: AppInfo.versionName,
+          );
         } catch (_) {}
-      });
-    } catch (e) {
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  ScheduleScreen(storage: widget.storage, api: widget.api),
+            ),
+          );
+        }
+      } else {
+        throw const FormatException('Неверный или просроченный код');
+      }
+    } on FormatException {
       if (mounted) {
-        setState(() => _isWaitingConfirmation = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: const Text(
-                  'Ошибка подключения к серверу. Попробуйте позже.')),
+              content:
+                  Text('Неверный или просроченный код. Начните вход снова.')),
         );
       }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Не удалось войти. Попробуйте ещё раз.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isWaitingConfirmation = false);
     }
   }
 
@@ -333,14 +348,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           fontSize: 13,
                           color:
                               Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 20),
-                    TextButton(
-                      onPressed: () {
-                        _pollTimer?.cancel();
-                        setState(() => _isWaitingConfirmation = false);
-                      },
-                      child: const Text('Отмена'),
                     ),
                   ] else ...[
                     // Кнопка входа через Telegram в 1 клик

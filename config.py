@@ -17,6 +17,8 @@ if not DB_PATH.is_absolute():
 
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+YANDEX_CLIENT_ID = os.getenv("YANDEX_CLIENT_ID", "4cae7d5a54a142c2906bf93a43203467")
+
 API_BASE_URL = os.getenv("API_BASE_URL", "https://www.rubinst.ru/schedule.php")
 # Необязательный локальный IPv4 для исходящих запросов расписания.
 API_SOURCE_IP = os.getenv("API_SOURCE_IP", "").strip()
@@ -27,7 +29,7 @@ WEBAPP_URL = os.getenv("WEBAPP_URL", "https://myrii.ru")
 # Новая версия адреса обновляет сохранённую страницу Telegram Mini App.
 _webapp_parts = urlsplit(WEBAPP_URL)
 _webapp_query = dict(parse_qsl(_webapp_parts.query, keep_blank_values=True))
-_webapp_query["v"] = "13"
+_webapp_query["v"] = "14"
 WEBAPP_URL = urlunsplit(_webapp_parts._replace(query=urlencode(_webapp_query)))
 WEB_HOST = os.getenv("WEB_HOST", "127.0.0.1")
 WEB_PORT = int(os.getenv("WEB_PORT", "8082"))

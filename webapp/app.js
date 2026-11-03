@@ -120,13 +120,12 @@ function parseParaTime(timeStr, defaultParaNum = 1) {
 
 // Фоновая синхронизация настроек пользователя с ботом
 async function syncUserWithBot(groupId, groupName, subgroup) {
-  if (!telegramUserId) return;
+  if (!tg?.initData) return;
   try {
     await fetch(`${authBaseUrl}/api/user/sync`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': tg.initData },
       body: JSON.stringify({
-        user_id: telegramUserId,
         group_id: groupId,
         group_name: groupName,
         subgroup: subgroup
@@ -139,9 +138,9 @@ async function syncUserWithBot(groupId, groupName, subgroup) {
 
 // Загрузка данных пользователя из бота
 async function fetchUserBotSettings() {
-  if (!telegramUserId) return null;
+  if (!tg?.initData) return null;
   try {
-    const res = await fetch(`${authBaseUrl}/api/user?user_id=${telegramUserId}`);
+    const res = await fetch(`${authBaseUrl}/api/user`, { headers: { "X-Telegram-Init-Data": tg.initData } });
     if (res.ok) {
       const data = await res.json();
       if (data.group_id) {
@@ -318,6 +317,16 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function safeInstituteUrl(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value, 'https://www.rubinst.ru/');
+    if (url.protocol === 'https:' && ['www.rubinst.ru', 'rubinst.ru'].includes(url.hostname)
+        && !url.username && !url.password && !url.port) return url.href;
+  } catch (_) {}
+  return null;
+}
+
 function renderTeacherHtml(teacher, post) {
   if (!teacher) return '';
   const cleanTeacher = teacher.trim();
@@ -427,9 +436,9 @@ function renderSchedule() {
         partsHtml += `
           <div class="subgroup-block">
             <div class="subgroup-label">1 подгруппа</div>
-            <div class="para-subject">${item.subj1 || 'Предмет'} <span class="type-pill">${item.type1 ? `(${item.type1})` : ''}</span></div>
+            <div class="para-subject">${escapeHtml(item.subj1 || 'Предмет')} <span class="type-pill">${item.type1 ? `(${escapeHtml(item.type1)})` : ''}</span></div>
             <div class="para-meta">
-              ${item.aud1 ? `<span class="aud-pill">ауд. ${item.aud1}</span>` : ''}
+              ${item.aud1 ? `<span class="aud-pill">ауд. ${escapeHtml(item.aud1)}</span>` : ''}
               ${renderTeacherHtml(item.teacher1, item.teachPost1)}
             </div>
           </div>`;
@@ -438,9 +447,9 @@ function renderSchedule() {
         partsHtml += `
           <div class="subgroup-block">
             <div class="subgroup-label">2 подгруппа</div>
-            <div class="para-subject">${item.subj2 || 'Предмет'} <span class="type-pill">${item.type2 ? `(${item.type2})` : ''}</span></div>
+            <div class="para-subject">${escapeHtml(item.subj2 || 'Предмет')} <span class="type-pill">${item.type2 ? `(${escapeHtml(item.type2)})` : ''}</span></div>
             <div class="para-meta">
-              ${item.aud2 ? `<span class="aud-pill">ауд. ${item.aud2}</span>` : ''}
+              ${item.aud2 ? `<span class="aud-pill">ауд. ${escapeHtml(item.aud2)}</span>` : ''}
               ${renderTeacherHtml(item.teacher2, item.teachPost2)}
             </div>
           </div>`;
@@ -467,9 +476,9 @@ function renderSchedule() {
             </div>
             ${badgeHtml}
           </div>
-          <div class="para-subject">${item.subj1 || 'Предмет'} <span class="type-pill">${item.type1 ? `(${item.type1})` : ''}</span></div>
+          <div class="para-subject">${escapeHtml(item.subj1 || 'Предмет')} <span class="type-pill">${item.type1 ? `(${escapeHtml(item.type1)})` : ''}</span></div>
           <div class="para-meta">
-            ${item.aud1 ? `<span class="aud-pill">ауд. ${item.aud1}</span>` : ''}
+            ${item.aud1 ? `<span class="aud-pill">ауд. ${escapeHtml(item.aud1)}</span>` : ''}
             ${renderTeacherHtml(item.teacher1, item.teachPost1)}
           </div>
         </div>`;
@@ -550,19 +559,28 @@ function renderGroupsList(filterQuery = '') {
     }
   });
 
-  let html = '';
-  Object.keys(courses).sort().forEach(course => {
-    html += `<div class="course-section-title">${course} курс</div>`;
-    courses[course].forEach(g => {
-      html += `<button class="group-item-btn" onclick="selectGroup(${g.id}, '${g.name}')">${g.name}</button>`;
-    });
-  });
-
-  if (html === '') {
-    html = '<p style="text-align:center; padding: 20px; color: var(--hint-color);">Группы не найдены</p>';
+  const fragment = document.createDocumentFragment();
+  for (const course of Object.keys(courses).sort((a, b) => Number(a) - Number(b))) {
+    const title = document.createElement('div');
+    title.className = 'course-section-title';
+    title.textContent = `${course} курс`;
+    fragment.append(title);
+    for (const group of courses[course]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'group-item-btn';
+      button.textContent = group.name;
+      button.addEventListener('click', () => selectGroup(group.id, group.name));
+      fragment.append(button);
+    }
   }
-
-  el.groupsListContainer.innerHTML = html;
+  if (!fragment.childNodes.length) {
+    const message = document.createElement('p');
+    message.style.cssText = 'text-align:center; padding:20px; color:var(--hint-color)';
+    message.textContent = 'Группы не найдены';
+    fragment.append(message);
+  }
+  el.groupsListContainer.replaceChildren(fragment);
 }
 
 // Модалка групп
@@ -628,8 +646,9 @@ function populateTeacherModal(t) {
   }
 
   // Фотография
-  if (t.photo_url) {
-    el.teacherPhoto.src = t.photo_url;
+  const photoUrl = safeInstituteUrl(t.photo_url);
+  if (photoUrl) {
+    el.teacherPhoto.src = photoUrl;
     el.teacherPhoto.classList.remove('hidden');
     el.teacherAvatarFallback.classList.add('hidden');
     el.teacherPhoto.onerror = () => {
@@ -661,7 +680,7 @@ function populateTeacherModal(t) {
   // Телефон
   if (t.phones && t.phones.length > 0) {
     el.teacherPhone.innerHTML = t.phones
-      .map(p => `<a class="info-link" href="tel:${p.dial}">${escapeHtml(p.display)}</a>`)
+      .map(p => `<a class="info-link" href="tel:${escapeAttr(p.dial)}">${escapeHtml(p.display)}</a>`)
       .join(', ');
     el.teacherPhoneRow.classList.remove('hidden');
   } else if (t.phone) {
@@ -687,7 +706,7 @@ function populateTeacherModal(t) {
   // Email
   if (t.email) {
     const emails = t.email.split(/\s+/).filter(Boolean);
-    el.teacherEmail.innerHTML = emails.map(m => `<a class="info-link" href="mailto:${m}">${m}</a>`).join(', ');
+    el.teacherEmail.innerHTML = emails.map(m => `<a class="info-link" href="mailto:${escapeAttr(m)}">${escapeHtml(m)}</a>`).join(', ');
     el.teacherEmailRow.classList.remove('hidden');
   } else {
     el.teacherEmailRow.classList.add('hidden');
@@ -702,7 +721,7 @@ function populateTeacherModal(t) {
   }
 
   // Ссылка на сайт РИИ
-  el.teacherSiteLink.href = t.profile_url || 'https://www.rubinst.ru/structure';
+  el.teacherSiteLink.href = safeInstituteUrl(t.profile_url) || 'https://www.rubinst.ru/structure';
 }
 
 function closeTeacherModal() {

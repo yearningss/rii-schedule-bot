@@ -29,6 +29,8 @@
     <application
         android:label="РИИ Расписание"
         android:name="${applicationName}"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -196,7 +198,7 @@
         <!-- Виджет рабочего стола -->
         <receiver
             android:name=".ScheduleWidgetProvider"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.yearnings.rii.ACTION_SCHEDULE_TICK" />

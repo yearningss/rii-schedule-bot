@@ -1,7 +1,13 @@
 # Встроенный легковесный HTTP-сервер на aiohttp.web для обслуживания Telegram Mini App
 from __future__ import annotations
 
-import os
+import asyncio
+import hashlib
+import hmac
+import secrets
+from collections import deque
+from urllib.parse import parse_qsl
+from config import BOT_TOKEN, YANDEX_CLIENT_ID
 import logging
 import json
 import time
@@ -23,6 +29,8 @@ WEBAPP_DIR = Path(__file__).resolve().parent.parent / "webapp"
 WEB_ORIGINS = {"https://myrii.ru", "https://rii-bot.yearnings.ru"}
 
 async def prevent_stale_pages(request: web.Request, response: web.StreamResponse) -> None:
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
     origin = request.headers.get("Origin")
     if request.path.startswith("/api/") and origin in WEB_ORIGINS:
         response.headers["Access-Control-Allow-Origin"] = origin
@@ -40,7 +48,7 @@ async def handle_api_preflight(request: web.Request) -> web.Response:
         return web.Response(status=403)
     return web.Response(status=204, headers={
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Telegram-Init-Data",
     })
 
 
@@ -84,45 +92,74 @@ async def handle_api_schedule(request: web.Request) -> web.Response:
         logger.error("Ошибка API schedule для группы %s: %s", group_id_str, e)
         return web.json_response({"error": "Failed to fetch schedule"}, status=500)
 
-async def handle_api_get_user(request: web.Request) -> web.Response:
-    user_id_str = request.query.get("user_id")
-    if not user_id_str:
-        return web.json_response({"error": "Missing user_id"}, status=400)
+def telegram_user_id(request: web.Request) -> int:
+    raw = request.headers.get("X-Telegram-Init-Data", "")
     try:
-        user_id = int(user_id_str)
-        user = await get_user(user_id)
-        if user:
-            return web.json_response({
-                "user_id": user["user_id"],
-                "group_id": user.get("group_id"),
-                "group_name": user.get("group_name"),
-                "subgroup": user.get("subgroup", 0)
-            })
-        return web.json_response({"user_id": user_id, "group_id": None, "group_name": None, "subgroup": 0})
-    except Exception as e:
-        logger.error("Ошибка API get_user для user_id %s: %s", user_id_str, e)
-        return web.json_response({"error": "Failed to get user"}, status=500)
+        if not raw or len(raw) > 8192:
+            raise ValueError
+        pairs = parse_qsl(raw, strict_parsing=True, max_num_fields=24)
+        data = dict(pairs)
+        if len(data) != len(pairs):
+            raise ValueError
+        signature = data.pop("hash")
+        check = "\n".join(f"{key}={value}" for key, value in sorted(data.items()))
+        key = hmac.digest(b"WebAppData", BOT_TOKEN.encode(), "sha256")
+        expected = hmac.new(key, check.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            raise ValueError
+        if not -30 <= time.time() - int(data["auth_date"]) <= 3600:
+            raise ValueError
+        uid = json.loads(data["user"])["id"]
+        if type(uid) is not int or not 0 < uid < 2**63:
+            raise ValueError
+        return uid
+    except (KeyError, ValueError, TypeError):
+        raise web.HTTPUnauthorized(text="Нужна действительная подпись Telegram")
+
+
+async def handle_api_get_user(request: web.Request) -> web.Response:
+    uid = telegram_user_id(request)
+    user = await get_user(uid) or {}
+    return web.json_response({
+        "user_id": uid, "group_id": user.get("group_id"),
+        "group_name": user.get("group_name"), "subgroup": user.get("subgroup", 0),
+    })
+
+
+async def verified_group_name(group_id: int) -> str:
+    if type(group_id) is not int or not 0 < group_id < 2**31:
+        raise web.HTTPBadRequest(text="Некорректная группа")
+    try:
+        group = await api_client.get_group_by_id(group_id)
+    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+        raise web.HTTPServiceUnavailable(text="Список групп временно недоступен")
+    if not group:
+        raise web.HTTPBadRequest(text="Группа не найдена")
+    return group["name"]
+
 
 async def handle_api_sync_user(request: web.Request) -> web.Response:
+    uid = telegram_user_id(request)
     try:
         data = await request.json()
-        user_id = data.get("user_id")
+        if not isinstance(data, dict):
+            raise ValueError
         group_id = data.get("group_id")
-        group_name = data.get("group_name")
         subgroup = data.get("subgroup")
+        if group_id is not None and (type(group_id) is not int or group_id <= 0):
+            raise ValueError
+        if subgroup is not None and (type(subgroup) is not int or subgroup not in (0, 1, 2)):
+            raise ValueError
+    except (ValueError, TypeError):
+        raise web.HTTPBadRequest(text="Некорректные настройки")
+    if group_id is not None:
+        await set_user_group(uid, group_id, await verified_group_name(group_id))
+    if subgroup is not None:
+        await set_user_subgroup(uid, subgroup)
+    return web.json_response({"status": "ok"})
 
-        if user_id and group_id and group_name:
-            await set_user_group(int(user_id), int(group_id), str(group_name))
-        if user_id and subgroup is not None:
-            await set_user_subgroup(int(user_id), int(subgroup))
-
-        return web.json_response({"status": "ok"})
-    except Exception as e:
-        logger.error("Ошибка API sync_user: %s", e)
-        return web.json_response({"error": "Failed to sync user settings"}, status=500)
 
 async def handle_api_app_auth_session(request: web.Request) -> web.Response:
-    import secrets
     session_token = secrets.token_urlsafe(16)
     from database import create_auth_session
     await create_auth_session(session_token)
@@ -135,15 +172,25 @@ async def handle_api_app_auth_session(request: web.Request) -> web.Response:
     })
 
 async def handle_api_app_auth_check(request: web.Request) -> web.Response:
-    session_token = request.query.get("session_token")
-    if not session_token:
-        return web.json_response({"error": "Missing session_token"}, status=400)
-    
-    from database import get_auth_session
-    session = await get_auth_session(session_token)
+    from database import redeem_auth_session, get_auth_session
+    if request.method == "GET":
+        # Старые клиенты не могут получить токен по одной ссылке.
+        return web.json_response({"status": "expired"}, status=200)
+    try:
+        data = await request.json()
+        token, code = data["session_token"], data["code"]
+        if not isinstance(token, str) or not re.fullmatch(r"[A-Za-z0-9_-]{22}", token):
+            raise ValueError
+        if not isinstance(code, str) or not re.fullmatch(r"[a-fA-F0-9]{12}", code):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise web.HTTPBadRequest(text="Некорректный код входа")
+    session = await redeem_auth_session(token, code.lower())
     if not session:
-        return web.json_response({"status": "not_found"}, status=404)
-    
+        current = await get_auth_session(token)
+        status = "expired" if not current or current["status"] in {"expired", "consumed"} else "invalid_code"
+        return web.json_response({"status": status})
+
     if session["status"] == "confirmed" and session.get("user_id"):
         user = await get_user(session["user_id"])
         return web.json_response({
@@ -166,11 +213,10 @@ async def handle_api_app_auth_check(request: web.Request) -> web.Response:
     return web.json_response({"status": session["status"]})
 
 async def handle_api_app_profile(request: web.Request) -> web.Response:
-    auth_token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
-    if not auth_token:
-        auth_token = request.query.get("auth_token", "").strip()
+    scheme, _, auth_token = request.headers.get("Authorization", "").partition(" ")
+    auth_token = auth_token.strip() if scheme.lower() == "bearer" else ""
         
-    if not auth_token:
+    if not auth_token or auth_token.startswith("dev_"):
         return web.json_response({"error": "Unauthorized"}, status=401)
         
     from database import get_user_by_auth_token, update_user_custom_avatar
@@ -182,32 +228,28 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
         try:
             data = await request.json()
             gid = data.get("group_id")
-            gname = data.get("group_name")
             sg = data.get("subgroup")
             avatar_url = data.get("avatar_url")
-            avatar_base64 = data.get("avatar_base64")
+            if data.get("avatar_base64") is not None:
+                raise web.HTTPBadRequest(text="Загрузка файлов аватара отключена")
+            if avatar_url is not None and (
+                not isinstance(avatar_url, str) or not re.fullmatch(r"custom:[A-Za-z0-9_-]{1,64}", avatar_url)
+            ):
+                raise web.HTTPBadRequest(text="Некорректный аватар")
             notifications_enabled = data.get("notifications_enabled")
             notify_before_mins = data.get("notify_before_mins")
             notify_lesson_start = data.get("notify_lesson_start")
             notify_breaks = data.get("notify_breaks")
             notify_changes = data.get("notify_changes")
 
-            if gid and gname:
-                await set_user_group(user["user_id"], int(gid), str(gname))
+            if sg is not None and (type(sg) is not int or sg not in (0, 1, 2)):
+                raise web.HTTPBadRequest(text="Некорректная подгруппа")
+            if gid is not None:
+                await set_user_group(user["user_id"], gid, await verified_group_name(gid))
             if sg is not None:
                 await set_user_subgroup(user["user_id"], int(sg))
             if avatar_url:
                 await update_user_custom_avatar(user["user_id"], avatar_url)
-            elif avatar_base64:
-                import base64
-                os.makedirs("webapp/avatars", exist_ok=True)
-                file_name = f"{user['user_id']}_custom.png"
-                file_path = os.path.join("webapp", "avatars", file_name)
-                img_data = base64.b64decode(avatar_base64.split(",")[-1])
-                with open(file_path, "wb") as f:
-                    f.write(img_data)
-                await update_user_custom_avatar(user["user_id"], f"/avatars/{file_name}")
-
             if any(x is not None for x in (notifications_enabled, notify_before_mins, notify_lesson_start, notify_breaks, notify_changes)):
                 await update_user_notifications(
                     user_id=user["user_id"],
@@ -219,6 +261,8 @@ async def handle_api_app_profile(request: web.Request) -> web.Response:
                 )
 
             user = await get_user(user["user_id"])
+        except web.HTTPException:
+            raise
         except Exception as e:
             logger.error("Ошибка обновления профиля мобильного приложения: %s", e)
             return web.json_response({"error": "Failed to update profile"}, status=500)
@@ -250,7 +294,6 @@ async def handle_api_app_device_sync(request: web.Request) -> web.Response:
         client_user_id = data.get("client_user_id")
         platform = data.get("platform", "android")
         group_id = data.get("group_id")
-        group_name = data.get("group_name")
         subgroup = data.get("subgroup")
         notifications_enabled = data.get("notifications_enabled")
         notify_before_mins = data.get("notify_before_mins")
@@ -259,6 +302,19 @@ async def handle_api_app_device_sync(request: web.Request) -> web.Response:
         notify_changes = data.get("notify_changes")
         app_version = data.get("app_version")
         auth_token = data.get("auth_token")
+
+        if auth_token:
+            from database import get_user_by_auth_token
+            if not isinstance(auth_token, str) or not await get_user_by_auth_token(auth_token):
+                return web.json_response({"error": "Invalid auth token"}, status=401)
+        if not isinstance(device_id, str) or not 1 <= len(device_id) <= 128:
+            raise web.HTTPBadRequest(text="Некорректное устройство")
+        if client_user_id is not None and (not isinstance(client_user_id, str) or len(client_user_id) > 128):
+            raise web.HTTPBadRequest(text="Некорректное устройство")
+
+        if subgroup is not None and (type(subgroup) is not int or subgroup not in (0, 1, 2)):
+            raise web.HTTPBadRequest(text="Некорректная подгруппа")
+        group_name = await verified_group_name(group_id) if group_id is not None else None
 
         from database import register_or_update_device_user
         user = await register_or_update_device_user(
@@ -278,6 +334,10 @@ async def handle_api_app_device_sync(request: web.Request) -> web.Response:
         )
 
         return web.json_response({"status": "ok", "user": user})
+    except web.HTTPException:
+        raise
+    except PermissionError:
+        return web.json_response({"error": "Invalid auth token"}, status=401)
     except Exception as e:
         logger.error("Ошибка API device sync: %s", e)
         return web.json_response({"error": "Failed to sync device user"}, status=500)
@@ -290,56 +350,62 @@ async def handle_api_app_device_unlink(request: web.Request) -> web.Response:
         auth_token = data.get("auth_token")
 
         from database import unlink_device_user
-        await unlink_device_user(
+        unlinked = await unlink_device_user(
             device_id=str(device_id) if device_id else None,
             client_user_id=str(client_user_id) if client_user_id else None,
             auth_token=str(auth_token) if auth_token else None
         )
-        return web.json_response({"status": "ok", "message": "Device unlinked successfully"})
+        if not unlinked:
+            return web.json_response({"error": "Unauthorized"}, status=401)
+        return web.json_response({"status": "ok"})
     except Exception as e:
         logger.error("Ошибка API device unlink: %s", e)
         return web.json_response({"error": "Failed to unlink device"}, status=500)
 
+async def fetch_yandex_identity(token: str) -> dict:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as client:
+        async with client.get(
+            "https://login.yandex.ru/info", params={"format": "json"},
+            headers={"Authorization": f"OAuth {token}"}, allow_redirects=False,
+        ) as response:
+            if response.status in (400, 401, 403):
+                raise web.HTTPUnauthorized(text="Недействительный токен Яндекса")
+            if response.status != 200:
+                raise web.HTTPServiceUnavailable(text="Яндекс ID временно недоступен")
+            return await response.json()
+
+
 async def handle_api_app_auth_yandex(request: web.Request) -> web.Response:
     try:
         data = await request.json()
-        yandex_id = data.get("yandex_id")
-        access_token = data.get("access_token")
-        if not yandex_id and not access_token:
-            return web.json_response({"error": "Missing yandex_id or access_token"}, status=400)
+        token = data["access_token"]
+        if not isinstance(token, str) or not re.fullmatch(r"[A-Za-z0-9._~-]{1,2048}", token):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise web.HTTPBadRequest(text="Требуется OAuth-токен Яндекса")
+    try:
+        identity = await fetch_yandex_identity(token)
+    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+        raise web.HTTPServiceUnavailable(text="Яндекс ID временно недоступен")
+    if not isinstance(identity, dict) or identity.get("client_id") != YANDEX_CLIENT_ID or not identity.get("id"):
+        raise web.HTTPUnauthorized(text="Токен выдан другому приложению")
+    avatar = identity.get("default_avatar_id")
+    avatar_url = None
+    if isinstance(avatar, str) and re.fullmatch(r"[A-Za-z0-9_/-]{1,128}", avatar) and not identity.get("is_avatar_empty"):
+        avatar_url = f"https://avatars.yandex.net/get-yapic/{avatar}/islands-200"
+    from database import register_or_login_yandex_user
+    user = await register_or_login_yandex_user(
+        yandex_id=str(identity["id"]), first_name=identity.get("first_name"),
+        last_name=identity.get("last_name"), display_name=identity.get("display_name"),
+        email=identity.get("default_email"), avatar_url=avatar_url,
+    )
+    return web.json_response({"status": "confirmed", "auth_token": user["auth_token"], "user": user})
 
-        first_name = data.get("first_name")
-        last_name = data.get("last_name")
-        display_name = data.get("display_name")
-        email = data.get("email")
-        avatar_url = data.get("avatar_url")
 
-        from database import register_or_login_yandex_user
-        user = await register_or_login_yandex_user(
-            yandex_id=str(yandex_id or access_token[:16]),
-            first_name=str(first_name) if first_name else None,
-            last_name=str(last_name) if last_name else None,
-            display_name=str(display_name) if display_name else None,
-            email=str(email) if email else None,
-            avatar_url=str(avatar_url) if avatar_url else None,
-        )
-
-        return web.json_response({
-            "status": "confirmed",
-            "auth_token": user.get("auth_token"),
-            "user": user
-        })
-    except Exception as e:
-        logger.error("Ошибка API yandex auth: %s", e)
-        return web.json_response({"error": "Failed to auth with Yandex"}, status=500)
-
-_changelog_cache = {
-    "timestamp": 0.0,
-    "data": []
-}
-
+_changelog_cache = {"timestamp": 0.0, "data": []}
 _loads = SingleFlight()
 _changelog_retry_at = 0.0
+
 
 async def get_app_changelog_data() -> list:
     return await _loads.run("changelog", _load_app_changelog)
@@ -536,8 +602,35 @@ async def timing_middleware(request, handler):
         if request.path.startswith("/api/") and elapsed >= 1:
             logger.warning("Медленный запрос %s %s: %.3f с", request.method, request.path, elapsed)
 
+# Ограничение нагрузки на публичные точки входа и регистрации устройств.
+_AUTH_LIMITS = {
+    "/api/app/auth/session": 120,
+    "/api/app/auth/check": 300,
+    "/api/app/auth/yandex": 120,
+    "/api/app/device/sync": 1200,
+}
+
+
+def create_auth_limit_middleware():
+    recent = {path: deque() for path in _AUTH_LIMITS}
+
+    @web.middleware
+    async def limit(request, handler):
+        if request.method == "POST" and request.path in recent:
+            queue = recent[request.path]
+            now = time.monotonic()
+            while queue and queue[0] <= now - 60:
+                queue.popleft()
+            if len(queue) >= _AUTH_LIMITS[request.path]:
+                raise web.HTTPTooManyRequests(headers={"Retry-After": "60"})
+            queue.append(now)
+        return await handler(request)
+
+    return limit
+
+
 def create_web_app() -> web.Application:
-    app = web.Application(middlewares=[timing_middleware])
+    app = web.Application(middlewares=[timing_middleware, create_auth_limit_middleware()], client_max_size=32 * 1024)
     app.on_cleanup.append(cleanup_upstream_clients)
     app.on_response_prepare.append(prevent_stale_pages)
     app.router.add_options("/api/{path:.*}", handle_api_preflight)
@@ -557,6 +650,7 @@ def create_web_app() -> web.Application:
     app.router.add_post("/api/user/sync", handle_api_sync_user)
     app.router.add_post("/api/app/auth/session", handle_api_app_auth_session)
     app.router.add_get("/api/app/auth/check", handle_api_app_auth_check)
+    app.router.add_post("/api/app/auth/check", handle_api_app_auth_check)
     app.router.add_post("/api/app/auth/yandex", handle_api_app_auth_yandex)
     app.router.add_get("/api/app/profile", handle_api_app_profile)
     app.router.add_post("/api/app/profile", handle_api_app_profile)
@@ -570,7 +664,7 @@ def create_web_app() -> web.Application:
 
 async def start_web_server(host: str, port: int) -> web.AppRunner:
     app = create_web_app()
-    runner = web.AppRunner(app)
+    runner = web.AppRunner(app, access_log_format='%a "%m %U %H" %s %b')
     await runner.setup()
     site = web.TCPSite(runner, host, port)
     await site.start()

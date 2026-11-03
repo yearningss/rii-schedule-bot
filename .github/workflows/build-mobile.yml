@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: приложение-${{ github.ref }}
@@ -77,9 +77,6 @@ jobs:
             echo "Декодирование личного сертификата разработчика..."
             echo "$KEYSTORE_BASE64" | base64 --decode > /tmp/release.jks
             echo "KEYSTORE_FILE=/tmp/release.jks" >> $GITHUB_ENV
-          elif [ -f "certs/release.jks" ]; then
-            echo "Использование сертификата certs/release.jks..."
-            echo "KEYSTORE_FILE=$(pwd)/certs/release.jks" >> $GITHUB_ENV
           else
             echo "::error::Сертификат релизной подписи не найден"
             exit 1
@@ -102,10 +99,14 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'Goll7535' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'yearnings' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'Goll7535' }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          if [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Не настроены секреты релизной подписи"
+            exit 1
+          fi
           cd app
           flutter build apk --release --android-skip-build-dependency-validation
 
@@ -173,6 +174,8 @@ jobs:
           if-no-files-found: error
 
   publish-release:
+    permissions:
+      contents: write
     name: Публикация релиза в GitHub Releases
     needs: [server, web, build-android, build-ios]
     runs-on: ubuntu-latest

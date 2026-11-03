@@ -15,7 +15,7 @@ from aiogram.exceptions import TelegramBadRequest
 
 from database import (
     get_user, set_user_group, set_user_has_seen_guide,
-    get_auth_session, confirm_auth_session
+    get_auth_session, confirm_auth_session, auth_verification_code
 )
 from services.api import api_client
 from keyboards import (
@@ -115,6 +115,8 @@ async def get_reply_markup_for_chat(message: Message, group_id: Optional[int] = 
 async def cmd_start(message: Message, command: CommandObject = None):
     # Проверка диплинка авторизации мобильного приложения (tg://resolve?domain=rubinst_bot&start=auth_TOKEN)
     if command and command.args and command.args.startswith("auth_"):
+        if message.chat.type != "private":
+            return
         session_token = command.args[5:].strip()
         session = await get_auth_session(session_token)
         if not session:
@@ -123,7 +125,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
         if session.get("status") == "expired":
             await message.answer("Время действия запроса на вход истекло. Запросите новую ссылку в приложении.")
             return
-        if session.get("status") == "confirmed":
+        if session.get("status") != "pending":
             await message.answer("Этот запрос на вход уже был подтвержден ранее.")
             return
 
@@ -141,7 +143,8 @@ async def cmd_start(message: Message, command: CommandObject = None):
             "Вход в мобильное приложение РИИ Расписание.\n\n"
             f"Текущая группа: {current_group}\n"
             f"Пользователь: {message.from_user.full_name}\n\n"
-            "Подтвердить авторизацию устройства?",
+            "Если вы сами начали вход, подтвердите запрос. Код вводите только в своём приложении. Никому его не пересылайте.",
+            parse_mode=None,
             reply_markup=kb
         )
         return
@@ -226,9 +229,14 @@ async def cmd_start(message: Message, command: CommandObject = None):
 
 @router.callback_query(F.data.startswith("appauth:"))
 async def cb_app_auth(callback: CallbackQuery):
+    if not callback.message or callback.message.chat.type != "private":
+        await callback.answer()
+        return
     parts = callback.data.split(":")
-    action = parts[1]
-    session_token = parts[2]
+    if len(parts) != 3 or parts[1] not in {"ok", "cancel"}:
+        await callback.answer()
+        return
+    action, session_token = parts[1:]
 
     if action == "ok":
         from_user = callback.from_user
@@ -253,11 +261,10 @@ async def cb_app_auth(callback: CallbackQuery):
             avatar_url=avatar_url,
         )
         if auth_token:
-            user = await get_user(callback.from_user.id)
-            group_text = f" Группа: {user['group_name']}." if user and user.get("group_name") else ""
             await callback.message.edit_text(
-                f"Вход в мобильное приложение успешно подтвержден.{group_text}\n"
-                "Теперь вернитесь в приложение: вход выполнится автоматически."
+                f"Код входа: {auth_verification_code(auth_token)}\n"
+                "Введите код в приложении РИИ Расписание. Никому его не пересылайте.",
+                parse_mode=None
             )
         else:
             await callback.message.edit_text("Не удалось подтвердить вход. Возможно, время ожидания истекло.")
