@@ -90,9 +90,7 @@ android {
             shrinkResources false
         }
         debug {
-            if (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.debug
         }
     }
 }
