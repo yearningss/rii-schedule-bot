@@ -519,18 +519,9 @@ async def handle_text_group_search(message: Message):
     if not message.text or message.text.startswith("/"):
         return
 
-    # В групповых чатах не перехватываем обычный разговор студентов,
-    # если сообщение не является ответом боту и не содержит упоминания бота.
-    if message.chat.type in ("group", "supergroup"):
-        bot_user = await message.bot.get_me()
-        is_reply_to_bot = bool(
-            message.reply_to_message
-            and message.reply_to_message.from_user
-            and message.reply_to_message.from_user.id == bot_user.id
-        )
-        has_mention = bool(bot_user.username and f"@{bot_user.username.lower()}" in message.text.lower())
-        if not (is_reply_to_bot or has_mention):
-            return
+    # Свободный поиск работает только в личке: ответы боту в беседе могут быть обычным разговором.
+    if message.chat.type != "private":
+        return
 
     query = message.text.strip()
     lower = query.casefold()
